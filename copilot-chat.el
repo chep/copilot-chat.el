@@ -88,18 +88,20 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 				 ("temperature" . 0.1))))
 
 
-
 (defun copilot-chat-auth-cb(status callback &optional CBARGS)
-;  (if (plist-get status :error)
- ;     (message "Authentication error : %s" (plist-get status :error))
-	(beginning-of-buffer)
-	(switch-to-buffer (current-buffer))
+  (if (plist-get status :error)
+      (error (message "Authentication error : %s" (plist-get status :error)))
+	(goto-char (point-min))
     (re-search-forward "\n\n")
 	(let ((json-object-type 'alist)
-          (json-array-type 'list))
-      (setf (copilot-chat-token copilot-chat-instance) (json-read))
-      (setf (copilot-chat-sessionid copilot-chat-instance) (copilot-chat-uuid)))
-	(funcall callback CBARGS))
+          (json-array-type 'list)
+		  (json-string (buffer-substring-no-properties (point) (point-max))))
+	  (condition-case nil
+		  (let ((json-data (json-read-from-string json-string)))
+			(setf (copilot-chat-token copilot-chat-instance) json-data)
+			(setf (copilot-chat-sessionid copilot-chat-instance) (copilot-chat-uuid))
+			(funcall callback CBARGS))
+		(error (message "Failed to parse JSON response"))))))
 
 (defun copilot-chat-auth(callback &optional CBARGS)
   "Authenticate with GitHub Copilot API."
@@ -116,7 +118,7 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 										   ("user-agent" . "CopilotChat.nvim/2.0.0"))))
 ;		  (switch-to-buffer (url-retrieve url 'copilot-chat-auth-cb '('callback
 ;CBARGS))))
-		  (url-retrieve url 'copilot-chat-auth-cb '('callback CBARGS)))
+		  (url-retrieve url 'copilot-chat-auth-cb (list callback CBARGS)))
 	  (message "Already authenticated with GitHub Copilot API")
 	  (funcall callback CBARGS))))
 
@@ -124,7 +126,7 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 (defun analyze-copilot-response (status)
   "Analyse Copilot answer in current buffer."
   (if (plist-get status :error)
-      (message "Copilot request error : %s" (plist-get status :error))
+      (error (message "Copilot request error : %s" (plist-get status :error)))
 
 	(while (re-search-forward "^data: " nil t)
       (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
@@ -201,3 +203,9 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
   "Ask Copilot to generate tests for the current selected code."
   (interactive)
   (copilot-ask-region 'test))
+
+(defun copilot-chat-custom-prompt-selection()
+  "Send to Copilot a custom prompt followed by the current selected code."
+  (interactive)
+  (let ((prompt (read-from-minibuffer "Copilot prompt: ")))
+	(copilot-chat-ask (concat prompt "\n" (buffer-substring-no-properties (region-beginning) (region-end))))))
