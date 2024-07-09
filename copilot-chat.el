@@ -36,6 +36,8 @@
 	(test . "Please generate tests for the followifg code:\n"))
     "Copilot chat predefined prompts")
 
+(defvar copilot-chat-token-cache "~/.cache/copilot-chat/token")
+
 (cl-defstruct copilot-chat
   github-token
   token
@@ -100,6 +102,11 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 		  (let ((json-data (json-read-from-string json-string)))
 			(setf (copilot-chat-token copilot-chat-instance) json-data)
 			(setf (copilot-chat-sessionid copilot-chat-instance) (copilot-chat-uuid))
+			;; save token in copilot-chat-token-cache file after creating
+			;; folders if needed
+			(make-directory (file-name-directory (expand-file-name copilot-chat-token-cache)))
+			(with-temp-file copilot-chat-token-cache
+			  (insert json-string))
 			(funcall callback CBARGS))
 		(error (message "Failed to parse JSON response"))))))
 
@@ -107,20 +114,29 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
   "Authenticate with GitHub Copilot API."
   (if (null (copilot-chat-github-token copilot-chat-instance))
 	  (error "No GitHub token found")
-	(if (or (null (copilot-chat-token copilot-chat-instance))
-			(> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat-instance))))
-		(let ((url "https://api.github.com/copilot_internal/v2/token")
-			  (url-request-method "GET")
-			  (url-request-extra-headers `(("authorization" . ,(concat "token " (copilot-chat-github-token copilot-chat-instance)))
-										   ("accept" . "application/json")
-										   ("editor-version" . "Neovim/0.10.0")
-										   ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-										   ("user-agent" . "CopilotChat.nvim/2.0.0"))))
-;		  (switch-to-buffer (url-retrieve url 'copilot-chat-auth-cb '('callback
-;CBARGS))))
-		  (url-retrieve url 'copilot-chat-auth-cb (list callback CBARGS)))
-	  (message "Already authenticated with GitHub Copilot API")
-	  (funcall callback CBARGS))))
+	(progn
+	  (when (null (copilot-chat-token copilot-chat-instance))
+		;; try to load token from ~/.cache/copilot-chat-token
+		(let ((token-file (expand-file-name copilot-chat-token-cache)))
+		  (when (file-exists-p token-file)
+			(with-temp-buffer
+			  (insert-file-contents token-file)
+			  (setf (copilot-chat-token copilot-chat-instance) (json-read-from-string (buffer-substring-no-properties (point-min) (point-max))))))))
+
+	  (if (or (null (copilot-chat-token copilot-chat-instance))
+			  (> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat-instance))))
+		  (let ((url "https://api.github.com/copilot_internal/v2/token")
+				(url-request-method "GET")
+				(url-mime-encoding-string nil)
+				(url-user-agent "CopilotChat.nvim/2.0.0")
+				(url-request-extra-headers `(("authorization" . ,(concat "token " (copilot-chat-github-token copilot-chat-instance)))
+											 ("accept" . "application/json")
+											 ("editor-version" . "Neovim/0.10.0")
+											 ("editor-plugin-version" . "CopilotChat.nvim/2.0.0"))))
+			(print url-request-extra-headers t)
+			(url-retrieve url 'copilot-chat-auth-cb (list callback CBARGS)))
+		(message "Already authenticated with GitHub Copilot API")
+		(funcall callback CBARGS)))))
 
 
 (defun analyze-copilot-response (status)
