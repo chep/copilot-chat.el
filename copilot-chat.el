@@ -45,6 +45,9 @@
    :authinfo nil
    ))
 
+(defvar copilot-chat-buffer (get-buffer-create "*Copilot-chat*"))
+
+
 (defvar copilot-chat-prompt
   "You are a world-class coding tutor. Your code explanations perfectly balance high-level concepts and granular details. Your approach ensures that students
  not only understand how to write code, but also grasp the underlying principles that guide effective programming.\nWhen asked for your name, you must respond with \"GitHub Copilot\".\nFollow the user's requirements carefully & to the letter.\nYour expertise is strictly limited to software development topics.\nFollow M
@@ -76,8 +79,7 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 				 ("temperature" . 0.1))))
 
 
-(defun copilot-chat-auth()
-  (interactive)
+(defun copilot-chat-auth(callback)
   "Authenticate with GitHub Copilot API."
   (if (null (copilot-chat-github-token copilot-chat-instance))
 	  (error "No GitHub token found")
@@ -90,72 +92,62 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 										   ("editor-version" . "Neovim/0.10.0")
 										   ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
 										   ("user-agent" . "CopilotChat.nvim/2.0.0"))))
-		  (with-current-buffer (url-retrieve-synchronously url)
+		  (url-retrieve url (lambda(status)
 			(beginning-of-buffer)
 			(search-forward "HTTP/1.1 200 OK")
             (re-search-forward "\n\n")
 			(let ((json-object-type 'alist)
                   (json-array-type 'list))
               (setf (copilot-chat-token copilot-chat-instance) (json-read))
-              (setf (copilot-chat-sessionid copilot-chat-instance) (copilot-chat-uuid))
-		  )))
-	  (message "Already authenticated with GitHub Copilot API"))
-))
+              (setf (copilot-chat-sessionid copilot-chat-instance) (copilot-chat-uuid)))))))
+	(message "Already authenticated with GitHub Copilot API"))
+  (funcall callback))
 
-(defun extract-copilot-content ()
-  "Extrait le contenu généré par Copilot du buffer en utilisant json-parse-string."
-  (let ((content ""))
-    (while (re-search-forward "^data: " nil t)
-      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
-			 (json-string (and (not (string= "[DONE]" line)) line))
-             (json-obj (and json-string (json-parse-string json-string :object-type 'alist)))
-             (choices (and json-obj (alist-get 'choices json-obj)))
-			 (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
-			 (token (and delta (alist-get 'content delta))))
-		(when (and token
-				   (not (eq (alist-get 'content delta) :null)))
-          (setq content (concat content token)))))
-	  content))
 
 (defun analyze-copilot-response ()
-  "Analyse la réponse de Copilot dans le buffer actuel."
-  (interactive)
-  (let ((copilot-content (extract-copilot-content)))
-    (with-output-to-temp-buffer "*Copilot Analysis*"
-      (princ "Copilot answer:\n")
-      (princ copilot-content))))
+  "Analyse Copilot answer in current buffer."
+  (with-current-buffer copilot-chat-buffer
+			   (erase-buffer))
+  (while (re-search-forward "^data: " nil t)
+    (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
+		   (json-string (and (not (string= "[DONE]" line)) line))
+           (json-obj (and json-string (json-parse-string json-string :object-type 'alist)))
+           (choices (and json-obj (alist-get 'choices json-obj)))
+		   (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
+		   (token (and delta (alist-get 'content delta))))
+	  (when (and token (not (eq token :null)))
+		(with-current-buffer copilot-chat-buffer
+					 (insert token)))))
+  (when (and copilot-chat-buffer (not (get-buffer-window copilot-chat-buffer 'visible)))
+    (switch-to-buffer copilot-chat-buffer)))
 
 (defun copilot-chat-ask (prompt &optional opts)
   "Ask a question to Copilot."
-  (print (copilot-chat-token copilot-chat-instance))
-  (copilot-chat-auth)
-  (let (
-		;(url "http://127.0.0.1:8080")
-		(url "https://api.githubcopilot.com/chat/completions")
-		(url-request-method "POST")
-		(url-mime-encoding-string nil)
-		(url-user-agent "CopilotChat.nvim/2.0.0")
-		(url-http-attempt-keepalives nil)
-		(url-request-extra-headers `(("openai-intent" . "conversation-panel")
-									 ("content-type" . "application/json")
-									 ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-									 ("authorization" . ,(concat "Bearer "
-																 (alist-get 'token (copilot-chat-token copilot-chat-instance))))
-									 ("x-request-id" . ,(copilot-chat-uuid))
-									 ("vscode-sessionid" . ,(copilot-chat-sessionid copilot-chat-instance))
-									 ("vscode-machineid" . ,(copilot-chat-machineid copilot-chat-instance))
-									 ("copilot-integration-id" . "vscode-chat")
-									 ("openai-organization" . "github-copilot")
-									 ("editor-version" . "Neovim/0.10.0")))
-		(url-request-data (copilot-chat-create-req prompt))
-		)
-;	(print url-request-extra-headers t)
-;	(print url-request-data t)
-	(with-current-buffer (url-retrieve-synchronously url)
-	  (beginning-of-buffer)
-	  (search-forward "HTTP/1.1 200 OK")
-      (re-search-forward "\n\n")
-	  (analyze-copilot-response))))
+  (with-current-buffer copilot-chat-buffer
+			   (erase-buffer))
+  (copilot-chat-auth (lambda ()
+					   (let ((url "https://api.githubcopilot.com/chat/completions")
+							 (url-request-method "POST")
+							 (url-mime-encoding-string nil)
+							 (url-user-agent "CopilotChat.nvim/2.0.0")
+							 (url-http-attempt-keepalives nil)
+							 (url-request-extra-headers `(("openai-intent" . "conversation-panel")
+														  ("content-type" . "application/json")
+														  ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
+														  ("authorization" . ,(concat "Bearer "
+																					  (alist-get 'token (copilot-chat-token copilot-chat-instance))))
+														  ("x-request-id" . ,(copilot-chat-uuid))
+														  ("vscode-sessionid" . ,(copilot-chat-sessionid copilot-chat-instance))
+														  ("vscode-machineid" . ,(copilot-chat-machineid copilot-chat-instance))
+														  ("copilot-integration-id" . "vscode-chat")
+														  ("openai-organization" . "github-copilot")
+														  ("editor-version" . "Neovim/0.10.0")))
+							 (url-request-data (copilot-chat-create-req prompt)))
+						 (with-current-buffer (url-retrieve url (lambda (status)
+																  (beginning-of-buffer)
+																  (search-forward "HTTP/1.1 200 OK")
+																  (re-search-forward "\n\n")
+																  (analyze-copilot-response))))))))
 
 ; https://api.githubcopilot.com/chat/completions
 ; http://127.0.0.1:8080
