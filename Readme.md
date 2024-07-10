@@ -38,5 +38,6 @@ While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer 
 - Get github token
 - Fix display function
 - Manage non ASCII char in prompt
+- Prompt history
 - Autoload
 - Installation
