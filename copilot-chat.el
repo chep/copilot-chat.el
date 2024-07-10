@@ -143,10 +143,9 @@
     (let ((split-window-preferred-function nil)
           (split-height-threshold nil)
           (split-width-threshold nil))
-      (split-window-below (floor (* 0.8 (window-total-width)))))
+      (split-window-below (floor (* 0.8 (window-total-height)))))
     (other-window 1)
-    (switch-to-buffer prompt-buffer)
-    (other-window -1)))
+    (switch-to-buffer prompt-buffer)))
 
 (provide 'copilot-chat)
 
