@@ -74,7 +74,7 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
   (setq copilot-chat-instance(make-copilot-chat
 							  :github-token (copilot-chat-get-cached-token)
 							  :token nil
-							  :sessionid nil
+							  :sessionid (concat (copilot-chat-uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
 							  :machineid (copilot-chat-machine-id))))
 
 (defun copilot-chat-create-req(prompt)
@@ -104,7 +104,6 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 		  (let ((json-data (json-read-from-string json-string))
 				(cache-dir (file-name-directory (expand-file-name copilot-chat-token-cache))))
 			(setf (copilot-chat-token copilot-chat-instance) json-data)
-			(setf (copilot-chat-sessionid copilot-chat-instance) (concat (copilot-chat-uuid) (number-to-string (* (round (float-time (current-time))) 1000))))
 			;; save token in copilot-chat-token-cache file after creating
 			;; folders if needed
 			(when (not (file-directory-p cache-dir))
