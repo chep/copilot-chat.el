@@ -12,7 +12,7 @@ TODO
 Clone repository and eval files in emacs.
 
 ## Usage
-`(copilot-display) should display copilot chat and prompt buffer
+`(copilot-display)` should display copilot chat and prompt buffer
 
 While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer will be written in chat buffer.
 
