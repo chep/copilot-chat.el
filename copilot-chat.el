@@ -38,6 +38,8 @@
 
 (defvar copilot-chat-token-cache "~/.cache/copilot-chat/token")
 
+(defvar copilot-chat-user-agent-save "")
+
 (cl-defstruct copilot-chat
   github-token
   token
@@ -91,6 +93,9 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 
 
 (defun copilot-chat-auth-cb(status callback &optional CBARGS)
+  (setq url-user-agent copilot-chat-user-agent-save)
+  (when (null status)
+	(error (message "Authentication error : timeout")))
   (if (plist-get status :error)
       (error (message "Authentication error : %s" (plist-get status :error)))
 	(goto-char (point-min))
@@ -128,12 +133,12 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 		  (let ((url "https://api.github.com/copilot_internal/v2/token")
 				(url-request-method "GET")
 				(url-mime-encoding-string nil)
-				(url-user-agent "CopilotChat.nvim/2.0.0")
 				(url-request-extra-headers `(("authorization" . ,(concat "token " (copilot-chat-github-token copilot-chat-instance)))
 											 ("accept" . "application/json")
 											 ("editor-version" . "Neovim/0.10.0")
 											 ("editor-plugin-version" . "CopilotChat.nvim/2.0.0"))))
-			(print url-request-extra-headers t)
+			(setq copilot-chat-user-agent-save url-user-agent
+				  url-user-agent "CopilotChat.nvim/2.0.0")
 			(url-retrieve url 'copilot-chat-auth-cb (list callback CBARGS)))
 		(message "Already authenticated with GitHub Copilot API")
 		(funcall callback CBARGS)))))
