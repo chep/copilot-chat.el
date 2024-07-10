@@ -192,41 +192,43 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
   (copilot-chat-auth 'copilot-chat-ask-cb prompt))
 
 
-(defun copilot-ask-region(prompt)
+(defun copilot-chat-ask-region(prompt)
   (copilot-chat-ask (concat (cdr (assoc prompt copilot-chat-prompts)) (buffer-substring-no-properties (region-beginning) (region-end)))))
 
 (defun copilot-chat-explain()
   "Ask Copilot to explain the current selected code."
   (interactive)
-  (copilot-ask-region 'explain))
+  (copilot-chat-ask-region 'explain))
 
 (defun copilot-chat-review()
   "Ask Copilot to review the current selected code."
   (interactive)
-  (copilot-ask-region 'review))
+  (copilot-chat-ask-region 'review))
 
 (defun copilot-chat-doc()
   "Ask Copilot to write documentation for the current selected code."
   (interactive)
-  (copilot-ask-region 'doc))
+  (copilot-chat-ask-region 'doc))
 
 (defun copilot-chat-fix()
   "Ask Copilot to fix the current selected code."
   (interactive)
-  (copilot-ask-region 'fix))
+  (copilot-chat-ask-region 'fix))
 
 (defun copilot-chat-optimize()
   "Ask Copilot to optimize the current selected code."
   (interactive)
-  (copilot-ask-region 'optimize))
+  (copilot-chat-ask-region 'optimize))
 
 (defun copilot-chat-test()
   "Ask Copilot to generate tests for the current selected code."
   (interactive)
-  (copilot-ask-region 'test))
+  (copilot-chat-ask-region 'test))
 
 (defun copilot-chat-custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code."
   (interactive)
   (let ((prompt (read-from-minibuffer "Copilot prompt: ")))
 	(copilot-chat-ask (concat prompt "\n" (buffer-substring-no-properties (region-beginning) (region-end))))))
+
+(provide 'copilot-chat)
