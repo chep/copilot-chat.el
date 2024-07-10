@@ -80,7 +80,7 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 (defun copilot-chat-create-req(prompt)
   "Create a request for Copilot."
   (json-encode `(("messages" . [,(list (cons "content" copilot-chat-prompt) (cons "role" "system"))
-								,(list (cons "content" prompt) (cons "role" "user"))])
+								,(list (cons "content" (url-hexify-string prompt)) (cons "role" "user"))])
 				 ("top_p" . 1)
 				 ("model" . "gpt-4")
 				 ("stream" . t)
