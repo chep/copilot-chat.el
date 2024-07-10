@@ -46,6 +46,7 @@
   sessionid
   machineid
   authinfo
+  history
 )
 
 
@@ -56,6 +57,7 @@
    :sessionid nil
    :machineid (copilot-chat-machine-id)
    :authinfo nil
+   :history nil
    ))
 
 (defvar copilot-chat-prompt
@@ -75,18 +77,24 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 							  :github-token (copilot-chat-get-cached-token)
 							  :token nil
 							  :sessionid (concat (copilot-chat-uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
-							  :machineid (copilot-chat-machine-id))))
+							  :machineid (copilot-chat-machine-id)
+							  :history nil)))
 
 (defun copilot-chat-create-req(prompt)
   "Create a request for Copilot."
-  (json-encode `(("messages" . [,(list (cons "content" copilot-chat-prompt) (cons "role" "system"))
-								,(list (cons "content" (url-hexify-string prompt)) (cons "role" "user"))])
-				 ("top_p" . 1)
-				 ("model" . "gpt-4")
-				 ("stream" . t)
-				 ("n" . 1)
-				 ("intent" . t)
-				 ("temperature" . 0.1))))
+  (let ((messages nil))
+	(push (list (cons "content" (url-hexify-string prompt)) (cons "role" "user")) messages)
+	(dolist (history (copilot-chat-history copilot-chat-instance))
+	  (push (list (cons "content" (url-hexify-string history)) (cons "role" "assistant")) messages))
+	(push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
+
+	(json-encode `(("messages" . ,(vconcat messages))
+				   ("top_p" . 1)
+				   ("model" . "gpt-4")
+				   ("stream" . t)
+				   ("n" . 1)
+				   ("intent" . t)
+				   ("temperature" . 0.1)))))
 
 
 (defun copilot-chat-auth-cb(status callback &optional CBARGS)
@@ -186,6 +194,9 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 
 (defun copilot-chat-ask (prompt callback)
   "Ask a question to Copilot."
-  (copilot-chat-auth 'copilot-chat-ask-cb (list prompt callback)))
+  (let* ((history (copilot-chat-history copilot-chat-instance))
+		 (new-history (cons prompt history)))
+	(copilot-chat-auth 'copilot-chat-ask-cb (list prompt callback))
+	(setf (copilot-chat-history copilot-chat-instance) new-history)))
 
 (provide 'copilot-chat-copilot)

@@ -50,7 +50,9 @@
 
 
 (defun copilot-chat-prompt-cb (content)
-  (copilot-chat-write-buffer content 'answer))
+  (copilot-chat-write-buffer content 'answer)
+  (with-current-buffer copilot-chat-buffer
+	(goto-char (point-max))))
 
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
