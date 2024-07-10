@@ -103,7 +103,7 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 	  (condition-case nil
 		  (let ((json-data (json-read-from-string json-string)))
 			(setf (copilot-chat-token copilot-chat-instance) json-data)
-			(setf (copilot-chat-sessionid copilot-chat-instance) (copilot-chat-uuid))
+			(setf (copilot-chat-sessionid copilot-chat-instance) (concat (copilot-chat-uuid) (number-to-string (* (round (float-time (current-time))) 1000))))
 			;; save token in copilot-chat-token-cache file after creating
 			;; folders if needed
 			(make-directory (file-name-directory (expand-file-name copilot-chat-token-cache)))
