@@ -6,15 +6,19 @@ This is a work in progress. Feel free to help me. See in the [Todo list](#todo) 
 
 ## Installation
 ### Straight
-TODO
+```
+(use-package copilot-chat
+  :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el")))
+```
 
 ### Manual
 Clone repository and eval files in emacs.
 
 ## Configuration
-You will need a token. The token can be put in the function `copilot-chat-get-cached-token` in `copilot-chat-copilot.el`
+You will need a token. The token is to be put in the the file named in the customizable variable `copilot-chat-github-token-file` (`~/.config/copilot-chat/github-token` by default).
 
-There is no way (for the moment) to get the token in emacs. I got mine with neovim: install the copilot-chat plugin (see in [Notes](#notes)), connect and the token should be in `~/.config/github-copilot/hosts.json`.
+There is no way (for the moment) to get the token in emacs. I got mine with neovim: install the copilot-chat plugin (see in [Notes](#notes)), connect and the token should be in `~/.config/github-copilot/hosts.json`.  
+If you know how to get this token, please tell me, I will implement it.
 
 ## Usage
 `(copilot-display)` displays copilot chat and prompt buffer.
