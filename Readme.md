@@ -35,7 +35,7 @@ While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer 
 
 `(copilot-chat-custom-prompt-selection) asks for a prompt in minibuffer and pastes selection after it before sending it to copilot.
 
-`(copilot-chat-add-current-buffer)` adds current buffer to copilot chat. Its content will be send with every request.
+`(copilot-chat-add-current-buffer)` adds current buffer to copilot chat. Its content will be sent with every request.
 
 `(copilot-chat-create)` creates a new context. History and buffers are forgotten.
 
