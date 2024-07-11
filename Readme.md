@@ -15,10 +15,7 @@ This is a work in progress. Feel free to help me. See in the [Todo list](#todo) 
 Clone repository and eval files in emacs.
 
 ## Configuration
-You will need a token. The token is to be put in the the file named in the customizable variable `copilot-chat-github-token-file` (`~/.config/copilot-chat/github-token` by default).
-
-There is no way (for the moment) to get the token in emacs. I got mine with neovim: install the copilot-chat plugin (see in [Notes](#notes)), connect and the token should be in `~/.config/github-copilot/hosts.json`.  
-If you know how to get this token, please tell me, I will implement it.
+When sending the first prompt, you will need to authenticate to github. Follow instruction and everything will be fine.
 
 ## Usage
 `(copilot-display)` displays copilot chat and prompt buffer.
@@ -44,6 +41,5 @@ While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer 
 `(copilot-chat-create)` creates a new context. History and buffers are forgotten.
 
 ## TODO
-- Get github token
 - Prompt history
 
