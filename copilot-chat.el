@@ -90,6 +90,8 @@
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
   (interactive)
+  (unless (copilot-chat-ready-p)
+	(copilot-chat-create))
   (with-current-buffer copilot-chat-prompt-buffer
 	(let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
 	  (erase-buffer)

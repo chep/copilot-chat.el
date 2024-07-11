@@ -34,6 +34,7 @@
 
 ;; structs
 (cl-defstruct copilot-chat
+  ready
   github-token
   token
   sessionid
@@ -79,6 +80,7 @@
 (defvar copilot-chat-user-agent-save "")
 (defvar copilot-chat-instance
   (make-copilot-chat
+   :ready nil
    :github-token nil
    :token nil
    :sessionid nil
@@ -122,6 +124,7 @@
   (interactive)
   "Create a new Copilot chat instance."
   (setq copilot-chat-instance(make-copilot-chat
+							  :ready t
 							  :github-token (copilot-chat-get-cached-token)
 							  :token nil
 							  :sessionid (concat (copilot-chat-uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
@@ -266,6 +269,9 @@
 	(let* ((buffers (copilot-chat-buffers copilot-chat-instance))
 		   (new-buffers (cons buffer buffers)))
 	  (setf (copilot-chat-buffers copilot-chat-instance) new-buffers))))
+
+(defun copilot-chat-ready-p()
+  (copilot-chat-ready copilot-chat-instance))
 
 (provide 'copilot-chat-copilot)
 
