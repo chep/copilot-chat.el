@@ -246,9 +246,10 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 	(setf (copilot-chat-history copilot-chat-instance) new-history)))
 
 (defun copilot-chat-add-buffer (buffer)
-  (let* ((buffers (copilot-chat-buffers copilot-chat-instance))
-		 (new-buffers (cons buffer buffers)))
-	(setf (copilot-chat-buffers copilot-chat-instance) new-buffers)))
+  (unless (memq buffer (copilot-chat-buffers copilot-chat-instance))
+	(let* ((buffers (copilot-chat-buffers copilot-chat-instance))
+		   (new-buffers (cons buffer buffers)))
+	  (setf (copilot-chat-buffers copilot-chat-instance) new-buffers))))
 
 (provide 'copilot-chat-copilot)
 
