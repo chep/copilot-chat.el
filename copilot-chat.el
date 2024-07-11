@@ -29,10 +29,23 @@
 
 (require 'copilot-chat-copilot)
 
+;; variables
+
 (defvar copilot-chat-buffer (get-buffer-create "*Copilot-chat*"))
 (defvar copilot-chat-prompt-buffer (get-buffer-create "*Copilot-chat-prompt*"))
+(defvar copilot-chat-mode-map (make-keymap)
+  "Keymap for Copilot Chat major mode.")
+(defvar copilot-chat-mode-prompt-map (make-keymap)
+  "Keymap for Copilot Chat Prompt major mode.")
 
 
+;; init
+(define-key copilot-chat-mode-map (kbd "C-c q") 'bury-buffer)
+(define-key copilot-chat-mode-prompt-map (kbd "C-c RET") 'copilot-chat-prompt-send)
+(define-key copilot-chat-mode-prompt-map (kbd "C-c q") '(lambda() (bury-buffer) (delete-window)))
+
+
+;; functions
 (defun copilot-chat-mode ()
   "Major mode for Copilot Chat buffer."
   (interactive)
@@ -42,10 +55,6 @@
   (setq mode-name "Copilot Chat")
   (setq buffer-read-only t)
   (run-hooks 'copilot-chat-mode-hook))
-
-(defvar copilot-chat-mode-map (make-keymap)
-  "Keymap for Copilot Chat major mode.")
-(define-key copilot-chat-mode-map (kbd "C-c q") 'bury-buffer)
 
 (define-derived-mode copilot-chat-mode special-mode "Copilot Chat"
   "Major mode for the Copilot Chat buffer."
@@ -59,11 +68,6 @@
   (setq major-mode 'copilot-chat-mode-prompt)
   (setq mode-name "Copilot Chat Prompt")
   (run-hooks 'copilot-chat-mode-prompt-hook))
-
-(defvar copilot-chat-mode-prompt-map (make-keymap)
-  "Keymap for Copilot Chat Prompt major mode.")
-(define-key copilot-chat-mode-prompt-map (kbd "C-c RET") 'copilot-chat-prompt-send)
-(define-key copilot-chat-mode-prompt-map (kbd "C-c q") '(lambda() (bury-buffer) (delete-window)))
 
 (define-derived-mode copilot-chat-mode-prompt text-mode "Copilot Chat Prompt"
   "Major mode for the Copilot Chat Prompt buffer.")

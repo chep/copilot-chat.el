@@ -31,8 +31,65 @@
 (require 'json)
 (require 'url)
 
-;; Fonctions utilitaires
 
+;; structs
+(cl-defstruct copilot-chat
+  github-token
+  token
+  sessionid
+  machineid
+  authinfo
+  history
+  buffers
+)
+
+
+;; constants
+(defconst copilot-chat-prompts
+  '((explain . "Please write an explanation for the following code:\n")
+	(review . "Please review the following code:\n")
+	(doc . "Please write documentation for the following code:\n")
+	(fix . "There is a problem in this code. Please rewrite the code to show it with the bug fixed.\n")
+	(optimize . "Please optimize the following code to improve performance and readablilty:\n")
+	(test . "Please generate tests for the followifg code:\n"))
+    "Copilot chat predefined prompts")
+
+
+;; customs
+(defgroup copilot-chat nil
+  "GitHub Copilot chat."
+  :group 'tools)
+
+(defcustom copilot-chat-token-cache "~/.cache/copilot-chat/token"
+  "The file where the GitHub token is cached."
+  :type 'string
+  :group 'copilot-chat)
+(defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
+  "The file where to find GitHub token."
+  :type 'string
+  :group 'copilot-chat)
+(defcustom copilot-chat-prompt
+  "You are a world-class coding tutor. Your code explanations perfectly balance high-level concepts and granular details. Your approach ensures that students not only understand how to write code, but also grasp the underlying principles that guide effective programming.\nWhen asked for your name, you must respond with \"GitHub Copilot\".\nFollow the user's requirements carefully & to the letter.\nYour expertise is strictly limited to software development topics.\nFollow Microsoft content policies.\nAvoid content that violates copyrights.\nFor questions not related to software development, simply give a reminder that you are an AI programming assistant.\nKeep your answers short and impersonal.\nUse Markdown formatting in your answers.\nMake sure to include the programming language name at the start of the Markdown code blocks.\nAvoid wrapping the whole response in triple backticks.\nThe user works in an IDE called Neovim which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.\nThe active document is the source code the user is looking at right now.\nYou can only give one reply for each conversation turn.\n\nAdditional Rules\nThink step by step:\n1. Examine the provided code selection and any other context like user question, related errors, project details, class definitions, etc.\n2. If you are unsure about the code, concepts, or the user's question, ask clarifying questions.\n3. If the user provided a specific question or error, answer it based on the selected code and additional provided context. Otherwise focus on explaining the selected code.\n4. Provide suggestions if you see opportunities to improve code readability, performance, etc.\n\nFocus on being clear, helpful, and thorough without assuming extensive prior knowledge.\nUse developer-friendly terms and analogies in your explanations.\nIdentify 'gotchas' or less obvious parts of the code that might trip up someone new.\nProvide clear and relevant examples aligned with any provided context.\n"
+  "The prompt to use for Copilot chat."
+  :type 'string
+  :group 'copilot-chat)
+
+
+;; variables
+(defvar copilot-chat-user-agent-save "")
+(defvar copilot-chat-instance
+  (make-copilot-chat
+   :github-token nil
+   :token nil
+   :sessionid nil
+   :machineid nil
+   :authinfo nil
+   :history nil
+   :buffers nil
+   ))
+
+
+;; Fonctions
 (defun copilot-chat-uuid ()
   "Generate a UUID."
   (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"
@@ -54,53 +111,12 @@
 (defun copilot-chat-get-cached-token ()
   "Get the cached GitHub token."
   (or (getenv "GITHUB_TOKEN")
-	  "your github token"
-      ))
+	  (let ((token-file (expand-file-name copilot-chat-github-token-file)))
+		(when (file-exists-p token-file)
+		  (with-temp-buffer
+			(insert-file-contents token-file)
+			(buffer-substring-no-properties (point-min) (point-max)))))))
 
-(defconst copilot-chat-prompts
-  '((explain . "Please write an explanation for the following code:\n")
-	(review . "Please review the following code:\n")
-	(doc . "Please write documentation for the following code:\n")
-	(fix . "There is a problem in this code. Please rewrite the code to show it with the bug fixed.\n")
-	(optimize . "Please optimize the following code to improve performance and readablilty:\n")
-	(test . "Please generate tests for the followifg code:\n"))
-    "Copilot chat predefined prompts")
-
-(defvar copilot-chat-token-cache "~/.cache/copilot-chat/token")
-
-(defvar copilot-chat-user-agent-save "")
-
-(cl-defstruct copilot-chat
-  github-token
-  token
-  sessionid
-  machineid
-  authinfo
-  history
-  buffers
-)
-
-
-(defvar copilot-chat-instance
-  (make-copilot-chat
-   :github-token (copilot-chat-get-cached-token)
-   :token nil
-   :sessionid nil
-   :machineid (copilot-chat-machine-id)
-   :authinfo nil
-   :history nil
-   :buffers nil
-   ))
-
-(defvar copilot-chat-prompt
-  "You are a world-class coding tutor. Your code explanations perfectly balance high-level concepts and granular details. Your approach ensures that students
- not only understand how to write code, but also grasp the underlying principles that guide effective programming.\nWhen asked for your name, you must respond with \"GitHub Copilot\".\nFollow the user's requirements carefully & to the letter.\nYour expertise is strictly limited to software development topics.\nFollow M
-icrosoft content policies.\nAvoid content that violates copyrights.\nFor questions not related to software development, simply give a reminder that you are an AI programming assistant.\nKeep your answers short and impersonal.\nUse Markdown formatting in your answers.\nMake sure to include the programming language name 
-at the start of the Markdown code blocks.\nAvoid wrapping the whole response in triple backticks.\nThe user works in an IDE called Neovim which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.\nThe active
- document is the source code the user is looking at right now.\nYou can only give one reply for each conversation turn.\n\nAdditional Rules\nThink step by step:\n1. Examine the provided code selection and any other context like user question, related errors, project details, class definitions, etc.\n2. If you are unsur
-e about the code, concepts, or the user's question, ask clarifying questions.\n3. If the user provided a specific question or error, answer it based on the selected code and additional provided context. Otherwise focus on explaining the selected code.\n4. Provide suggestions if you see opportunities to improve code rea
-dability, performance, etc.\n\nFocus on being clear, helpful, and thorough without assuming extensive prior knowledge.\nUse developer-friendly terms and analogies in your explanations.\nIdentify 'gotchas' or less obvious parts of the code that might trip up someone new.\nProvide clear and relevant examples aligned with
- any provided context.\n")
 
 (defun copilot-chat-create (&optional proxy allow-insecure)
   (interactive)
