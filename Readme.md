@@ -15,7 +15,7 @@ This is a work in progress. Feel free to help me. See in the [Todo list](#todo) 
 Clone repository and eval files in emacs.
 
 ## Configuration
-When sending the first prompt, you will need to authenticate to github. Follow instruction and everything will be fine.
+When sending the first prompt, you will need to authenticate to github. Follow instructions and everything will be fine.
 
 ## Usage
 `(copilot-display)` displays copilot chat and prompt buffer.
@@ -34,7 +34,7 @@ While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer 
 
 `(copilot-chat-test)` asks copilot to write tests for selected code.
 
-`(copilot-chat-custom-prompt-selection) asks for a prompt in minibuffer and pastes selection after it before sending it to copilot.
+`(copilot-chat-custom-prompt-selection)` asks for a prompt in minibuffer and pastes selection after it before sending it to copilot.
 
 `(copilot-chat-add-current-buffer)` adds current buffer to copilot chat. Its content will be sent with every request.
 
