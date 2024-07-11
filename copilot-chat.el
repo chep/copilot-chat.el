@@ -178,6 +178,10 @@
     (other-window 1)
     (switch-to-buffer prompt-buffer)))
 
+(defun copilot-chat-add-current-buffer()
+  (interactive)
+  (copilot-chat-add-buffer (current-buffer)))
+
 (provide 'copilot-chat)
 
 ;;; copilot-chat.el ends here

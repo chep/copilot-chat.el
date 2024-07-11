@@ -77,6 +77,7 @@
   machineid
   authinfo
   history
+  buffers
 )
 
 
@@ -88,6 +89,7 @@
    :machineid (copilot-chat-machine-id)
    :authinfo nil
    :history nil
+   :buffers nil
    ))
 
 (defvar copilot-chat-prompt
@@ -108,14 +110,28 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 							  :token nil
 							  :sessionid (concat (copilot-chat-uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
 							  :machineid (copilot-chat-machine-id)
-							  :history nil)))
+							  :history nil
+							  :buffers nil)))
 
 (defun copilot-chat-create-req(prompt)
   "Create a request for Copilot."
   (let ((messages nil))
+	; user prompt
 	(push (list (cons "content" (url-hexify-string prompt)) (cons "role" "user")) messages)
+
+	; history
 	(dolist (history (copilot-chat-history copilot-chat-instance))
 	  (push (list (cons "content" (url-hexify-string history)) (cons "role" "assistant")) messages))
+
+	; buffers
+	(setf (copilot-chat-buffers copilot-chat-instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
+																	 (copilot-chat-buffers copilot-chat-instance)))
+	(dolist (buffer (copilot-chat-buffers copilot-chat-instance))
+	  (when (buffer-live-p buffer)
+		(with-current-buffer buffer
+		  (push (list (cons "content" (url-hexify-string (buffer-substring-no-properties (point-min) (point-max)))) (cons "role" "assistant")) messages))))
+
+	; system
 	(push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
 
 	(json-encode `(("messages" . ,(vconcat messages))
@@ -228,6 +244,11 @@ dability, performance, etc.\n\nFocus on being clear, helpful, and thorough witho
 		 (new-history (cons prompt history)))
 	(copilot-chat-auth 'copilot-chat-ask-cb (list prompt callback))
 	(setf (copilot-chat-history copilot-chat-instance) new-history)))
+
+(defun copilot-chat-add-buffer (buffer)
+  (let* ((buffers (copilot-chat-buffers copilot-chat-instance))
+		 (new-buffers (cons buffer buffers)))
+	(setf (copilot-chat-buffers copilot-chat-instance) new-buffers)))
 
 (provide 'copilot-chat-copilot)
 
