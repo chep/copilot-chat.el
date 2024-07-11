@@ -132,6 +132,67 @@
 							  :history nil
 							  :buffers nil)))
 
+
+(defun copilot-chat-login()
+  (setq copilot-chat-user-agent-save url-user-agent
+		url-user-agent "CopilotChat.nvim/2.0.0")
+  (let* ((url "https://github.com/login/device/code")
+		 (url-request-method "POST")
+		 (url-mime-encoding-string nil)
+		 (url-http-attempt-keepalives nil)
+		 (url-request-extra-headers `(("content-type" . "application/json")
+									  ("accept" . "application/json")
+									  ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
+									  ("accept-encoding" . "gzip,deflate,br")
+									  ("editor-version" . "Neovim/0.10.0")))
+		 (url-request-data "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"scope\":\"read:user\"}"))
+	(with-current-buffer (url-retrieve-synchronously url)
+	  (goto-char (point-min))
+      (re-search-forward "HTTP/1.1 200 OK")
+      (re-search-forward "device_code=")
+	  (backward-char 12)
+	  (let* ((text (buffer-substring-no-properties (point) (line-end-position)))
+			 (pairs (split-string text "&"))
+			 (alist '()))
+		(dolist (pair pairs alist)
+		  (let ((key-value (split-string pair "=")))
+			(push (cons (car key-value) (cadr key-value)) alist)))
+
+		(let ((device-code (cdr (assoc "device_code" alist)))
+			  (user-code (cdr (assoc "user_code" alist)))
+			  (verification-uri (url-unhex-string (cdr (assoc "verification_uri" alist)))))
+		  (gui-set-selection 'CLIPBOARD user-code)
+          (read-from-minibuffer (format "Your one-time code %s is copied. Press ENTER to open GitHub in your browser. If your browser does not open automatically, browse to %s." user-code verification-uri))
+          (browse-url verification-uri)
+          (read-from-minibuffer "Press ENTER after authorizing.")
+
+		  (let* ((url "https://github.com/login/oauth/access_token")
+				 (url-request-method "POST")
+				 (url-mime-encoding-string nil)
+				 (url-http-attempt-keepalives nil)
+				 (url-request-extra-headers `(("content-type" . "application/json")
+											  ("accept" . "application/json")
+											  ("accept-encoding" . "gzip,deflate,br")
+											  ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
+											  ("editor-version" . "Neovim/0.10.0")))
+				 (url-request-data (format "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"device_code\":\"%s\",\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"}" device-code)))
+			(print device-code t)
+			(with-current-buffer (url-retrieve-synchronously url)
+			  (goto-char (point-min))
+			  (re-search-forward "HTTP/1.1 200 OK")
+			  (re-search-forward "access_token=")
+			  (let* ((text (buffer-substring-no-properties (point) (line-end-position)))
+					 (pairs (split-string text "&"))
+					 (token (car pairs))
+					 (token-dir (file-name-directory (expand-file-name copilot-chat-github-token-file))))
+				(setf (copilot-chat-github-token copilot-chat-instance) token)
+				(when (not (file-directory-p token-dir))
+				  (make-directory token-dir t))
+				(with-temp-file copilot-chat-github-token-file
+				  (insert token)))))))))
+    (setq url-user-agent copilot-chat-user-agent-save))
+
+
 (defun copilot-chat-create-req(prompt)
   "Create a request for Copilot."
   (let ((messages nil))
@@ -188,31 +249,31 @@
 
 (defun copilot-chat-auth(callback &optional CBARGS)
   "Authenticate with GitHub Copilot API."
-  (if (null (copilot-chat-github-token copilot-chat-instance))
-	  (error "No GitHub token found")
-	(progn
-	  (when (null (copilot-chat-token copilot-chat-instance))
-		;; try to load token from ~/.cache/copilot-chat-token
-		(let ((token-file (expand-file-name copilot-chat-token-cache)))
-		  (when (file-exists-p token-file)
-			(with-temp-buffer
-			  (insert-file-contents token-file)
-			  (setf (copilot-chat-token copilot-chat-instance) (json-read-from-string (buffer-substring-no-properties (point-min) (point-max))))))))
+  (when (null (copilot-chat-github-token copilot-chat-instance))
+	(copilot-chat-login))
 
-	  (if (or (null (copilot-chat-token copilot-chat-instance))
-			  (> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat-instance))))
-		  (let ((url "https://api.github.com/copilot_internal/v2/token")
-				(url-request-method "GET")
-				(url-mime-encoding-string nil)
-				(url-request-extra-headers `(("authorization" . ,(concat "token " (copilot-chat-github-token copilot-chat-instance)))
-											 ("accept" . "application/json")
-											 ("editor-version" . "Neovim/0.10.0")
-											 ("editor-plugin-version" . "CopilotChat.nvim/2.0.0"))))
-			(setq copilot-chat-user-agent-save url-user-agent
-				  url-user-agent "CopilotChat.nvim/2.0.0")
-			(url-retrieve url 'copilot-chat-auth-cb (list callback CBARGS)))
-		(message "Already authenticated with GitHub Copilot API")
-		(funcall callback CBARGS)))))
+  (when (null (copilot-chat-token copilot-chat-instance))
+	;; try to load token from ~/.cache/copilot-chat-token
+	(let ((token-file (expand-file-name copilot-chat-token-cache)))
+	  (when (file-exists-p token-file)
+		(with-temp-buffer
+		  (insert-file-contents token-file)
+		  (setf (copilot-chat-token copilot-chat-instance) (json-read-from-string (buffer-substring-no-properties (point-min) (point-max))))))))
+
+  (if (or (null (copilot-chat-token copilot-chat-instance))
+		  (> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat-instance))))
+	  (let ((url "https://api.github.com/copilot_internal/v2/token")
+			(url-request-method "GET")
+			(url-mime-encoding-string nil)
+			(url-request-extra-headers `(("authorization" . ,(concat "token " (copilot-chat-github-token copilot-chat-instance)))
+										 ("accept" . "application/json")
+										 ("editor-version" . "Neovim/0.10.0")
+										 ("editor-plugin-version" . "CopilotChat.nvim/2.0.0"))))
+		(setq copilot-chat-user-agent-save url-user-agent
+			  url-user-agent "CopilotChat.nvim/2.0.0")
+		(url-retrieve url 'copilot-chat-auth-cb (list callback CBARGS)))
+	(message "Already authenticated with GitHub Copilot API")
+	(funcall callback CBARGS)))
 
 
 (defun analyze-copilot-response (status callback)
