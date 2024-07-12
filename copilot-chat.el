@@ -56,6 +56,10 @@
     (define-key map (kbd "SPC") 'copilot-chat-list-add-or-remove-buffer)
     (define-key map (kbd "C-c c") 'copilot-chat-list-clear-buffers)
     (define-key map (kbd "g") 'copilot-chat-list-refresh)
+	(define-key map (kbd "q") (lambda()
+								(interactive)
+								(bury-buffer)
+								(delete-window)))
     map)
   "Keymap for `copilot-chat-list-mode'.")
 

@@ -38,9 +38,11 @@ While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer 
 
 `(copilot-chat-add-current-buffer)` adds current buffer to copilot chat. Its content will be sent with every request.
 
+`(copilot-chat-list)` open buffer list. Buffers can be added or removed to copilot context with space and RET. `C-c c` clears the list. This function can be called with `C-c l` in prompt buffer.
+
 `(copilot-chat-create)` creates a new context. History and buffers are forgotten.
+
 
 ## TODO
 - Prompt history
-- Included buffer list (list, add, remove)
 - Manage markdown in buffers
