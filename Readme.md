@@ -43,4 +43,4 @@ While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer 
 ## TODO
 - Prompt history
 - Included buffer list (list, add, remove)
-
+- Manage markdown in buffers
