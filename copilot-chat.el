@@ -46,7 +46,7 @@
 									(interactive)
 									(bury-buffer)
 									(delete-window)))
-	(define-key map (kbd "C-c l") 'copilot-chat-list)
+	(define-key map (kbd "C-c l") 'copilot-chat-prompt-split-and-list)
 	map)
   "Keymap for Copilot Chat Prompt major mode.")
 
@@ -261,6 +261,15 @@
   (copilot-chat-clear-buffers)
   (message "Cleared all buffers from Copilot chat list.")
   (copilot-chat-list-refresh))
+
+(defun copilot-chat-prompt-split-and-list()
+  (interactive)
+  (let ((split-window-preferred-function nil)
+		(split-height-threshold nil)
+		(split-width-threshold nil))
+	(split-window-right (floor (* 0.8 (window-total-width)))))
+  (other-window 1)
+  (copilot-chat-list))
 
 (provide 'copilot-chat)
 
