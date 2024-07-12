@@ -331,6 +331,17 @@
 		   (new-buffers (cons buffer buffers)))
 	  (setf (copilot-chat-buffers copilot-chat-instance) new-buffers))))
 
+(defun copilot-chat-clear-buffers ()
+  (setf (copilot-chat-buffers copilot-chat-instance) nil))
+
+(defun copilot-chat-del-buffer (buffer)
+  (when (memq buffer (copilot-chat-buffers copilot-chat-instance))
+	(setf (copilot-chat-buffers copilot-chat-instance)
+          (delete buffer (copilot-chat-buffers copilot-chat-instance)))))
+
+(defun copilot-chat-get-buffers ()
+  (copilot-chat-buffers copilot-chat-instance))
+
 (defun copilot-chat-ready-p()
   (copilot-chat-ready copilot-chat-instance))
 

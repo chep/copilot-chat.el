@@ -31,19 +31,33 @@
 
 ;; variables
 
-(defvar copilot-chat-buffer (get-buffer-create "*Copilot-chat*"))
-(defvar copilot-chat-prompt-buffer (get-buffer-create "*Copilot-chat-prompt*"))
-(defvar copilot-chat-mode-map (make-keymap)
+(defvar copilot-chat-buffer "*Copilot-chat*")
+(defvar copilot-chat-prompt-buffer "*Copilot-chat-prompt*")
+(defvar copilot-chat-list-buffer "*Copilot-chat-list*")
+(defvar copilot-chat-mode-map
+  (let ((map (make-keymap)))
+	(define-key map (kbd "C-c q") 'bury-buffer)
+	map)
   "Keymap for Copilot Chat major mode.")
-(defvar copilot-chat-mode-prompt-map (make-keymap)
+(defvar copilot-chat-prompt-mode-map
+  (let ((map (make-keymap)))
+	(define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
+	(define-key map (kbd "C-c q") (lambda()
+									(interactive)
+									(bury-buffer)
+									(delete-window)))
+	(define-key map (kbd "C-c l") 'copilot-chat-list)
+	map)
   "Keymap for Copilot Chat Prompt major mode.")
 
-
-;; init
-(define-key copilot-chat-mode-map (kbd "C-c q") 'bury-buffer)
-(define-key copilot-chat-mode-prompt-map (kbd "C-c RET") 'copilot-chat-prompt-send)
-(define-key copilot-chat-mode-prompt-map (kbd "C-c q") '(lambda() (bury-buffer) (delete-window)))
-
+(defvar copilot-chat-list-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") 'copilot-chat-list-add-or-remove-buffer)
+    (define-key map (kbd "SPC") 'copilot-chat-list-add-or-remove-buffer)
+    (define-key map (kbd "C-c c") 'copilot-chat-list-clear-buffers)
+    (define-key map (kbd "g") 'copilot-chat-list-refresh)
+    map)
+  "Keymap for `copilot-chat-list-mode'.")
 
 ;; functions
 (defun copilot-chat-mode ()
@@ -60,17 +74,22 @@
   "Major mode for the Copilot Chat buffer."
   (read-only-mode 1))
 
-(defun copilot-chat-mode-prompt ()
+(defun copilot-chat-prompt-mode ()
   "Major mode for Copilot Chat Prompt buffer."
   (interactive)
   (kill-all-local-variables)
-  (use-local-map copilot-chat-mode-prompt-map)
-  (setq major-mode 'copilot-chat-mode-prompt)
+  (use-local-map copilot-chat-prompt-mode-map)
+  (setq major-mode 'copilot-chat-prompt-mode)
   (setq mode-name "Copilot Chat Prompt")
-  (run-hooks 'copilot-chat-mode-prompt-hook))
+  (run-hooks 'copilot-chat-prompt-mode-hook))
 
-(define-derived-mode copilot-chat-mode-prompt text-mode "Copilot Chat Prompt"
+(define-derived-mode copilot-chat-prompt-mode text-mode "Copilot Chat Prompt"
   "Major mode for the Copilot Chat Prompt buffer.")
+
+(define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
+  "Major mode for listing and managing buffers in Copilot chat."
+  (setq buffer-read-only t)
+  (copilot-chat-list-refresh))
 
 
 (defun copilot-chat-write-buffer(content type)
@@ -165,7 +184,16 @@
   (interactive)
   (let ((buffer copilot-chat-prompt-buffer))
     (with-current-buffer buffer
-      (copilot-chat-mode-prompt))
+      (copilot-chat-prompt-mode))
+    (switch-to-buffer buffer)))
+
+;;;###autoload
+(defun copilot-chat-list ()
+  "Open Copilot Chat list buffer."
+  (interactive)
+  (let ((buffer (get-buffer-create copilot-chat-list-buffer)))
+    (with-current-buffer buffer
+      (copilot-chat-list-mode))
     (switch-to-buffer buffer)))
 
 (defun copilot-chat-display ()
@@ -175,7 +203,7 @@
     (with-current-buffer chat-buffer
       (copilot-chat-mode))
     (with-current-buffer prompt-buffer
-      (copilot-chat-mode-prompt))
+      (copilot-chat-prompt-mode))
     (switch-to-buffer chat-buffer)
     (let ((split-window-preferred-function nil)
           (split-height-threshold nil)
@@ -187,6 +215,52 @@
 (defun copilot-chat-add-current-buffer()
   (interactive)
   (copilot-chat-add-buffer (current-buffer)))
+
+
+(defun copilot-chat-list-refresh ()
+  "Refresh the list of buffers in the current Copilot chat list buffer."
+  (interactive)
+  (let ((pt (point))
+		(inhibit-read-only t)
+        (sorted-buffers (sort (buffer-list)
+							  (lambda (a b)
+                                (string< (symbol-name (buffer-local-value 'major-mode a))
+                                         (symbol-name (buffer-local-value 'major-mode b)))))))
+    (erase-buffer)
+    (dolist (buffer sorted-buffers)
+	  (let ((buffer-name (buffer-name buffer))
+			(cop-bufs (copilot-chat-get-buffers)))
+		(when (and (not (string-prefix-p " " buffer-name))
+				   (not (string-prefix-p "*" buffer-name)))
+		  (insert (propertize buffer-name
+							  'face (if (member buffer cop-bufs)
+										'font-lock-keyword-face
+									  'default))
+				  "\n"))))
+	(goto-char pt)))
+
+
+(defun copilot-chat-list-add-or-remove-buffer ()
+  "Add or remove the buffer at point from the Copilot chat list."
+  (interactive)
+  (let* ((buffer-name (buffer-substring (line-beginning-position) (line-end-position)))
+         (buffer (get-buffer buffer-name))
+		 (cop-bufs (copilot-chat-get-buffers)))
+    (when buffer
+      (if (member buffer cop-bufs)
+          (progn
+            (copilot-chat-del-buffer buffer)
+            (message "Buffer '%s' removed from Copilot chat list." buffer-name))
+        (copilot-chat-add-buffer buffer)
+        (message "Buffer '%s' added to Copilot chat list." buffer-name)))
+    (copilot-chat-list-refresh)))
+
+(defun copilot-chat-list-clear-buffers ()
+  "Clear all buffers from the Copilot chat list."
+  (interactive)
+  (copilot-chat-clear-buffers)
+  (message "Cleared all buffers from Copilot chat list.")
+  (copilot-chat-list-refresh))
 
 (provide 'copilot-chat)
 
