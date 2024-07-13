@@ -52,7 +52,7 @@
 	(doc . "Please write documentation for the following code:\n")
 	(fix . "There is a problem in this code. Please rewrite the code to show it with the bug fixed.\n")
 	(optimize . "Please optimize the following code to improve performance and readablilty:\n")
-	(test . "Please generate tests for the followifg code:\n"))
+	(test . "Please generate tests for the following code:\n"))
     "Copilot chat predefined prompts")
 
 
