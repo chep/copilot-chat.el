@@ -30,7 +30,22 @@
 
 (require 'copilot-chat-copilot)
 
+;; customs
+(when (featurep 'shell-maker)
+  (defcustom copilot-chat-use-shell-maker t
+    "If set, copilot chat will use shell-maker"
+    :type 'boolean
+    :group 'copilot-chat))
+
 ;; variables
+
+(when (and (featurep 'shell-maker)
+           copilot-chat-use-shell-maker)
+  (defvar copilot-chat-shell-cb-fn nil)
+  (defvar copilot-chat-shell-config
+    (make-shell-maker-config
+     :name "Copilot-Chat-shell"
+     :execute-command 'copilot-chat-shell-cb)))
 
 (defvar copilot-chat-buffer "*Copilot-chat*")
 (defvar copilot-chat-prompt-buffer "*Copilot-chat-prompt*")
@@ -70,6 +85,7 @@
   "Current position in copilot-chat prompt history")
 
 
+
 ;; functions
 (defun copilot-chat-mode ()
   "Major mode for Copilot Chat buffer."
@@ -102,7 +118,6 @@
   (setq buffer-read-only t)
   (copilot-chat-list-refresh))
 
-
 (defun copilot-chat-write-buffer(content type)
   "Write content to the Copilot Chat buffer."
   (with-current-buffer copilot-chat-buffer
@@ -130,13 +145,17 @@
       (setq copilot-chat-prompt-history-position nil)
       (copilot-chat-ask prompt 'copilot-chat-prompt-cb))))
 
-
 (defun copilot-chat-ask-region(prompt)
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
-    (with-current-buffer copilot-chat-prompt-buffer
-      (erase-buffer)
-      (insert (concat (cdr (assoc prompt copilot-chat-prompts)) code)))
-    (copilot-chat-prompt-send)))
+    (if (and (featurep 'shell-maker)
+             copilot-chat-use-shell-maker)
+        (with-current-buffer (copilot-chat-get-shell-buffer)
+          (insert (concat (cdr (assoc prompt copilot-chat-prompts)) code))
+          (shell-maker-submit))
+      (with-current-buffer copilot-chat-prompt-buffer
+        (erase-buffer)
+        (insert (concat (cdr (assoc prompt copilot-chat-prompts)) code)))
+      (copilot-chat-prompt-send))))
 
 (defun copilot-chat-explain()
   "Ask Copilot to explain the current selected code."
@@ -174,12 +193,15 @@
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" code)))
-    (with-current-buffer copilot-chat-prompt-buffer
-      (erase-buffer)
-      (insert formatted-prompt))
-    (copilot-chat-prompt-send)))
-
-
+    (if (and (featurep 'shell-maker)
+             copilot-chat-use-shell-maker)
+        (with-current-buffer (copilot-chat-get-shell-buffer)
+          (insert formatted-prompt)
+          (shell-maker-submit))
+      (with-current-buffer copilot-chat-prompt-buffer
+        (erase-buffer)
+        (insert formatted-prompt))
+      (copilot-chat-prompt-send))))
 
 ;;;###autoload
 (defun copilot-chat ()
@@ -211,19 +233,22 @@
 
 (defun copilot-chat-display ()
   (interactive)
-  (let ((chat-buffer (get-buffer-create copilot-chat-buffer))
-        (prompt-buffer (get-buffer-create copilot-chat-prompt-buffer)))
-    (with-current-buffer chat-buffer
-      (copilot-chat-mode))
-    (with-current-buffer prompt-buffer
-      (copilot-chat-prompt-mode))
-    (switch-to-buffer chat-buffer)
-    (let ((split-window-preferred-function nil)
-          (split-height-threshold nil)
-          (split-width-threshold nil))
-      (split-window-below (floor (* 0.8 (window-total-height)))))
-    (other-window 1)
-    (switch-to-buffer prompt-buffer)))
+  (if (and (featurep 'shell-maker)
+           copilot-chat-use-shell-maker)
+      (switch-to-buffer (copilot-chat-get-shell-buffer))
+    (let ((chat-buffer (get-buffer-create copilot-chat-buffer))
+          (prompt-buffer (get-buffer-create copilot-chat-prompt-buffer)))
+      (with-current-buffer chat-buffer
+        (copilot-chat-mode))
+      (with-current-buffer prompt-buffer
+        (copilot-chat-prompt-mode))
+      (switch-to-buffer chat-buffer)
+      (let ((split-window-preferred-function nil)
+            (split-height-threshold nil)
+            (split-width-threshold nil))
+        (split-window-below (floor (* 0.8 (window-total-height)))))
+      (other-window 1)
+      (switch-to-buffer prompt-buffer))))
 
 (defun copilot-chat-add-current-buffer()
   (interactive)
@@ -317,20 +342,10 @@
         (erase-buffer)
         (insert prompt)))))
 
-(when (featurep 'shell-maker)
-  (defvar copilot-chat-shell-cb-fn nil)
-
-  (defvar copilot-chat-shell-config
-    (make-shell-maker-config
-     :name "Copilot-Chat-shell"
-     :execute-command 'copilot-chat-shell-cb))
-
+(when (and (featurep 'shell-maker)
+           copilot-chat-use-shell-maker)
   (defun copilot-chat-shell-cb-prompt (callback error-callback content)
-    (with-current-buffer (get-buffer (concat "*"
-                                             (downcase (cl-struct-slot-value
-                                                        'shell-maker-config
-                                                        'name copilot-chat-shell-config))
-                                             "*"))
+    (with-current-buffer (copilot-chat-get-shell-buffer)
       (funcall callback content nil)))
 
   (defun copilot-chat-shell-cb (command _history callback error-callback)
@@ -341,7 +356,20 @@
   (defun copilot-chat-shell ()
     "Start a Copilot Chat shell."
     (interactive)
-    (shell-maker-start copilot-chat-shell-config)))
+    (shell-maker-start copilot-chat-shell-config))
+
+  (defun copilot-chat-get-shell-buffer()
+    (let* ((name (concat "*"
+                         (downcase (cl-struct-slot-value
+                                    'shell-maker-config
+                                    'name copilot-chat-shell-config))
+                         "*"))
+           (buffer (get-buffer name)))
+      (if (null buffer)
+          (progn
+            (copilot-chat-shell)
+            (copilot-chat-get-shell-buffer))
+        buffer))))
 
 (provide 'copilot-chat)
 
