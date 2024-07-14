@@ -317,6 +317,32 @@
         (erase-buffer)
         (insert prompt)))))
 
+(when (featurep 'shell-maker)
+  (defvar copilot-chat-shell-cb-fn nil)
+
+  (defvar copilot-chat-shell-config
+    (make-shell-maker-config
+     :name "Copilot-Chat-shell"
+     :execute-command 'copilot-chat-shell-cb))
+
+  (defun copilot-chat-shell-cb-prompt (callback error-callback content)
+    (with-current-buffer (get-buffer (concat "*"
+                                             (downcase (cl-struct-slot-value
+                                                        'shell-maker-config
+                                                        'name copilot-chat-shell-config))
+                                             "*"))
+      (funcall callback content nil)))
+
+  (defun copilot-chat-shell-cb (command _history callback error-callback)
+    (setq copilot-chat-shell-cb-fn (apply-partially 'copilot-chat-shell-cb-prompt callback error-callback))
+    (copilot-chat-ask command copilot-chat-shell-cb-fn))
+
+
+  (defun copilot-chat-shell ()
+    "Start a Copilot Chat shell."
+    (interactive)
+    (shell-maker-start copilot-chat-shell-config)))
+
 (provide 'copilot-chat)
 
 ;;; copilot-chat.el ends here

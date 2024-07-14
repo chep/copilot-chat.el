@@ -289,8 +289,6 @@
                (token (and delta (alist-get 'content delta))))
           (when (and token (not (eq token :null)))
               (setq content (concat content token)))))
-      (when (and copilot-chat-buffer (not (get-buffer-window copilot-chat-buffer 'visible)))
-        (switch-to-buffer copilot-chat-buffer))
       (funcall callback content))))
 
 
