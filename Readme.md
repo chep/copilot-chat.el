@@ -10,6 +10,11 @@ This is a work in progress. Feel free to help me. See in the [Todo list](#todo) 
 (use-package copilot-chat
   :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el")))
 ```
+### With shell-maker
+
+(use-package copilot-chat
+  :straight (:host github :repo "chep/copilot-chat.el" :branch "shell-maker" :files ("*.el"))
+  :after (shell-maker))
 
 ### Manual
 Clone repository and eval files in emacs.
@@ -51,6 +56,10 @@ When sending the first prompt, you will need to authenticate to github. Follow i
 - `g` refresh list
 - `q` bury buffer and delete window
 
+### Shell-maker
+
+`(copilot-chat-shell)` opens a copilot chat shell. History and included buffers work like in copilot prompt buffer but predefined functions (explain, review… will still use chat buffer to display answers).
+
 ## TODO
-- Prompt history
 - Manage markdown in buffers
+- Use shell for predefined prompts if it is enabled
