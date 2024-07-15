@@ -1,3 +1,4 @@
+;; -*- indent-tabs-mode: nil -*-
 ;;; copilot-chat.el --- copilot chat interface -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2024  Cédric Chépied
@@ -36,20 +37,20 @@
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
 (defvar copilot-chat-mode-map
   (let ((map (make-keymap)))
-	(define-key map (kbd "C-c q") 'bury-buffer)
-	map)
+    (define-key map (kbd "C-c q") 'bury-buffer)
+    map)
   "Keymap for Copilot Chat major mode.")
 (defvar copilot-chat-prompt-mode-map
   (let ((map (make-keymap)))
-	(define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
-	(define-key map (kbd "C-c q") (lambda()
-									(interactive)
-									(bury-buffer)
-									(delete-window)))
-	(define-key map (kbd "C-c l") 'copilot-chat-prompt-split-and-list)
-	(define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
-	(define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
-	map)
+    (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
+    (define-key map (kbd "C-c q") (lambda()
+                                    (interactive)
+                                    (bury-buffer)
+                                    (delete-window)))
+    (define-key map (kbd "C-c l") 'copilot-chat-prompt-split-and-list)
+    (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
+    (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
+    map)
   "Keymap for Copilot Chat Prompt major mode.")
 (defvar copilot-chat-list-mode-map
   (let ((map (make-sparse-keymap)))
@@ -57,10 +58,10 @@
     (define-key map (kbd "SPC") 'copilot-chat-list-add-or-remove-buffer)
     (define-key map (kbd "C-c c") 'copilot-chat-list-clear-buffers)
     (define-key map (kbd "g") 'copilot-chat-list-refresh)
-	(define-key map (kbd "q") (lambda()
-								(interactive)
-								(bury-buffer)
-								(delete-window)))
+    (define-key map (kbd "q") (lambda()
+                                (interactive)
+                                (bury-buffer)
+                                (delete-window)))
     map)
   "Keymap for `copilot-chat-list-mode'.")
 (defvar copilot-chat-prompt-history nil
@@ -105,37 +106,37 @@
 (defun copilot-chat-write-buffer(content type)
   "Write content to the Copilot Chat buffer."
   (with-current-buffer copilot-chat-buffer
-	(let ((inhibit-read-only t))
-	(goto-char (point-max))
-	(insert (concat (propertize (format-time-string "%H:%M:%S") 'face 'font-lock-comment-face) " "))
-	(insert (propertize (format "%s\n" content) 'face (if (eq type 'prompt) 'font-lock-keyword-face 'font-lock-string-face))))))
+    (let ((inhibit-read-only t))
+      (goto-char (point-max))
+      (insert (concat (propertize (format-time-string "%H:%M:%S") 'face 'font-lock-comment-face) " "))
+      (insert (propertize (format "%s\n" content) 'face (if (eq type 'prompt) 'font-lock-keyword-face 'font-lock-string-face))))))
 
 
 (defun copilot-chat-prompt-cb (content)
   (copilot-chat-write-buffer content 'answer)
   (with-current-buffer copilot-chat-buffer
-	(goto-char (point-max))))
+    (goto-char (point-max))))
 
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
   (interactive)
   (unless (copilot-chat-ready-p)
-	(copilot-chat-create))
+    (copilot-chat-create))
   (with-current-buffer copilot-chat-prompt-buffer
-	(let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
-	  (erase-buffer)
-	  (copilot-chat-write-buffer prompt 'prompt)
+    (let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
+      (erase-buffer)
+      (copilot-chat-write-buffer prompt 'prompt)
       (push prompt copilot-chat-prompt-history)
-	  (setq copilot-chat-prompt-history-position nil)
-	  (copilot-chat-ask prompt 'copilot-chat-prompt-cb))))
+      (setq copilot-chat-prompt-history-position nil)
+      (copilot-chat-ask prompt 'copilot-chat-prompt-cb))))
 
 
 (defun copilot-chat-ask-region(prompt)
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
-	(with-current-buffer copilot-chat-prompt-buffer
-	  (erase-buffer)
-	  (insert (concat (cdr (assoc prompt copilot-chat-prompts)) code)))
-	(copilot-chat-prompt-send)))
+    (with-current-buffer copilot-chat-prompt-buffer
+      (erase-buffer)
+      (insert (concat (cdr (assoc prompt copilot-chat-prompts)) code)))
+    (copilot-chat-prompt-send)))
 
 (defun copilot-chat-explain()
   "Ask Copilot to explain the current selected code."
@@ -171,12 +172,12 @@
   "Send to Copilot a custom prompt followed by the current selected code."
   (interactive)
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
-		(code (buffer-substring-no-properties (region-beginning) (region-end)))
-		(formatted-prompt (concat prompt "\n" code)))
-	(with-current-buffer copilot-chat-prompt-buffer
-	  (erase-buffer)
-	  (insert formatted-prompt))
-	(copilot-chat-prompt-send)))
+         (code (buffer-substring-no-properties (region-beginning) (region-end)))
+         (formatted-prompt (concat prompt "\n" code)))
+    (with-current-buffer copilot-chat-prompt-buffer
+      (erase-buffer)
+      (insert formatted-prompt))
+    (copilot-chat-prompt-send)))
 
 
 
@@ -233,23 +234,23 @@
   "Refresh the list of buffers in the current Copilot chat list buffer."
   (interactive)
   (let ((pt (point))
-		(inhibit-read-only t)
+        (inhibit-read-only t)
         (sorted-buffers (sort (buffer-list)
-							  (lambda (a b)
+                              (lambda (a b)
                                 (string< (symbol-name (buffer-local-value 'major-mode a))
                                          (symbol-name (buffer-local-value 'major-mode b)))))))
     (erase-buffer)
     (dolist (buffer sorted-buffers)
-	  (let ((buffer-name (buffer-name buffer))
-			(cop-bufs (copilot-chat-get-buffers)))
-		(when (and (not (string-prefix-p " " buffer-name))
-				   (not (string-prefix-p "*" buffer-name)))
-		  (insert (propertize buffer-name
-							  'face (if (member buffer cop-bufs)
-										'font-lock-keyword-face
-									  'default))
-				  "\n"))))
-	(goto-char pt)))
+      (let ((buffer-name (buffer-name buffer))
+            (cop-bufs (copilot-chat-get-buffers)))
+        (when (and (not (string-prefix-p " " buffer-name))
+                   (not (string-prefix-p "*" buffer-name)))
+          (insert (propertize buffer-name
+                              'face (if (member buffer cop-bufs)
+                                        'font-lock-keyword-face
+                                      'default))
+                  "\n"))))
+    (goto-char pt)))
 
 
 (defun copilot-chat-list-add-or-remove-buffer ()
@@ -257,7 +258,7 @@
   (interactive)
   (let* ((buffer-name (buffer-substring (line-beginning-position) (line-end-position)))
          (buffer (get-buffer buffer-name))
-		 (cop-bufs (copilot-chat-get-buffers)))
+         (cop-bufs (copilot-chat-get-buffers)))
     (when buffer
       (if (member buffer cop-bufs)
           (progn
@@ -277,44 +278,44 @@
 (defun copilot-chat-prompt-split-and-list()
   (interactive)
   (let ((split-window-preferred-function nil)
-		(split-height-threshold nil)
-		(split-width-threshold nil))
-	(split-window-right (floor (* 0.8 (window-total-width)))))
+        (split-height-threshold nil)
+        (split-width-threshold nil))
+    (split-window-right (floor (* 0.8 (window-total-width)))))
   (other-window 1)
   (copilot-chat-list))
 
 (defun copilot-chat-prompt-history-previous()
   (interactive)
   (with-current-buffer copilot-chat-prompt-buffer
-	(let ((prompt (if (null copilot-chat-prompt-history)
-					  nil
-					(if (null copilot-chat-prompt-history-position)
-						(progn
-						  (setq copilot-chat-prompt-history-position 0)
-						  (car copilot-chat-prompt-history))
-					  (if (= copilot-chat-prompt-history-position (1- (length copilot-chat-prompt-history)))
-						  (car (last copilot-chat-prompt-history))
-						(setq copilot-chat-prompt-history-position (1+ copilot-chat-prompt-history-position))
-						(nth copilot-chat-prompt-history-position copilot-chat-prompt-history))))))
-	  (when prompt
-		(erase-buffer)
-		(insert prompt)))))
+    (let ((prompt (if (null copilot-chat-prompt-history)
+                      nil
+                    (if (null copilot-chat-prompt-history-position)
+                        (progn
+                          (setq copilot-chat-prompt-history-position 0)
+                          (car copilot-chat-prompt-history))
+                      (if (= copilot-chat-prompt-history-position (1- (length copilot-chat-prompt-history)))
+                          (car (last copilot-chat-prompt-history))
+                        (setq copilot-chat-prompt-history-position (1+ copilot-chat-prompt-history-position))
+                        (nth copilot-chat-prompt-history-position copilot-chat-prompt-history))))))
+      (when prompt
+        (erase-buffer)
+        (insert prompt)))))
 
 
 (defun copilot-chat-prompt-history-next()
   (interactive)
   (with-current-buffer copilot-chat-prompt-buffer
-	(let ((prompt (if (null copilot-chat-prompt-history)
-					  nil
-					(if (null copilot-chat-prompt-history-position)
-						nil
-					  (if (= 0 copilot-chat-prompt-history-position)
-						  ""
-						(setq copilot-chat-prompt-history-position (1- copilot-chat-prompt-history-position))
-						(nth copilot-chat-prompt-history-position copilot-chat-prompt-history))))))
-	  (when prompt
-		(erase-buffer)
-		(insert prompt)))))
+    (let ((prompt (if (null copilot-chat-prompt-history)
+                      nil
+                    (if (null copilot-chat-prompt-history-position)
+                        nil
+                      (if (= 0 copilot-chat-prompt-history-position)
+                          ""
+                        (setq copilot-chat-prompt-history-position (1- copilot-chat-prompt-history-position))
+                        (nth copilot-chat-prompt-history-position copilot-chat-prompt-history))))))
+      (when prompt
+        (erase-buffer)
+        (insert prompt)))))
 
 (provide 'copilot-chat)
 
