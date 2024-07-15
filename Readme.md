@@ -18,30 +18,38 @@ Clone repository and eval files in emacs.
 When sending the first prompt, you will need to authenticate to github. Follow instructions and everything will be fine.
 
 ## Usage
-`(copilot-display)` displays copilot chat and prompt buffer.
+### Functions
+- `(copilot-display)` display copilot chat and prompt buffer.
+- `(copilot-chat-explain)` ask copilot to explain selected code.
+- `(copilot-chat-review)` ask copilot to review selected code.
+- `(copilot-chat-doc)` ask copilot to document selected code.
+- `(copilot-chat-fix)` ask copilot to fix selected code.
+- `(copilot-chat-optimize)` ask copilot to optimize selected code.
+- `(copilot-chat-test)` ask copilot to write tests for selected code.
+- `(copilot-chat-custom-prompt-selection)` ask for a prompt in minibuffer and pastes selection after it before sending it to copilot.
+- `(copilot-chat-add-current-buffer)` add current buffer to copilot chat. Its content will be sent with every request.
+- `(copilot-chat-list)` open buffer list.
+- `(copilot-chat-create)` create a new context. History and buffers are forgotten.
+- `copilot-chat-prompt-history-previous` insert previous prompt from history in prompt buffer.
+- `copilot-chat-prompt-history-next` insert next prompt from history in prompt buffer.
 
-While in prompt buffer, enter a prompt and hit `C-c RET` to send it. The answer will be written in chat buffer.
+### Key bindings
+#### Prompt buffer
+- `C-c RET` send prompt. Answer will be written in chat buffer.
+- `M-p` previous prompt.
+- `M-n` next prompt.
+- `C-c l` open buffer list.
+- `C-c q` bury buffer and delete window
 
-`(copilot-chat-explain)` asks copilot to explain selected code.
+#### Chat buffer
+- `q` bury buffer
 
-`(copilot-chat-review)` asks copilot to review selected code.
-
-`(copilot-chat-doc)` asks copilot to document selected code.
-
-`(copilot-chat-fix)` asks copilot to fix selected code.
-
-`(copilot-chat-optimize)` asks copilot to optimize selected code.
-
-`(copilot-chat-test)` asks copilot to write tests for selected code.
-
-`(copilot-chat-custom-prompt-selection)` asks for a prompt in minibuffer and pastes selection after it before sending it to copilot.
-
-`(copilot-chat-add-current-buffer)` adds current buffer to copilot chat. Its content will be sent with every request.
-
-`(copilot-chat-list)` open buffer list. Buffers can be added or removed to copilot context with space and RET. `C-c c` clears the list. This function can be called with `C-c l` in prompt buffer.
-
-`(copilot-chat-create)` creates a new context. History and buffers are forgotten.
-
+#### Buffer list buffer
+- `RET` select or deselect buffer on point
+- `space` select or deselect buffer on point
+- `C-c` clear buffer list
+- `g` refresh list
+- `q` bury buffer and delete window
 
 ## TODO
 - Prompt history
