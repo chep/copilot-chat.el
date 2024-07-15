@@ -47,9 +47,10 @@
 									(bury-buffer)
 									(delete-window)))
 	(define-key map (kbd "C-c l") 'copilot-chat-prompt-split-and-list)
+	(define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
+	(define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
 	map)
   "Keymap for Copilot Chat Prompt major mode.")
-
 (defvar copilot-chat-list-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'copilot-chat-list-add-or-remove-buffer)
@@ -62,6 +63,11 @@
 								(delete-window)))
     map)
   "Keymap for `copilot-chat-list-mode'.")
+(defvar copilot-chat-prompt-history nil
+  "copilot-chat prompt history")
+(defvar copilot-chat-prompt-history-position nil
+  "Current position in copilot-chat prompt history")
+
 
 ;; functions
 (defun copilot-chat-mode ()
@@ -119,6 +125,8 @@
 	(let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
 	  (erase-buffer)
 	  (copilot-chat-write-buffer prompt 'prompt)
+      (push prompt copilot-chat-prompt-history)
+	  (setq copilot-chat-prompt-history-position nil)
 	  (copilot-chat-ask prompt 'copilot-chat-prompt-cb))))
 
 
@@ -274,6 +282,39 @@
 	(split-window-right (floor (* 0.8 (window-total-width)))))
   (other-window 1)
   (copilot-chat-list))
+
+(defun copilot-chat-prompt-history-previous()
+  (interactive)
+  (with-current-buffer copilot-chat-prompt-buffer
+	(let ((prompt (if (null copilot-chat-prompt-history)
+					  nil
+					(if (null copilot-chat-prompt-history-position)
+						(progn
+						  (setq copilot-chat-prompt-history-position 0)
+						  (car copilot-chat-prompt-history))
+					  (if (= copilot-chat-prompt-history-position (1- (length copilot-chat-prompt-history)))
+						  (car (last copilot-chat-prompt-history))
+						(setq copilot-chat-prompt-history-position (1+ copilot-chat-prompt-history-position))
+						(nth copilot-chat-prompt-history-position copilot-chat-prompt-history))))))
+	  (when prompt
+		(erase-buffer)
+		(insert prompt)))))
+
+
+(defun copilot-chat-prompt-history-next()
+  (interactive)
+  (with-current-buffer copilot-chat-prompt-buffer
+	(let ((prompt (if (null copilot-chat-prompt-history)
+					  nil
+					(if (null copilot-chat-prompt-history-position)
+						nil
+					  (if (= 0 copilot-chat-prompt-history-position)
+						  ""
+						(setq copilot-chat-prompt-history-position (1- copilot-chat-prompt-history-position))
+						(nth copilot-chat-prompt-history-position copilot-chat-prompt-history))))))
+	  (when prompt
+		(erase-buffer)
+		(insert prompt)))))
 
 (provide 'copilot-chat)
 
