@@ -52,5 +52,4 @@ When sending the first prompt, you will need to authenticate to github. Follow i
 - `q` bury buffer and delete window
 
 ## TODO
-- Prompt history
 - Manage markdown in buffers
