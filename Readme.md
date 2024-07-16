@@ -19,7 +19,7 @@ When sending the first prompt, you will need to authenticate to github. Follow i
 
 ## Usage
 ### Functions
-- `(copilot-display)` display copilot chat and prompt buffer.
+- `(copilot-chat-display)` display copilot chat and prompt buffer.
 - `(copilot-chat-explain)` ask copilot to explain selected code.
 - `(copilot-chat-review)` ask copilot to review selected code.
 - `(copilot-chat-doc)` ask copilot to document selected code.
