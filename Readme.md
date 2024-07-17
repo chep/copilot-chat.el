@@ -1,8 +1,12 @@
 # Copilot Chat for Emacs
-## Notes
-This plugin is based on Copilot Chat for neovim repository: https://github.com/CopilotC-Nvim/CopilotChat.nvim
+## Description
+This plugin allows you to chat with github copilot.
 
-This is a work in progress. Feel free to help me. See in the [Todo list](#todo) if you can implement missing features.
+![copilot-chat demo](chat.gif?raw=true "copilot-chat demo")
+
+This plugin is unofficial and based on Copilot Chat for neovim repository: https://github.com/CopilotC-Nvim/CopilotChat.nvim
+
+Feel free to contribute (check the [Todo list](#todo) ), report issues or discuss new features.
 
 ## Installation
 ### Straight
