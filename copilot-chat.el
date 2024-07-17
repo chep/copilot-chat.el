@@ -29,6 +29,7 @@
 ;;; Code:
 
 (require 'copilot-chat-copilot)
+(require 'markdown-mode)
 
 ;; variables
 
@@ -81,7 +82,7 @@
   (setq buffer-read-only t)
   (run-hooks 'copilot-chat-mode-hook))
 
-(define-derived-mode copilot-chat-mode special-mode "Copilot Chat"
+(define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
   "Major mode for the Copilot Chat buffer."
   (read-only-mode 1))
 
@@ -94,7 +95,7 @@
   (setq mode-name "Copilot Chat Prompt")
   (run-hooks 'copilot-chat-prompt-mode-hook))
 
-(define-derived-mode copilot-chat-prompt-mode text-mode "Copilot Chat Prompt"
+(define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt"
   "Major mode for the Copilot Chat Prompt buffer.")
 
 (define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
@@ -108,8 +109,10 @@
   (with-current-buffer copilot-chat-buffer
     (let ((inhibit-read-only t))
       (goto-char (point-max))
-      (insert (concat (propertize (format-time-string "%H:%M:%S") 'face 'font-lock-comment-face) " "))
-      (insert (propertize (format "%s\n" content) 'face (if (eq type 'prompt) 'font-lock-keyword-face 'font-lock-string-face))))))
+      (if (eq type 'prompt)
+          (insert "\n# ")
+        (insert "## "))
+      (insert (concat (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content))))))
 
 
 (defun copilot-chat-prompt-cb (content)

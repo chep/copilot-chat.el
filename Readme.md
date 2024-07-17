@@ -17,6 +17,8 @@ Clone repository and eval files in emacs.
 ## Configuration
 When sending the first prompt, you will need to authenticate to github. Follow instructions and everything will be fine.
 
+`markdown-view-mode` is used in chat buffer. First line of your prompt will be formated as header1 and first line of copilot's answer as header2. You can modify markdow mode faces to customize display.
+
 ## Usage
 ### Functions
 - `(copilot-chat-display)` display copilot chat and prompt buffer.
@@ -52,4 +54,3 @@ When sending the first prompt, you will need to authenticate to github. Follow i
 - `q` bury buffer and delete window
 
 ## TODO
-- Manage markdown in buffers
