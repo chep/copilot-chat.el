@@ -69,6 +69,7 @@
   "copilot-chat prompt history")
 (defvar copilot-chat-prompt-history-position nil
   "Current position in copilot-chat prompt history")
+(defvar copilot-chat-first-word-answer t)
 
 
 ;; functions
@@ -110,9 +111,13 @@
     (let ((inhibit-read-only t))
       (goto-char (point-max))
       (if (eq type 'prompt)
-          (insert "\n# ")
-        (insert "## "))
-      (insert (concat (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content))))))
+          (progn
+            (insert (concat "# " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content)))
+            (setq copilot-chat-first-word-answer t))
+        (when copilot-chat-first-word-answer
+          (insert (concat "## " (format-time-string "*[%H:%M:%S]* ")))
+          (setq copilot-chat-first-word-answer nil))
+        (insert content)))))
 
 
 (defun copilot-chat-prompt-cb (content)

@@ -1,4 +1,5 @@
 ;; -*- indent-tabs-mode: nil -*-
+;; -*- lexical-binding: t -*-
 
 ;;; copilot-chat-copilot.el --- copilot chat engine -*- lexical-binding:t -*-
 
@@ -76,6 +77,16 @@
   "The prompt to use for Copilot chat."
   :type 'string
   :group 'copilot-chat)
+(defcustom copilot-chat-use-curl t
+  "If set to t, copilot-chat will use curl instead of url emacs api."
+  :type 'boolean
+  :group 'copilot-chat)
+(defcustom copilot-chat-curl-program "/usr/bin/curl"
+  "Curl program to use if copilot-chat-use-curl is set."
+  :type 'string
+  :group 'copilot-chat)
+
+
 
 
 ;; variables
@@ -91,6 +102,7 @@
    :history nil
    :buffers nil
    ))
+(defvar copilot-chat-last-data nil)
 
 
 ;; Fonctions
@@ -314,14 +326,16 @@
                                       ("openai-organization" . "github-copilot")
                                       ("editor-version" . "Neovim/0.10.0")))
          (url-request-data (copilot-chat-create-req  prompt)))
-     (url-retrieve url 'analyze-copilot-response (list callback))))
+    (url-retrieve url 'analyze-copilot-response (list callback))))
 
 
 (defun copilot-chat-ask (prompt callback)
   "Ask a question to Copilot."
   (let* ((history (copilot-chat-history copilot-chat-instance))
          (new-history (cons prompt history)))
-    (copilot-chat-auth 'copilot-chat-ask-cb (list prompt callback))
+    (if copilot-chat-use-curl
+        (copilot-chat-auth 'curl-copilot-chat-ask-cb (list prompt callback))
+      (copilot-chat-auth 'copilot-chat-ask-cb (list prompt callback)))
     (setf (copilot-chat-history copilot-chat-instance) new-history)))
 
 (defun copilot-chat-add-buffer (buffer)
@@ -344,6 +358,60 @@
 (defun copilot-chat-ready-p()
   (copilot-chat-ready copilot-chat-instance))
 
-(provide 'copilot-chat-copilot)
 
+(defun curl-analyze-copilot-response (proc string callback)
+  (when copilot-chat-last-data
+    (setq string (concat copilot-chat-last-data string))
+    (setq copilot-chat-last-data nil))
+
+  (let ((segments (split-string string "\n")))
+    (dolist (segment segments)
+      (when (string-prefix-p "data:" segment)
+        (let ((data (substring segment 6)))
+          (if (string= data "[DONE]")
+              (funcall callback "\n")
+            (condition-case err
+                (let* ((json-obj (json-parse-string data :object-type 'alist))
+                       (choices (and json-obj (alist-get 'choices json-obj)))
+                       (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
+                       (token (and delta (alist-get 'content delta))))
+                  (when (and token (not (eq token :null)))
+                    (funcall callback token)))
+              (json-parse-error
+               (message (format "erreur parse : %s" segment)))
+              (json-end-of-file
+               (setq copilot-chat-last-data segment))
+              (error
+               (print err t)
+               (message (format "erreur : %s" segment))))))))))
+
+
+(defun curl-copilot-chat-ask-cb(args)
+  (setq copilot-chat-last-data nil)
+  (let* ((prompt (car args))
+         (callback (cadr args))
+         (proc (make-process
+                :name "copilot-chat-curl"
+                :buffer nil
+                :filter (lexical-let ((callback callback))
+                          (lambda (proc string)
+                            (curl-analyze-copilot-response proc string callback)))
+                :command `("curl"
+                           "-X" "POST"
+                           "https://api.githubcopilot.com/chat/completions"
+                           "-H" "openai-intent: conversation-panel"
+                           "-H" "content-type: application/json"
+                           "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
+                           "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat-instance)))
+					       "-H" ,(concat "x-request-id: " (copilot-chat-uuid))
+                           "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat-instance))
+                           "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat-instance))
+                           "-H" "copilot-integration-id: vscode-chat"
+					       "-H" "User-Agent: CopilotChat.nvim/2.0.0"
+                           "-H" "openai-organization: github-copilot"
+                           "-H" "editor-version: Neovim/0.10.0"
+                           "-d" ,(copilot-chat-create-req  prompt)))))))
+
+
+(provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
