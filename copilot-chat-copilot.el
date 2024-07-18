@@ -1,5 +1,5 @@
-;; -*- indent-tabs-mode: nil -*-
 ;; -*- lexical-binding: t -*-
+;; -*- indent-tabs-mode: nil -*-
 
 ;;; copilot-chat-copilot.el --- copilot chat engine -*- lexical-binding:t -*-
 
@@ -385,7 +385,6 @@
                (print err t)
                (message (format "erreur : %s" segment))))))))))
 
-
 (defun curl-copilot-chat-ask-cb(args)
   (setq copilot-chat-last-data nil)
   (let* ((prompt (car args))
@@ -393,24 +392,23 @@
          (proc (make-process
                 :name "copilot-chat-curl"
                 :buffer nil
-                :filter (lexical-let ((callback callback))
-                          (lambda (proc string)
-                            (curl-analyze-copilot-response proc string callback)))
+                :filter (lambda (proc string)
+                          (curl-analyze-copilot-response proc string callback))
                 :command `("curl"
-                           "-X" "POST"
-                           "https://api.githubcopilot.com/chat/completions"
-                           "-H" "openai-intent: conversation-panel"
-                           "-H" "content-type: application/json"
-                           "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
-                           "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat-instance)))
-					       "-H" ,(concat "x-request-id: " (copilot-chat-uuid))
-                           "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat-instance))
-                           "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat-instance))
-                           "-H" "copilot-integration-id: vscode-chat"
-					       "-H" "User-Agent: CopilotChat.nvim/2.0.0"
-                           "-H" "openai-organization: github-copilot"
-                           "-H" "editor-version: Neovim/0.10.0"
-                           "-d" ,(copilot-chat-create-req  prompt)))))))
+						   "-X" "POST"
+						   "https://api.githubcopilot.com/chat/completions"
+						   "-H" "openai-intent: conversation-panel"
+						   "-H" "content-type: application/json"
+						   "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
+						   "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat-instance)))
+						   "-H" ,(concat "x-request-id: " (copilot-chat-uuid))
+						   "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat-instance))
+						   "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat-instance))
+						   "-H" "copilot-integration-id: vscode-chat"
+						   "-H" "User-Agent: CopilotChat.nvim/2.0.0"
+						   "-H" "openai-organization: github-copilot"
+						   "-H" "editor-version: Neovim/0.10.0"
+						   "-d" ,(copilot-chat-create-req  prompt)))))))
 
 
 (provide 'copilot-chat-copilot)
