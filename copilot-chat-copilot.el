@@ -105,7 +105,7 @@
    :buffers nil
    ))
 (defvar copilot-chat-last-data nil)
-
+(defvar copilot-chat-curl-answer nil)
 
 ;; Fonctions
 (defun copilot-chat-uuid ()
@@ -215,7 +215,7 @@
     (push (list (cons "content" (url-hexify-string prompt)) (cons "role" "user")) messages)
     ;; history
     (dolist (history (copilot-chat-history copilot-chat-instance))
-      (push (list (cons "content" (url-hexify-string history)) (cons "role" "assistant")) messages))
+      (push (list (cons "content" (url-hexify-string (car history))) (cons "role" (cadr history))) messages))
     ;; buffers
     (setf (copilot-chat-buffers copilot-chat-instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
                                                                      (copilot-chat-buffers copilot-chat-instance)))
@@ -303,6 +303,7 @@
           (when (and token (not (eq token :null)))
               (setq content (concat content token)))))
       (funcall callback content)
+      (setf (copilot-chat-history copilot-chat-instance) (cons (list prompt "assistant") (copilot-chat-history copilot-chat-instance)))
       (funcall callback copilot-chat-magic))))
 
 
@@ -326,13 +327,14 @@
                                       ("openai-organization" . "github-copilot")
                                       ("editor-version" . "Neovim/0.10.0")))
          (url-request-data (copilot-chat-create-req  prompt)))
+	(print url-request-data t)
     (url-retrieve url 'analyze-copilot-response (list callback))))
 
 
 (defun copilot-chat-ask (prompt callback)
   "Ask a question to Copilot."
   (let* ((history (copilot-chat-history copilot-chat-instance))
-         (new-history (cons prompt history)))
+         (new-history (cons (list prompt "user") history)))
     (if copilot-chat-use-curl
         (copilot-chat-auth 'curl-copilot-chat-ask-cb (list prompt callback))
       (copilot-chat-auth 'copilot-chat-ask-cb (list prompt callback)))
@@ -369,14 +371,18 @@
       (when (string-prefix-p "data:" segment)
         (let ((data (substring segment 6)))
           (if (string= data "[DONE]")
-			  (funcall callback copilot-chat-magic)
+			  (progn
+				(funcall callback copilot-chat-magic)
+				(setf (copilot-chat-history copilot-chat-instance) (cons (list copilot-chat-curl-answer "assistant") (copilot-chat-history copilot-chat-instance)))
+				(setq copilot-chat-curl-answer nil))
             (condition-case err
                 (let* ((json-obj (json-parse-string data :object-type 'alist))
                        (choices (and json-obj (alist-get 'choices json-obj)))
                        (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
                        (token (and delta (alist-get 'content delta))))
                   (when (and token (not (eq token :null)))
-                    (funcall callback token)))
+                    (funcall callback token)
+					(setq copilot-chat-curl-answer (concat copilot-chat-curl-answer token))))
               (json-parse-error
 				(setq copilot-chat-last-data segment))
               (json-end-of-file
@@ -394,6 +400,7 @@
                 :buffer nil
                 :filter (lambda (proc string)
                           (curl-analyze-copilot-response proc string callback))
+				:stderr (get-buffer-create "*copilot-chat-curl-stderr*")
                 :command `("curl"
 						   "-X" "POST"
 						   "https://api.githubcopilot.com/chat/completions"
@@ -408,7 +415,7 @@
 						   "-H" "User-Agent: CopilotChat.nvim/2.0.0"
 						   "-H" "openai-organization: github-copilot"
 						   "-H" "editor-version: Neovim/0.10.0"
-						   "-d" ,(copilot-chat-create-req  prompt)))))))
+						   "-d" ,(copilot-chat-create-req prompt)))))))
 
 
 (provide 'copilot-chat-copilot)
