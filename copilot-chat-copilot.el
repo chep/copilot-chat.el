@@ -135,7 +135,6 @@
 
 
 (defun copilot-chat-create (&optional proxy allow-insecure)
-  (interactive)
   "Create a new Copilot chat instance."
   (setq copilot-chat-instance(make-copilot-chat
                               :ready t
