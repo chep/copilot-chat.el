@@ -58,6 +58,8 @@
     (test . "Please generate tests for the following code:\n"))
     "Copilot chat predefined prompts")
 
+(defconst copilot-chat-magic "#cc#done#!$")
+
 
 ;; customs
 (defgroup copilot-chat nil
@@ -300,7 +302,8 @@
                (token (and delta (alist-get 'content delta))))
           (when (and token (not (eq token :null)))
               (setq content (concat content token)))))
-      (funcall callback (concat content "\n")))))
+      (funcall callback content)
+      (funcall callback copilot-chat-magic))))
 
 
 (defun copilot-chat-ask-cb (args)
@@ -366,7 +369,7 @@
       (when (string-prefix-p "data:" segment)
         (let ((data (substring segment 6)))
           (if (string= data "[DONE]")
-              (funcall callback "\n")
+			  (funcall callback copilot-chat-magic)
             (condition-case err
                 (let* ((json-obj (json-parse-string data :object-type 'alist))
                        (choices (and json-obj (alist-get 'choices json-obj)))
@@ -375,7 +378,7 @@
                   (when (and token (not (eq token :null)))
                     (funcall callback token)))
               (json-parse-error
-               (message (format "erreur parse : %s" segment)))
+				(setq copilot-chat-last-data segment))
               (json-end-of-file
                (setq copilot-chat-last-data segment))
               (error

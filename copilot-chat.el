@@ -34,6 +34,7 @@
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-org)
+(require 'copilot-chat-shell-maker)
 
 
 ;; customs
@@ -119,7 +120,9 @@
   (copilot-chat-list-refresh))
 
 (defun copilot-chat-prompt-cb (content)
-  (copilot-chat-write-buffer content 'answer)
+    (if (string= content copilot-chat-magic)
+        (copilot-chat-write-buffer "\n\n" 'answer)
+      (copilot-chat-write-buffer content 'answer))
   (with-current-buffer copilot-chat-buffer
     (goto-char (point-max))))
 
@@ -333,7 +336,7 @@
   (cond
     ((eq copilot-chat-frontend 'markdown) (copilot-chat-markdown-init))
     ((eq copilot-chat-frontend 'org) (copilot-chat-org-init))
-;;    ((eq copilot-chat-frontend 'shell-maker) (copilot-chat-shell-maker-init))
+    ((eq copilot-chat-frontend 'shell-maker) (copilot-chat-shell-maker-init))
     (t (copilot-chat-markdown-init)))
   (copilot-chat-create))
 
