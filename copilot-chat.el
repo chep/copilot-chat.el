@@ -1,6 +1,4 @@
-;; -*- lexical-binding: t -*-
-;; -*- indent-tabs-mode: nil -*-
-;; -*- lisp-indent-offset: 2 -*-
+;; -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
 
 ;;; copilot-chat.el --- copilot chat interface
 
@@ -330,8 +328,12 @@
 
 (defun copilot-chat-reset()
   (interactive)
-  (kill-buffer (get-buffer copilot-chat-buffer))
-  (kill-buffer (get-buffer copilot-chat-prompt-buffer))
+  (let ((cb (get-buffer copilot-chat-buffer))
+        (cpb (get-buffer copilot-chat-prompt-buffer)))
+    (when cb)
+      (kill-buffer cb)
+    (when cpb
+        (kill-buffer cpb)))
   (copilot-chat-clean)
   (cond
     ((eq copilot-chat-frontend 'markdown) (copilot-chat-markdown-init))

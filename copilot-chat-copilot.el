@@ -1,5 +1,4 @@
-;; -*- lexical-binding: t -*-
-;; -*- indent-tabs-mode: nil -*-
+;; -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
 
 ;;; copilot-chat-copilot.el --- copilot chat engine -*- lexical-binding:t -*-
 

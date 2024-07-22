@@ -1,5 +1,4 @@
-;; -*- lexical-binding: t -*-
-;; -*- indent-tabs-mode: nil -*-
+;; -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
 ;;; copilot-chat-org.el --- copilot chat interface, org frontend
 
 ;; Copyright (C) 2024  Cédric Chépied
@@ -70,7 +69,7 @@ def hello_world():
 #+END_SRC
 Avoid wrapping the whole response in the block code.
 
-Don't forget the most important rule when you are formatting your response: use emacs org syntax only
+Don't forget the most important rule when you are formatting your response: use emacs org syntax only.
 
 The user works in an IDE called Emacs which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.
 The active document is the source code the user is looking at right now.
