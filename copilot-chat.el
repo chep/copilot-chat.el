@@ -83,7 +83,7 @@
   (setq buffer-read-only t)
   (run-hooks 'copilot-chat-mode-hook))
 
-(define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
+(define-derived-mode copilot-chat-mode org-mode "Copilot Chat"
   "Major mode for the Copilot Chat buffer."
   (read-only-mode 1))
 
@@ -96,7 +96,7 @@
   (setq mode-name "Copilot Chat Prompt")
   (run-hooks 'copilot-chat-prompt-mode-hook))
 
-(define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt"
+(define-derived-mode copilot-chat-prompt-mode org-mode "Copilot Chat Prompt"
   "Major mode for the Copilot Chat Prompt buffer.")
 
 (define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
@@ -112,10 +112,10 @@
       (goto-char (point-max))
       (if (eq type 'prompt)
           (progn
-            (insert (concat "# " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content)))
+            (insert (concat "* " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content)))
             (setq copilot-chat-first-word-answer t))
         (when copilot-chat-first-word-answer
-          (insert (concat "## " (format-time-string "*[%H:%M:%S]* ")))
+          (insert (concat "** " (format-time-string "*[%H:%M:%S]* ")))
           (setq copilot-chat-first-word-answer nil))
         (insert content)))))
 
