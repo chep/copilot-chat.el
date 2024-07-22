@@ -98,6 +98,9 @@
   "Major mode for the Copilot Chat buffer."
   (read-only-mode 1))
 
+(defun copilot-chat-write-buffer(content type)
+  "Write content to the Copilot Chat buffer.")
+
 (defun copilot-chat-prompt-mode ()
   "Major mode for Copilot Chat Prompt buffer."
   (interactive)
@@ -326,12 +329,15 @@
   (interactive)
   (kill-buffer (get-buffer copilot-chat-buffer))
   (kill-buffer (get-buffer copilot-chat-prompt-buffer))
+  (copilot-chat-clean)
   (cond
     ((eq copilot-chat-frontend 'markdown) (copilot-chat-markdown-init))
     ((eq copilot-chat-frontend 'org) (copilot-chat-org-init))
 ;;    ((eq copilot-chat-frontend 'shell-maker) (copilot-chat-shell-maker-init))
     (t (copilot-chat-markdown-init)))
   (copilot-chat-create))
+
+(defun copilot-chat-clean())
 
 (provide 'copilot-chat)
 
