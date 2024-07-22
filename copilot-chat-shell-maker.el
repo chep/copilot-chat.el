@@ -81,7 +81,6 @@
 
 (defun copilot-chat-shell ()
   "Start a Copilot Chat shell."
-  (interactive)
   (shell-maker-start copilot-chat-shell-config))
 
 (defun copilot-chat-get-shell-buffer()
