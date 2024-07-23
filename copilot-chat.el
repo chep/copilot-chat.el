@@ -332,8 +332,8 @@
   (interactive)
   (let ((cb (get-buffer copilot-chat-buffer))
         (cpb (get-buffer copilot-chat-prompt-buffer)))
-    (when cb)
-      (kill-buffer cb)
+    (when cb
+      (kill-buffer cb))
     (when cpb
         (kill-buffer cpb)))
   (copilot-chat-clean)
