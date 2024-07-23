@@ -1,4 +1,4 @@
-;; -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
+;; -*- lexical-binding: t; indent-tabs-mode: nil -*-
 
 ;;; copilot-chat-copilot.el --- copilot chat engine -*- lexical-binding:t -*-
 
@@ -105,6 +105,8 @@
    ))
 (defvar copilot-chat-last-data nil)
 (defvar copilot-chat-curl-answer nil)
+(defvar copilot-chat-curl-file nil)
+
 
 ;; Fonctions
 (defun copilot-chat-uuid ()
@@ -392,29 +394,35 @@
 
 (defun curl-copilot-chat-ask-cb(args)
   (setq copilot-chat-last-data nil)
-  (let* ((prompt (car args))
-         (callback (cadr args))
-         (proc (make-process
-                :name "copilot-chat-curl"
-                :buffer nil
-                :filter (lambda (proc string)
-                          (curl-analyze-copilot-response proc string callback))
-				:stderr (get-buffer-create "*copilot-chat-curl-stderr*")
-                :command `("curl"
-						   "-X" "POST"
-						   "https://api.githubcopilot.com/chat/completions"
-						   "-H" "openai-intent: conversation-panel"
-						   "-H" "content-type: application/json"
-						   "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
-						   "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat-instance)))
-						   "-H" ,(concat "x-request-id: " (copilot-chat-uuid))
-						   "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat-instance))
-						   "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat-instance))
-						   "-H" "copilot-integration-id: vscode-chat"
-						   "-H" "User-Agent: CopilotChat.nvim/2.0.0"
-						   "-H" "openai-organization: github-copilot"
-						   "-H" "editor-version: Neovim/0.10.0"
-						   "-d" ,(copilot-chat-create-req prompt)))))))
+  (when copilot-chat-curl-file
+    (delete-file copilot-chat-curl-file))
+  (let ((prompt (car args)))
+    (setq copilot-chat-curl-file (make-temp-file "copilot-chat"))
+    (with-temp-file copilot-chat-curl-file
+      (insert (copilot-chat-create-req prompt))))
+  (let* ((callback (cadr args))
+          (proc (make-process
+                  :name "copilot-chat-curl"
+                  :buffer nil
+                  :filter (lambda (proc string)
+                            (curl-analyze-copilot-response proc string callback))
+                  :stderr (get-buffer-create "*copilot-chat-curl-stderr*")
+                  :command `("curl"
+  						   "-X" "POST"
+                                "https://api.githubcopilot.com/chat/completions"
+                                ;"http://localhost:8080"
+  						   "-H" "openai-intent: conversation-panel"
+  						   "-H" "content-type: application/json"
+  						   "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
+  						   "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat-instance)))
+  						   "-H" ,(concat "x-request-id: " (copilot-chat-uuid))
+  						   "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat-instance))
+  						   "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat-instance))
+  						   "-H" "copilot-integration-id: vscode-chat"
+  						   "-H" "User-Agent: CopilotChat.nvim/2.0.0"
+  						   "-H" "openai-organization: github-copilot"
+  						   "-H" "editor-version: Neovim/0.10.0"
+  						   "-d" ,(concat "@" copilot-chat-curl-file)))))))
 
 
 (provide 'copilot-chat-copilot)
