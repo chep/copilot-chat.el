@@ -1,4 +1,4 @@
-;; -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
+;; -*- lexical-binding: t; indent-tabs-mode: nil -*-
 
 ;;; copilot-chat.el --- copilot chat interface
 
@@ -32,8 +32,6 @@
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-org)
-(require 'copilot-chat-shell-maker)
-
 
 ;; customs
 (defcustom copilot-chat-frontend 'markdown
@@ -80,6 +78,10 @@
 (defvar copilot-chat-prompt-history-position nil
   "Current position in copilot-chat prompt history")
 (defvar copilot-chat-first-word-answer t)
+(defvar copilot-chat-frontend-list '((markdown . copilot-chat-markdown-init)
+                                     (org . copilot-chat-org-init))
+    "Copilot-chat frontend list. Must contain elements like this:
+(type . init-function)")
 
 
 ;; functions
@@ -335,11 +337,10 @@
     (when cpb
         (kill-buffer cpb)))
   (copilot-chat-clean)
-  (cond
-    ((eq copilot-chat-frontend 'markdown) (copilot-chat-markdown-init))
-    ((eq copilot-chat-frontend 'org) (copilot-chat-org-init))
-    ((eq copilot-chat-frontend 'shell-maker) (copilot-chat-shell-maker-init))
-    (t (copilot-chat-markdown-init)))
+  (dolist (f copilot-chat-frontend-list)
+    (when (eq (car f) copilot-chat-frontend)
+      (funcall (cdr f))
+      (cl-return)))
   (copilot-chat-create))
 
 (defun copilot-chat-clean())

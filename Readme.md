@@ -29,7 +29,18 @@ With curl, answers will be written token by token.
 With url library, all the text is written when all data is read and this can be long.
 
 ### Frontend
-Several frontends are available. You can select your favorite by setting the `copilot-chat-frontend` variable to `'markdown`, `'org` or `'shell-maker`.
+Several frontends are available. You can select your favorite by setting the `copilot-chat-frontend` variable to `'markdown` or `'org`.
+
+You can also use `'shell-maker` if you want ( https://github.com/xenodium/chatgpt-shell ).
+```
+(use-package copilot-chat
+  :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
+  :custom
+  (copilot-chat-frontend 'shell-maker)
+  :config
+  (require 'copilot-chat-shell-maker)
+  (push '(shell-maker . copilot-chat-shell-maker-init) copilot-chat-frontend-list))
+```
 
 Try them and choose wisely.
 
