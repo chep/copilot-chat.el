@@ -223,7 +223,7 @@
     (dolist (buffer (copilot-chat-buffers copilot-chat-instance))
       (when (buffer-live-p buffer)
         (with-current-buffer buffer
-          (push (list (cons "content" (url-hexify-string (buffer-substring-no-properties (point-min) (point-max)))) (cons "role" "assistant")) messages))))
+          (push (list (cons "content" (url-hexify-string (buffer-substring-no-properties (point-min) (point-max)))) (cons "role" "user")) messages))))
     ;; system
     (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
 
