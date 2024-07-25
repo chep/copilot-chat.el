@@ -337,10 +337,11 @@
     (when cpb
         (kill-buffer cpb)))
   (copilot-chat-clean)
-  (dolist (f copilot-chat-frontend-list)
-    (when (eq (car f) copilot-chat-frontend)
-      (funcall (cdr f))
-      (cl-return)))
+  (catch 'end
+    (dolist (f copilot-chat-frontend-list)
+      (when (eq (car f) copilot-chat-frontend)
+        (funcall (cdr f))
+        (throw 'end nil))))
   (copilot-chat-create))
 
 (defun copilot-chat-clean())
