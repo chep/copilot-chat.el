@@ -12,7 +12,8 @@ Feel free to contribute (check the [Todo list](#todo) ), report issues or discus
 ### Straight
 ```
 (use-package copilot-chat
-  :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el")))
+  :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
+  :after request)
 ```
 
 ### Manual
@@ -22,11 +23,11 @@ Clone repository and eval files in emacs.
 ### Github
 You will need a github acccount with access to copilot API. When sending the first prompt, you will need to authenticate to github. Follow instructions and everything will be fine.
 
-### Network 
-If `copilot-chat-use-curl` is set to t (default), copilot-chat will use curl program for https requests. The path can be set in `copilot-chat-curl-program`. You can switch back to emacs url library by setting `copilot-chat-use-curl` to nil.
+### Backend
+If `copilot-chat-use-curl` is set to t (default), copilot-chat will use curl program for https requests. The path can be set in `copilot-chat-curl-program`. You can switch back to request library by setting `copilot-chat-use-curl` to nil.
 
 With curl, answers will be written token by token.  
-With url library, all the text is written when all data is read and this can be long.
+With request library, the text is written when all data is read and this can be long.
 
 ### Frontend
 Several frontends are available. You can select your favorite by setting the `copilot-chat-frontend` variable to `'markdown` or `'org`.
