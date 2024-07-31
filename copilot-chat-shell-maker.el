@@ -38,7 +38,6 @@
   (make-shell-maker-config
     :name "Copilot-Chat-shell"
     :execute-command 'copilot-chat-shell-cb))
-(defvar copilot-chat-shell-maker-answer nil)
 
 
 (defun copilot-chat-shell-maker-ask-region(prompt)
@@ -65,15 +64,14 @@
   (switch-to-buffer (copilot-chat-get-shell-buffer)))
 
 (defun copilot-chat-shell-cb-prompt (callback error-callback content)
-  (if (string= content copilot-chat-magic)
-      (with-current-buffer (copilot-chat-get-shell-buffer)
-        (funcall callback copilot-chat-shell-maker-answer nil)
-		(setq copilot-chat-shell-maker-answer nil))
-    (setq copilot-chat-shell-maker-answer (concat copilot-chat-shell-maker-answer content))))
+  (with-current-buffer (copilot-chat-get-shell-buffer)
+    (if (string= content copilot-chat-magic)
+        (funcall callback "" nil) ;; all done, lets close it off (partial = nil)
+      (funcall callback content t)))) ;; still going (partial = t)
+
 
 (defun copilot-chat-shell-cb (command _history callback error-callback)
-  (setq copilot-chat-shell-cb-fn (apply-partially 'copilot-chat-shell-cb-prompt callback error-callback)
-        copilot-chat-shell-maker-answer nil)
+  (setq copilot-chat-shell-cb-fn (apply-partially 'copilot-chat-shell-cb-prompt callback error-callback))
   (copilot-chat-ask command copilot-chat-shell-cb-fn))
 
 
