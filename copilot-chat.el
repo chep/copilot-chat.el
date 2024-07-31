@@ -142,6 +142,7 @@
 
 (defun copilot-chat-ask-region(prompt)
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
+    (copilot-chat--prepare-buffers)
     (with-current-buffer copilot-chat-prompt-buffer
       (erase-buffer)
       (insert (concat (cdr (assoc prompt copilot-chat-prompts)) code)))
@@ -218,8 +219,8 @@
       (copilot-chat-list-mode))
     (switch-to-buffer buffer)))
 
-(defun copilot-chat-display ()
-  (interactive)
+(defun copilot-chat--prepare-buffers()
+  "Create the copilot-chat-buffer and copilot-chat-prompt-buffer."
   (unless (copilot-chat-ready-p)
     (copilot-chat-reset))
   (let ((chat-buffer (get-buffer-create copilot-chat-buffer))
@@ -228,6 +229,13 @@
       (copilot-chat-mode))
     (with-current-buffer prompt-buffer
       (copilot-chat-prompt-mode))
+  (list chat-buffer prompt-buffer)))
+
+(defun copilot-chat-display ()
+  (interactive)
+  (let* ((buffers (copilot-chat--prepare-buffers))
+         (chat-buffer (car buffers))
+         (prompt-buffer (cdr buffers)))
     (switch-to-buffer chat-buffer)
     (let ((split-window-preferred-function nil)
           (split-height-threshold nil)
