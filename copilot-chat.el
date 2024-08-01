@@ -235,7 +235,7 @@
   (interactive)
   (let* ((buffers (copilot-chat--prepare-buffers))
          (chat-buffer (car buffers))
-         (prompt-buffer (cdr buffers)))
+         (prompt-buffer (cadr buffers)))
     (switch-to-buffer chat-buffer)
     (let ((split-window-preferred-function nil)
           (split-height-threshold nil)
