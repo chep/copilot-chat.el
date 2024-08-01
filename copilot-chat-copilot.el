@@ -213,7 +213,7 @@
 
     (json-encode `(("messages" . ,(vconcat messages))
                    ("top_p" . 1)
-                   ("model" . "gpt-4")
+                   ("model" . "gpt-4o-2024-05-13")
                    ("stream" . t)
                    ("n" . 1)
                    ("intent" . t)
