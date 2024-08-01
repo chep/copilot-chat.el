@@ -2,7 +2,7 @@
 
 ;;; copilot-chat-shell-maker.el --- copilot chat interface, shell-maker frontend
 
-;; Copyright (C) 2024  Cédric Chépied
+;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; The MIT License (MIT)
 

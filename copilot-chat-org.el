@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
 ;;; copilot-chat-org.el --- copilot chat interface, org frontend
 
-;; Copyright (C) 2024  Cédric Chépied
+;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; The MIT License (MIT)
 

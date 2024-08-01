@@ -2,7 +2,7 @@
 
 ;;; copilot-chat-copilot.el --- copilot chat engine -*- lexical-binding:t -*-
 
-;; Copyright (C) 2024  Cédric Chépied
+;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; The MIT License (MIT)
 
