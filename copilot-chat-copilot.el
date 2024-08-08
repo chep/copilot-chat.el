@@ -327,35 +327,93 @@
 (defun copilot-chat-ready-p()
   (copilot-chat-ready copilot-chat-instance))
 
+(defun copilot-chat--extract-segment (segment)
+  "Extract data from an individual line-delimited segment, returning one of:
+
+  - 'empty: if the segment has no data
+  - 'partial: if the segment seems to be incomplete, i.e. more data in a future response
+  - 'done: if this segment indicates completion (data: [DONE])
+  - otherwise, the entire JSON content (data: {...})"
+  (cond
+   ;; empty
+   ((string-empty-p segment) 'empty)
+   ;; seems to have a valid prefix
+   ((string-prefix-p "data: " segment)
+    (let ((data (substring segment 6)))
+      (if (string= data "[DONE]")
+          ;; the magic done marker
+          'done
+        ;; not the done marker, so must be "done: {...json...}"
+        (condition-case err
+            (json-parse-string data :object-type 'alist)
+          ;; failure => the segment was probably truncated and we need more data from a future
+          ;; response
+          (json-parse-error 'partial)
+          (json-end-of-file 'partial)))))
+   ;; otherwise, the prefix was probably truncated (e.g. "dat", or "data:") => need more data from a
+   ;; future response
+   (t 'partial)))
 
 (defun curl-analyze-copilot-response (proc string callback)
+  ;; The API conceptually sends us big blob of line-deliminated information, e.g.
+  ;;
+  ;;     data: {"choices":[{...,"delta":{"content":"great"}}],...}
+  ;;
+  ;;     data: {"choices":[{...,"delta":{"content":"work"}}],...}
+  ;;
+  ;;     data: [DONE]
+  ;;
+  ;; We recieve this piecewise, with this function called with `string' as any substring, completely
+  ;; ignoring the lines and other rules of the protocol. Thus, this function processes line-by-line
+  ;; but needs to be careful to handle partial input any point. We do this by saving a left-over
+  ;; line that failed processing to `copilot-chat-last-data' and reading it on the next call.
+  ;;
+  ;; For instance, this function could be called with three segments like:
+  ;;
+  ;; 1. "data: {...}\n\ndat" (break in the middle of a "data: " prefix)
+  ;; 2. "a: {...}\n\ndata: [D" (break in the middle of some data content)
+  ;; 3. "ONE]\n\n"
+  ;;
+  ;; Those calls will proceed like this:
+  ;;
+  ;; 1. With segment 1, successfully process the first line (`callback' is called with argument "great"), skip
+  ;;    the next empty line, and then fail to process the trailing "dat"; "dat" is saved to
+  ;;    `copilot-chat-last-data'.
+  ;;
+  ;; 2. With segment 2, the value of `copilot-chat-last-data' is first prepended to `string', and
+  ;;    processing continues with "data: {...}\n\ndata: [D". Thus, `callback' is called with "work",
+  ;;    the next line skipped, and then "data: [D" saved to `copilot-chat-last-data'.
+  ;;
+  ;; 3. With segment 3, `copilot-chat-last-data' is prepended to `string', resulting in a value of
+  ;;    "data: [DONE]\n\n". Thus, `callback' is called with the value of `copilot-chat-magic', and
+  ;;    the two trailing empty lines are skipped.
   (when copilot-chat-last-data
     (setq string (concat copilot-chat-last-data string))
     (setq copilot-chat-last-data nil))
 
   (let ((segments (split-string string "\n")))
     (dolist (segment segments)
-      (when (string-prefix-p "data:" segment)
-        (let ((data (substring segment 6)))
-          (if (string= data "[DONE]")
-			  (progn
-				(funcall callback copilot-chat-magic)
-				(setf (copilot-chat-history copilot-chat-instance) (cons (list copilot-chat-curl-answer "assistant") (copilot-chat-history copilot-chat-instance)))
-				(setq copilot-chat-curl-answer nil))
-            (condition-case err
-                (let* ((json-obj (json-parse-string data :object-type 'alist))
-                       (choices (and json-obj (alist-get 'choices json-obj)))
-                       (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
-                       (token (and delta (alist-get 'content delta))))
-                  (when (and token (not (eq token :null)))
-                    (funcall callback token)
-					(setq copilot-chat-curl-answer (concat copilot-chat-curl-answer token))))
-              (json-parse-error
-				(setq copilot-chat-last-data segment))
-              (json-end-of-file
-               (setq copilot-chat-last-data segment))
-              (error
-               (message (format "erreur : %s" segment))))))))))
+      (let ((extracted (copilot-chat--extract-segment segment)))
+        (cond
+         ;; No data at all, just skip:
+         ((eq extracted 'empty)
+          nil)
+         ;; Data looks truncated, save it for the next segment:
+         ((eq extracted 'partial)
+          (setq copilot-chat-last-data segment))
+         ;; Final segment, all done:
+         ((eq extracted 'done)
+          (funcall callback copilot-chat-magic)
+	  (setf (copilot-chat-history copilot-chat-instance) (cons (list copilot-chat-curl-answer "assistant") (copilot-chat-history copilot-chat-instance)))
+	  (setq copilot-chat-curl-answer nil))
+         ;; Otherwise, JSON parsed successfully, extract .choices[0].delta.content and pass that along:
+         (extracted
+          (let* ((choices (alist-get 'choices extracted))
+                 (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
+                 (token (and delta (alist-get 'content delta))))
+            (when (and token (not (eq token :null)))
+              (funcall callback token)
+	      (setq copilot-chat-curl-answer (concat copilot-chat-curl-answer token))))))))))
 
 (defun curl-copilot-chat-ask-cb(args)
   (setq copilot-chat-last-data nil)
