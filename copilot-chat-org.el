@@ -31,7 +31,7 @@
 (require 'org)
 
 
-(defun copilot-chat-org-write(content type)
+(defun copilot-chat--org-write(content type)
   "Write content to the Copilot Chat buffer."
   (with-current-buffer copilot-chat-buffer
 	(let ((inhibit-read-only t))
@@ -39,15 +39,15 @@
 	  (if (eq type 'prompt)
 		(progn
 		  (insert (concat "* " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content)))
-		  (setq copilot-chat-first-word-answer t))
-		(when copilot-chat-first-word-answer
+		  (setq copilot-chat--first-word-answer t))
+		(when copilot-chat--first-word-answer
 		  (insert (concat "** " (format-time-string "*[%H:%M:%S]* ")))
-		  (setq copilot-chat-first-word-answer nil))
+		  (setq copilot-chat--first-word-answer nil))
 		(insert content)))))
 
-(defun copilot-chat-org-clean()
-  (advice-remove 'copilot-chat-write-buffer #'copilot-chat-org-write)
-  (advice-remove 'copilot-chat-clean #'copilot-chat-org-clean))
+(defun copilot-chat--org-clean()
+  (advice-remove 'copilot-chat--write-buffer #'copilot-chat--org-write)
+  (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean))
 
 
 (defun copilot-chat-org-init()
@@ -94,8 +94,8 @@ Provide clear and relevant examples aligned with any provided context.
 
   (define-derived-mode copilot-chat-prompt-mode org-mode "Copilot Chat Prompt")
 
-  (advice-add 'copilot-chat-write-buffer :override #'copilot-chat-org-write)
-  (advice-add 'copilot-chat-clean :after #'copilot-chat-org-clean))
+  (advice-add 'copilot-chat--write-buffer :override #'copilot-chat--org-write)
+  (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean))
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here

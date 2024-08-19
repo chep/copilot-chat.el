@@ -6,14 +6,14 @@ This plugin allows you to chat with github copilot.
 
 This plugin is unofficial and based on Copilot Chat for neovim repository: https://github.com/CopilotC-Nvim/CopilotChat.nvim
 
-Feel free to contribute (check the [Todo list](#todo) ), report issues or discuss new features.
+Feel free to contribute, report issues or discuss new features.
 
 ## Installation
 ### Straight
 ```
 (use-package copilot-chat
   :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
-  :after request)
+  :after (request))
 ```
 
 ### Manual
@@ -36,11 +36,13 @@ You can also use `'shell-maker` if you want ( https://github.com/xenodium/chatgp
 ```
 (use-package copilot-chat
   :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
+  :after (request shell-maker)
   :custom
   (copilot-chat-frontend 'shell-maker)
   :config
   (require 'copilot-chat-shell-maker)
-  (push '(shell-maker . copilot-chat-shell-maker-init) copilot-chat-frontend-list))
+  (push '(shell-maker . copilot-chat-shell-maker-init) copilot-chat-frontend-list)
+  (copilot-chat-shell-maker-init))
 ```
 
 Try them and choose wisely.

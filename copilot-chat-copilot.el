@@ -48,7 +48,7 @@
 
 
 ;; constants
-(defconst copilot-chat-prompts
+(defconst copilot-chat--prompts
   '((explain . "Please write an explanation for the following code:\n")
     (review . "Please review the following code:\n")
     (doc . "Please write documentation for the following code:\n")
@@ -57,7 +57,7 @@
     (test . "Please generate tests for the following code:\n"))
     "Copilot chat predefined prompts")
 
-(defconst copilot-chat-magic "#cc#done#!$")
+(defconst copilot-chat--magic "#cc#done#!$")
 
 
 ;; customs
@@ -89,9 +89,8 @@
 
 
 
-
 ;; variables
-(defvar copilot-chat-instance
+(defvar copilot-chat--instance
   (make-copilot-chat
    :ready nil
    :github-token nil
@@ -102,13 +101,13 @@
    :history nil
    :buffers nil
    ))
-(defvar copilot-chat-last-data nil)
-(defvar copilot-chat-curl-answer nil)
-(defvar copilot-chat-curl-file nil)
+(defvar copilot-chat--last-data nil)
+(defvar copilot-chat--curl-answer nil)
+(defvar copilot-chat--curl-file nil)
 
 
 ;; Fonctions
-(defun copilot-chat-uuid ()
+(defun copilot-chat--uuid ()
   "Generate a UUID."
   (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"
           (random 65536) (random 65536)
@@ -117,7 +116,7 @@
           (logior (random 4096) 32768)
           (random 65536) (random 65536) (random 65536)))
 
-(defun copilot-chat-machine-id ()
+(defun copilot-chat--machine-id ()
   "Generate a machine ID."
   (let ((hex-chars "0123456789abcdef")
         (length 65)
@@ -126,7 +125,7 @@
       (setq hex (concat hex (string (aref hex-chars (random 16))))))
     hex))
 
-(defun copilot-chat-get-cached-token ()
+(defun copilot-chat--get-cached-token ()
   "Get the cached GitHub token."
   (or (getenv "GITHUB_TOKEN")
       (let ((token-file (expand-file-name copilot-chat-github-token-file)))
@@ -136,18 +135,18 @@
             (buffer-substring-no-properties (point-min) (point-max)))))))
 
 
-(defun copilot-chat-create (&optional proxy allow-insecure)
+(defun copilot-chat--create (&optional proxy allow-insecure)
   "Create a new Copilot chat instance."
-  (setq copilot-chat-instance(make-copilot-chat
+  (setq copilot-chat--instance(make-copilot-chat
                               :ready t
-                              :github-token (copilot-chat-get-cached-token)
+                              :github-token (copilot-chat--get-cached-token)
                               :token nil
-                              :sessionid (concat (copilot-chat-uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
-                              :machineid (copilot-chat-machine-id)
+                              :sessionid (concat (copilot-chat--uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
+                              :machineid (copilot-chat--machine-id)
                               :history nil
                               :buffers nil)))
 
-(defun copilot-chat-login()
+(defun copilot-chat--login()
   (request "https://github.com/login/device/code"
     :type "POST"
     :data "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"scope\":\"read:user\"}"
@@ -186,25 +185,25 @@
                                       (error "http error"))
                                     (let ((token (alist-get 'access_token data))
                                          (token-dir (file-name-directory (expand-file-name copilot-chat-github-token-file))))
-                                      (setf (copilot-chat-github-token copilot-chat-instance) token)
+                                      (setf (copilot-chat-github-token copilot-chat--instance) token)
                                       (when (not (file-directory-p token-dir))
                                         (make-directory token-dir t))
                                       (with-temp-file copilot-chat-github-token-file
                                         (insert token)))))))))))
 
 
-(defun copilot-chat-create-req(prompt)
+(defun copilot-chat--create-req(prompt)
   "Create a request for Copilot."
   (let ((messages nil))
     ;; user prompt
     (push (list (cons "content" prompt) (cons "role" "user")) messages)
     ;; history
-    (dolist (history (copilot-chat-history copilot-chat-instance))
+    (dolist (history (copilot-chat-history copilot-chat--instance))
       (push (list (cons "content" (car history)) (cons "role" (cadr history))) messages))
     ;; buffers
-    (setf (copilot-chat-buffers copilot-chat-instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
-                                                                     (copilot-chat-buffers copilot-chat-instance)))
-    (dolist (buffer (copilot-chat-buffers copilot-chat-instance))
+    (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
+                                                                     (copilot-chat-buffers copilot-chat--instance)))
+    (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
       (when (buffer-live-p buffer)
         (with-current-buffer buffer
           (push (list (cons "content" (buffer-substring-no-properties (point-min) (point-max))) (cons "role" "user")) messages))))
@@ -220,24 +219,24 @@
                    ("temperature" . 0.1)))))
 
 
-(defun copilot-chat-auth(callback &optional CBARGS)
+(defun copilot-chat--auth(callback &optional CBARGS)
   "Authenticate with GitHub Copilot API."
-  (when (null (copilot-chat-github-token copilot-chat-instance))
-    (copilot-chat-login))
+  (when (null (copilot-chat-github-token copilot-chat--instance))
+    (copilot-chat--login))
 
-  (when (null (copilot-chat-token copilot-chat-instance))
+  (when (null (copilot-chat-token copilot-chat--instance))
     ;; try to load token from ~/.cache/copilot-chat-token
     (let ((token-file (expand-file-name copilot-chat-token-cache)))
       (when (file-exists-p token-file)
         (with-temp-buffer
           (insert-file-contents token-file)
-          (setf (copilot-chat-token copilot-chat-instance) (json-read-from-string (buffer-substring-no-properties (point-min) (point-max))))))))
+          (setf (copilot-chat-token copilot-chat--instance) (json-read-from-string (buffer-substring-no-properties (point-min) (point-max))))))))
 
-  (if (or (null (copilot-chat-token copilot-chat-instance))
-      (> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat-instance))))
+  (if (or (null (copilot-chat-token copilot-chat--instance))
+      (> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat--instance))))
     (request "https://api.github.com/copilot_internal/v2/token"
       :type "GET"
-      :headers `(("authorization" . ,(concat "token " (copilot-chat-github-token copilot-chat-instance)))
+      :headers `(("authorization" . ,(concat "token " (copilot-chat-github-token copilot-chat--instance)))
               ("accept" . "application/json")
               ("editor-version" . "Neovim/0.10.0")
               ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
@@ -247,7 +246,7 @@
       :complete (cl-function (lambda (&key response &key data &allow-other-keys)
                      (unless (= (request-response-status-code response) 200)
                        (error "Authentication error"))
-                     (setf (copilot-chat-token copilot-chat-instance) data)
+                     (setf (copilot-chat-token copilot-chat--instance) data)
                      ;; save token in copilot-chat-token-cache file after creating
                      ;; folders if needed
                      (let ((cache-dir (file-name-directory (expand-file-name copilot-chat-token-cache))))
@@ -260,7 +259,7 @@
     (funcall callback CBARGS)))
 
 
-(defun copilot-chat-ask-cb (args)
+(defun copilot-chat--ask-cb (args)
   (let* ((prompt (car args))
        (callback (car(cdr args))))
     (request "https://api.githubcopilot.com/chat/completions"
@@ -270,14 +269,14 @@
               ("user-agent" . "CopilotChat.nvim/2.0.0")
               ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
               ("authorization" . ,(concat "Bearer "
-                          (alist-get 'token (copilot-chat-token copilot-chat-instance))))
-              ("x-request-id" . ,(copilot-chat-uuid))
-              ("vscode-sessionid" . ,(copilot-chat-sessionid copilot-chat-instance))
-              ("vscode-machineid" . ,(copilot-chat-machineid copilot-chat-instance))
+                          (alist-get 'token (copilot-chat-token copilot-chat--instance))))
+              ("x-request-id" . ,(copilot-chat--uuid))
+              ("vscode-sessionid" . ,(copilot-chat-sessionid copilot-chat--instance))
+              ("vscode-machineid" . ,(copilot-chat-machineid copilot-chat--instance))
               ("copilot-integration-id" . "vscode-chat")
               ("openai-organization" . "github-copilot")
               ("editor-version" . "Neovim/0.10.0"))
-      :data (copilot-chat-create-req  prompt)
+      :data (copilot-chat--create-req  prompt)
       :parser (cl-function (lambda()
                    (let ((content ""))
                      (while (re-search-forward "^data: " nil t)
@@ -294,38 +293,38 @@
                      (unless (= (request-response-status-code response) 200)
                        (error "Authentication error"))
                      (funcall callback data)
-                     (setf (copilot-chat-history copilot-chat-instance) (cons (list prompt "assistant") (copilot-chat-history copilot-chat-instance)))
-                     (funcall callback copilot-chat-magic))))))
+                     (setf (copilot-chat-history copilot-chat--instance) (cons (list prompt "assistant") (copilot-chat-history copilot-chat--instance)))
+                     (funcall callback copilot-chat--magic))))))
 
 
-(defun copilot-chat-ask (prompt callback)
+(defun copilot-chat--ask (prompt callback)
   "Ask a question to Copilot."
-  (let* ((history (copilot-chat-history copilot-chat-instance))
+  (let* ((history (copilot-chat-history copilot-chat--instance))
          (new-history (cons (list prompt "user") history)))
     (if copilot-chat-use-curl
-        (copilot-chat-auth 'curl-copilot-chat-ask-cb (list prompt callback))
-      (copilot-chat-auth 'copilot-chat-ask-cb (list prompt callback)))
-    (setf (copilot-chat-history copilot-chat-instance) new-history)))
+        (copilot-chat--auth 'copilot-chat--curl-ask-cb (list prompt callback))
+      (copilot-chat--auth 'copilot-chat--ask-cb (list prompt callback)))
+    (setf (copilot-chat-history copilot-chat--instance) new-history)))
 
-(defun copilot-chat-add-buffer (buffer)
-  (unless (memq buffer (copilot-chat-buffers copilot-chat-instance))
-    (let* ((buffers (copilot-chat-buffers copilot-chat-instance))
+(defun copilot-chat--add-buffer (buffer)
+  (unless (memq buffer (copilot-chat-buffers copilot-chat--instance))
+    (let* ((buffers (copilot-chat-buffers copilot-chat--instance))
            (new-buffers (cons buffer buffers)))
-      (setf (copilot-chat-buffers copilot-chat-instance) new-buffers))))
+      (setf (copilot-chat-buffers copilot-chat--instance) new-buffers))))
 
-(defun copilot-chat-clear-buffers ()
-  (setf (copilot-chat-buffers copilot-chat-instance) nil))
+(defun copilot-chat--clear-buffers ()
+  (setf (copilot-chat-buffers copilot-chat--instance) nil))
 
-(defun copilot-chat-del-buffer (buffer)
-  (when (memq buffer (copilot-chat-buffers copilot-chat-instance))
-    (setf (copilot-chat-buffers copilot-chat-instance)
-          (delete buffer (copilot-chat-buffers copilot-chat-instance)))))
+(defun copilot-chat--del-buffer (buffer)
+  (when (memq buffer (copilot-chat-buffers copilot-chat--instance))
+    (setf (copilot-chat-buffers copilot-chat--instance)
+          (delete buffer (copilot-chat-buffers copilot-chat--instance)))))
 
-(defun copilot-chat-get-buffers ()
-  (copilot-chat-buffers copilot-chat-instance))
+(defun copilot-chat--get-buffers ()
+  (copilot-chat-buffers copilot-chat--instance))
 
-(defun copilot-chat-ready-p()
-  (copilot-chat-ready copilot-chat-instance))
+(defun copilot-chat--ready-p()
+  (copilot-chat-ready copilot-chat--instance))
 
 (defun copilot-chat--extract-segment (segment)
   "Extract data from an individual line-delimited segment, returning one of:
@@ -354,7 +353,7 @@
    ;; future response
    (t 'partial)))
 
-(defun curl-analyze-copilot-response (proc string callback)
+(defun copilot-chat--curl-analyze-response (proc string callback)
   ;; The API conceptually sends us big blob of line-deliminated information, e.g.
   ;;
   ;;     data: {"choices":[{...,"delta":{"content":"great"}}],...}
@@ -366,7 +365,7 @@
   ;; We recieve this piecewise, with this function called with `string' as any substring, completely
   ;; ignoring the lines and other rules of the protocol. Thus, this function processes line-by-line
   ;; but needs to be careful to handle partial input any point. We do this by saving a left-over
-  ;; line that failed processing to `copilot-chat-last-data' and reading it on the next call.
+  ;; line that failed processing to `copilot-chat--last-data' and reading it on the next call.
   ;;
   ;; For instance, this function could be called with three segments like:
   ;;
@@ -378,18 +377,18 @@
   ;;
   ;; 1. With segment 1, successfully process the first line (`callback' is called with argument "great"), skip
   ;;    the next empty line, and then fail to process the trailing "dat"; "dat" is saved to
-  ;;    `copilot-chat-last-data'.
+  ;;    `copilot-chat--last-data'.
   ;;
-  ;; 2. With segment 2, the value of `copilot-chat-last-data' is first prepended to `string', and
+  ;; 2. With segment 2, the value of `copilot-chat--last-data' is first prepended to `string', and
   ;;    processing continues with "data: {...}\n\ndata: [D". Thus, `callback' is called with "work",
-  ;;    the next line skipped, and then "data: [D" saved to `copilot-chat-last-data'.
+  ;;    the next line skipped, and then "data: [D" saved to `copilot-chat--last-data'.
   ;;
-  ;; 3. With segment 3, `copilot-chat-last-data' is prepended to `string', resulting in a value of
-  ;;    "data: [DONE]\n\n". Thus, `callback' is called with the value of `copilot-chat-magic', and
+  ;; 3. With segment 3, `copilot-chat--last-data' is prepended to `string', resulting in a value of
+  ;;    "data: [DONE]\n\n". Thus, `callback' is called with the value of `copilot-chat--magic', and
   ;;    the two trailing empty lines are skipped.
-  (when copilot-chat-last-data
-    (setq string (concat copilot-chat-last-data string))
-    (setq copilot-chat-last-data nil))
+  (when copilot-chat--last-data
+    (setq string (concat copilot-chat--last-data string))
+    (setq copilot-chat--last-data nil))
 
   (let ((segments (split-string string "\n")))
     (dolist (segment segments)
@@ -400,12 +399,12 @@
           nil)
          ;; Data looks truncated, save it for the next segment:
          ((eq extracted 'partial)
-          (setq copilot-chat-last-data segment))
+          (setq copilot-chat--last-data segment))
          ;; Final segment, all done:
          ((eq extracted 'done)
-          (funcall callback copilot-chat-magic)
-	  (setf (copilot-chat-history copilot-chat-instance) (cons (list copilot-chat-curl-answer "assistant") (copilot-chat-history copilot-chat-instance)))
-	  (setq copilot-chat-curl-answer nil))
+          (funcall callback copilot-chat--magic)
+	  (setf (copilot-chat-history copilot-chat--instance) (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance)))
+	  (setq copilot-chat--curl-answer nil))
          ;; Otherwise, JSON parsed successfully, extract .choices[0].delta.content and pass that along:
          (extracted
           (let* ((choices (alist-get 'choices extracted))
@@ -413,22 +412,22 @@
                  (token (and delta (alist-get 'content delta))))
             (when (and token (not (eq token :null)))
               (funcall callback token)
-	      (setq copilot-chat-curl-answer (concat copilot-chat-curl-answer token))))))))))
+	      (setq copilot-chat--curl-answer (concat copilot-chat--curl-answer token))))))))))
 
-(defun curl-copilot-chat-ask-cb(args)
-  (setq copilot-chat-last-data nil)
-  (when copilot-chat-curl-file
-    (delete-file copilot-chat-curl-file))
+(defun copilot-chat--curl-ask-cb(args)
+  (setq copilot-chat--last-data nil)
+  (when copilot-chat--curl-file
+    (delete-file copilot-chat--curl-file))
   (let ((prompt (car args)))
-    (setq copilot-chat-curl-file (make-temp-file "copilot-chat"))
-    (with-temp-file copilot-chat-curl-file
-      (insert (copilot-chat-create-req prompt))))
+    (setq copilot-chat--curl-file (make-temp-file "copilot-chat"))
+    (with-temp-file copilot-chat--curl-file
+      (insert (copilot-chat--create-req prompt))))
   (let* ((callback (cadr args))
           (proc (make-process
                   :name "copilot-chat-curl"
                   :buffer nil
                   :filter (lambda (proc string)
-                            (curl-analyze-copilot-response proc string callback))
+                            (copilot-chat--curl-analyze-response proc string callback))
                   :stderr (get-buffer-create "*copilot-chat-curl-stderr*")
                   :command `("curl"
   						   "-X" "POST"
@@ -437,15 +436,15 @@
   						   "-H" "openai-intent: conversation-panel"
   						   "-H" "content-type: application/json"
   						   "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
-  						   "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat-instance)))
-  						   "-H" ,(concat "x-request-id: " (copilot-chat-uuid))
-  						   "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat-instance))
-  						   "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat-instance))
+  						   "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat--instance)))
+  						   "-H" ,(concat "x-request-id: " (copilot-chat--uuid))
+  						   "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat--instance))
+  						   "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat--instance))
   						   "-H" "copilot-integration-id: vscode-chat"
   						   "-H" "User-Agent: CopilotChat.nvim/2.0.0"
   						   "-H" "openai-organization: github-copilot"
   						   "-H" "editor-version: Neovim/0.10.0"
-  						   "-d" ,(concat "@" copilot-chat-curl-file)))))))
+  						   "-d" ,(concat "@" copilot-chat--curl-file)))))))
 
 
 (provide 'copilot-chat-copilot)
