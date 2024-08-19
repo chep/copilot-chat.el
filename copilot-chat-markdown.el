@@ -30,22 +30,22 @@
 
 (require 'markdown-mode)
 
-(defun copilot-chat-markdown-write (content type)
+(defun copilot-chat--markdown-write (content type)
   (with-current-buffer copilot-chat-buffer
 	(let ((inhibit-read-only t))
 	  (goto-char (point-max))
 	  (if (eq type 'prompt)
 		(progn
 		  (insert (concat "# " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content)))
-		  (setq copilot-chat-first-word-answer t))
-	   	  (when copilot-chat-first-word-answer
+		  (setq copilot-chat--first-word-answer t))
+	   	  (when copilot-chat--first-word-answer
 			(insert (concat "## " (format-time-string "*[%H:%M:%S]* ")))
-	        (setq copilot-chat-first-word-answer nil))
+	        (setq copilot-chat--first-word-answer nil))
 		  (insert content)))))
 
-(defun copilot-chat-markdown-clean()
-  (advice-remove 'copilot-chat-write-buffer #'copilot-chat-markdown-write)
-  (advice-remove 'copilot-chat-clean #'copilot-chat-markdown-clean))
+(defun copilot-chat--markdown-clean()
+  (advice-remove 'copilot-chat--write-buffer #'copilot-chat--markdown-write)
+  (advice-remove 'copilot-chat--clean #'copilot-chat--markdown-clean))
 
 
 (defun copilot-chat-markdown-init()
@@ -57,8 +57,8 @@
 
   (define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt")
 
-  (advice-add 'copilot-chat-write-buffer :override #'copilot-chat-markdown-write)
-  (advice-add 'copilot-chat-clean :after #'copilot-chat-markdown-clean))
+  (advice-add 'copilot-chat--write-buffer :override #'copilot-chat--markdown-write)
+  (advice-add 'copilot-chat--clean :after #'copilot-chat--markdown-clean))
 
 (provide 'copilot-chat-markdown)
 ;;; copilot-chat-markdown.el ends here
