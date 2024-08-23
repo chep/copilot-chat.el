@@ -169,36 +169,43 @@
       (insert (concat (cdr (assoc prompt copilot-chat--prompts)) code)))
     (copilot-chat-prompt-send)))
 
+;;;###autoload
 (defun copilot-chat-explain()
   "Ask Copilot to explain the current selected code."
   (interactive)
   (copilot-chat--ask-region 'explain))
 
+;;;###autoload
 (defun copilot-chat-review()
   "Ask Copilot to review the current selected code."
   (interactive)
   (copilot-chat--ask-region 'review))
 
+;;;###autoload
 (defun copilot-chat-doc()
   "Ask Copilot to write documentation for the current selected code."
   (interactive)
   (copilot-chat--ask-region 'doc))
 
+;;;###autoload
 (defun copilot-chat-fix()
   "Ask Copilot to fix the current selected code."
   (interactive)
   (copilot-chat--ask-region 'fix))
 
+;;;###autoload
 (defun copilot-chat-optimize()
   "Ask Copilot to optimize the current selected code."
   (interactive)
   (copilot-chat--ask-region 'optimize))
 
+;;;###autoload
 (defun copilot-chat-test()
   "Ask Copilot to generate tests for the current selected code."
   (interactive)
   (copilot-chat--ask-region 'test))
 
+;;;###autoload
 (defun copilot-chat-custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code."
   (interactive)
@@ -212,7 +219,6 @@
 
 
 
-;;;###autoload
 (defun copilot-chat ()
   "Open Copilot Chat buffer."
   (interactive)
@@ -222,7 +228,6 @@
       (copilot-chat-mode))
     (switch-to-buffer buffer)))
 
-;;;###autoload
 (defun copilot-chat-prompt ()
   "Open Copilot Chat Prompt buffer."
   (interactive)
@@ -252,7 +257,9 @@
       (copilot-chat-prompt-mode))
   (list chat-buffer prompt-buffer)))
 
+;;;###autoload
 (defun copilot-chat-display ()
+  "Display copilot chat buffers"
   (interactive)
   (let* ((buffers (copilot-chat--prepare-buffers))
          (chat-buffer (car buffers))
