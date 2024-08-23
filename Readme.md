@@ -52,8 +52,8 @@ Try them and choose wisely.
 Start chatting with `copilot-chat-display`. Type your question in `*copilot-chat-prompt*` buffer, then press `C-c RET`.  
 You may need to authenticate to github. Follow instructions.
 
-You can select buffers that will be added as context in your prompt. Use `copilot-chat-add-current-buffer` and `copilot-chat-del-current-buffer`. You can also manage buffer by using `copilot-chat-list`.  
-Selected buffer will be sent with each prompt until you remove them.
+You can select buffers that will be added as context in your prompt. Use `copilot-chat-add-current-buffer` and `copilot-chat-del-current-buffer`. You can also manage buffers by using `copilot-chat-list`.  
+Selected buffers will be sent with each prompt until you remove them.
 
 
 ### Functions
