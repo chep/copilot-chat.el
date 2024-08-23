@@ -55,7 +55,7 @@
     (fix . "There is a problem in this code. Please rewrite the code to show it with the bug fixed.\n")
     (optimize . "Please optimize the following code to improve performance and readability:\n")
     (test . "Please generate tests for the following code:\n"))
-    "Copilot chat predefined prompts")
+    "Copilot chat predefined prompts.")
 
 (defconst copilot-chat--magic "#cc#done#!$")
 
@@ -79,11 +79,11 @@
   :type 'string
   :group 'copilot-chat)
 (defcustom copilot-chat-use-curl t
-  "If set to t, copilot-chat will use curl instead of url emacs api."
+  "If set to t, `copilot-chat' will use curl instead of url Emacs api."
   :type 'boolean
   :group 'copilot-chat)
 (defcustom copilot-chat-curl-program "/usr/bin/curl"
-  "Curl program to use if copilot-chat-use-curl is set."
+  "Curl program to use if `copilot-chat-use-curl' is set."
   :type 'string
   :group 'copilot-chat)
 
@@ -135,7 +135,7 @@
             (buffer-substring-no-properties (point-min) (point-max)))))))
 
 
-(defun copilot-chat--create (&optional proxy allow-insecure)
+(defun copilot-chat--create ()
   "Create a new Copilot chat instance."
   (setq copilot-chat--instance(make-copilot-chat
                               :ready t
@@ -147,6 +147,7 @@
                               :buffers nil)))
 
 (defun copilot-chat--login()
+  "Manage github login."
   (request "https://github.com/login/device/code"
     :type "POST"
     :data "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"scope\":\"read:user\"}"
@@ -193,7 +194,8 @@
 
 
 (defun copilot-chat--create-req(prompt)
-  "Create a request for Copilot."
+  "Create a request for Copilot.
+Argument PROMPT Copilot prompt to send."
   (let ((messages nil))
     ;; user prompt
     (push (list (cons "content" prompt) (cons "role" "user")) messages)
@@ -220,7 +222,9 @@
 
 
 (defun copilot-chat--auth(callback &optional CBARGS)
-  "Authenticate with GitHub Copilot API."
+  "Authenticate with GitHub Copilot API.
+Argument CALLBACK funtion to call after authentication.
+Optional argument CBARGS Arguments to be given to the callback."
   (when (null (copilot-chat-github-token copilot-chat--instance))
     (copilot-chat--login))
 

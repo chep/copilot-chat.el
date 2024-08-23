@@ -4,6 +4,13 @@
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
+;; Author: cedric.chepied <cedric.chepied@gmail.com>
+;; Version: 1.1.0
+;; URL: https://github.com/chep/copilot-chat.el
+;; Package-Requires: ((request) (markdown-mode) (org) (emacs "24.3"))
+;; Keywords: github, copilot, chat
+
+
 ;; The MIT License (MIT)
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +33,7 @@
 
 ;;; Commentary:
 
+;; Add the ability to chat with github copilot
 
 ;;; Code:
 
@@ -35,7 +43,7 @@
 
 ;; customs
 (defcustom copilot-chat-frontend 'markdown
-  "Frontend to use with copilot-chat. Can be markdown, org or shell-maker"
+  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-maker."
   :type 'symbol
   :group 'copilot-chat)
 
@@ -74,7 +82,7 @@
     map)
   "Keymap for `copilot-chat-list-mode'.")
 (defvar copilot-chat--prompt-history nil
-  "copilot-chat prompt history")
+  "copilot-chat prompt history.")
 (defvar copilot-chat--prompt-history-position nil
   "Current position in copilot-chat prompt history")
 (defvar copilot-chat--first-word-answer t)
