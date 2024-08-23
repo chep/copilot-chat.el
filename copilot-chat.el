@@ -99,8 +99,19 @@
   "Major mode for the Copilot Chat buffer."
   (read-only-mode 1))
 
-(defun copilot-chat--write-buffer(content type)
-  "Write content to the Copilot Chat buffer.")
+(defun copilot-chat--write-buffer(data &optional buffer)
+  "Write content to the Copilot Chat buffer."
+  (with-current-buffer (if buffer
+                           buffer
+                         copilot-chat-buffer)
+	(let ((inhibit-read-only t))
+	  (goto-char (point-max))
+        (insert data))))
+
+(defun copilot-chat--format-data(content type)
+    "Format the content according to the frontend."
+    content)
+
 
 (defun copilot-chat-prompt-mode ()
   "Major mode for Copilot Chat Prompt buffer."
@@ -119,12 +130,13 @@
   (setq buffer-read-only t)
   (copilot-chat-list-refresh))
 
-(defun copilot-chat-prompt-cb (content)
-    (if (string= content copilot-chat--magic)
-        (copilot-chat--write-buffer "\n\n" 'answer)
-      (copilot-chat--write-buffer content 'answer))
-  (with-current-buffer copilot-chat-buffer
-    (goto-char (point-max))))
+(defun copilot-chat-prompt-cb (content &optional buffer)
+  (if (string= content copilot-chat--magic)
+      (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
+    (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer))
+  (unless buffer
+    (with-current-buffer copilot-chat-buffer
+      (goto-char (point-max)))))
 
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
@@ -135,11 +147,19 @@
   (with-current-buffer copilot-chat-prompt-buffer
     (let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
       (erase-buffer)
-      (copilot-chat--write-buffer prompt 'prompt)
+      (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt))
       (push prompt copilot-chat--prompt-history)
       (setq copilot-chat--prompt-history-position nil)
       (copilot-chat--ask prompt 'copilot-chat-prompt-cb))))
 
+;;;###autoload
+(defun copilot-chat-ask-and-insert()
+  "Send to Copilot a custom prompt and insert answer in current buffer at point."
+  (interactive)
+  (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
+         (current-buf (current-buffer)))
+    (copilot-chat--ask prompt (lambda (content)
+                                (copilot-chat-prompt-cb content current-buf)))))
 
 (defun copilot-chat--ask-region(prompt)
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))

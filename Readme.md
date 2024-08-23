@@ -62,6 +62,7 @@ Try them and choose wisely.
 - `(copilot-chat-list)` open buffer list.
 - `copilot-chat-prompt-history-previous` insert previous prompt from history in prompt buffer.
 - `copilot-chat-prompt-history-next` insert next prompt from history in prompt buffer.
+- `copilot-chat-ask-and-insert` ask for a custom prompt and write answer in current buffer at point.
 
 ### Key bindings
 #### Prompt buffer

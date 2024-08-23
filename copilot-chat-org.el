@@ -31,22 +31,20 @@
 (require 'org)
 
 
-(defun copilot-chat--org-write(content type)
-  "Write content to the Copilot Chat buffer."
-  (with-current-buffer copilot-chat-buffer
-	(let ((inhibit-read-only t))
-	  (goto-char (point-max))
-	  (if (eq type 'prompt)
-		(progn
-		  (insert (concat "* " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content)))
-		  (setq copilot-chat--first-word-answer t))
-		(when copilot-chat--first-word-answer
-		  (insert (concat "** " (format-time-string "*[%H:%M:%S]* ")))
-		  (setq copilot-chat--first-word-answer nil))
-		(insert content)))))
+(defun copilot-chat--org-format-data(content type)
+  (let ((data ""))
+    (if (eq type 'prompt)
+	  (progn
+	    (setq copilot-chat--first-word-answer t)
+	    (setq data (concat "* " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content))))
+	  (when copilot-chat--first-word-answer
+	    (setq copilot-chat--first-word-answer nil)
+        (setq data (concat "** " (format-time-string "*[%H:%M:%S]* "))))
+	  (setq data (concat data content)))
+    data))
 
 (defun copilot-chat--org-clean()
-  (advice-remove 'copilot-chat--write-buffer #'copilot-chat--org-write)
+  (advice-remove 'copilot-chat--format-data #'copilot-chat--org-format-data)
   (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean))
 
 
@@ -94,7 +92,7 @@ Provide clear and relevant examples aligned with any provided context.
 
   (define-derived-mode copilot-chat-prompt-mode org-mode "Copilot Chat Prompt")
 
-  (advice-add 'copilot-chat--write-buffer :override #'copilot-chat--org-write)
+  (advice-add 'copilot-chat--format-data :override #'copilot-chat--org-format-data)
   (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean))
 
 (provide 'copilot-chat-org)
