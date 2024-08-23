@@ -48,6 +48,14 @@ You can also use `'shell-maker` if you want ( https://github.com/xenodium/chatgp
 Try them and choose wisely.
 
 ## Usage
+### Basic
+Start chatting with `copilot-chat-display`. Type your question in `*copilot-chat-prompt*` buffer, then press `C-c RET`.  
+You may need to authenticate to github. Follow instructions.
+
+You can select buffers that will be added as context in your prompt. Use `copilot-chat-add-current-buffer` and `copilot-chat-del-current-buffer`. You can also manage buffer by using `copilot-chat-list`.  
+Selected buffer will be sent with each prompt until you remove them.
+
+
 ### Functions
 - `(copilot-chat-reset)` reset everything including history, buffers and frontend.
 - `(copilot-chat-display)` display copilot chat buffers.
@@ -59,6 +67,7 @@ Try them and choose wisely.
 - `(copilot-chat-test)` ask copilot to write tests for selected code.
 - `(copilot-chat-custom-prompt-selection)` ask for a prompt in minibuffer and pastes selection after it before sending it to copilot.
 - `(copilot-chat-add-current-buffer)` add current buffer to copilot chat. Its content will be sent with every request.
+- `(copilot-chat-del-current-buffer)` remove current buffer.
 - `(copilot-chat-list)` open buffer list.
 - `copilot-chat-prompt-history-previous` insert previous prompt from history in prompt buffer.
 - `copilot-chat-prompt-history-next` insert next prompt from history in prompt buffer.

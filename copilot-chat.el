@@ -269,6 +269,9 @@
   (interactive)
   (copilot-chat--add-buffer (current-buffer)))
 
+(defun copilot-chat-del-current-buffer()
+  (interactive)
+  (copilot-chat--del-buffer (current-buffer)))
 
 (defun copilot-chat-list-refresh ()
   "Refresh the list of buffers in the current Copilot chat list buffer."
