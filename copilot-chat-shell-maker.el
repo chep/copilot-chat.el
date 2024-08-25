@@ -32,6 +32,7 @@
 
 (require 'shell-maker)
 (require 'copilot-chat-copilot)
+(require 'polymode)
 
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
@@ -39,6 +40,19 @@
     :name "Copilot-Chat-shell"
     :execute-command 'copilot-chat--shell-cb))
 
+(define-hostmode poly-shell-maker-hostmode
+  :mode 'copilot-chat-shell-shell-mode)
+
+(define-innermode poly-shell-maker-markdown-innermode
+  :mode 'markdown-mode
+  :head-matcher ".[ \t]*\*\[[0-9]+:[0-9]+:[0-9]+\]\*"
+  :tail-matcher "^Copilot-Chat-shell>"
+  :head-mode 'markdown-mode
+  :tail-mode 'host)
+
+(define-polymode poly-copilot-chat-shell-mode
+  :hostmode 'poly-shell-maker-hostmode
+  :innermodes '(poly-shell-maker-markdown-innermode))
 
 (defun copilot-chat--shell-maker-ask-region(prompt)
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
@@ -65,8 +79,16 @@
 
 (defun copilot-chat--shell-cb-prompt (callback error-callback content)
   (with-current-buffer (copilot-chat--get-shell-buffer)
+    (goto-char (point-max))
+    (when copilot-chat--first-word-answer
+      (setq copilot-chat--first-word-answer nil)
+      (funcall callback (format-time-string "# *[%H:%M:%S]*\n") t))
+
     (if (string= content copilot-chat--magic)
-        (funcall callback "" nil) ;; all done, lets close it off (partial = nil)
+      (progn
+        ;; all done, lets close it off (partial = nil)
+        (funcall callback "" nil)
+        (setq copilot-chat--first-word-answer t))
       (funcall callback content t)))) ;; still going (partial = t)
 
 
@@ -88,8 +110,11 @@
          (buffer (get-buffer name)))
     (if (null buffer)
        (progn
-          (copilot-chat--shell)
-          (copilot-chat--get-shell-buffer))
+         (copilot-chat--shell)
+         (let ((buffer (copilot-chat--get-shell-buffer)))
+           (with-current-buffer buffer
+             (poly-copilot-chat-shell-mode))
+           buffer))
       buffer)))
 
 (defun copilot-chat--shell-maker-clean()
