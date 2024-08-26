@@ -44,10 +44,10 @@
   :mode 'copilot-chat-shell-shell-mode)
 
 (define-innermode poly-shell-maker-markdown-innermode
-  :mode 'markdown-mode
-  :head-matcher ".[ \t]*\*\[[0-9]+:[0-9]+:[0-9]+\]\*"
+  :mode 'markdown-view-mode
+  :head-matcher ".*[ \t]*\[[0-9]+:[0-9]+:[0-9]+\] Copilot:"
   :tail-matcher "^Copilot-Chat-shell>"
-  :head-mode 'markdown-mode
+  :head-mode 'body
   :tail-mode 'host)
 
 (define-polymode poly-copilot-chat-shell-mode
@@ -82,7 +82,7 @@
     (goto-char (point-max))
     (when copilot-chat--first-word-answer
       (setq copilot-chat--first-word-answer nil)
-      (funcall callback (format-time-string "# *[%H:%M:%S]*\n") t))
+      (funcall callback (format-time-string "# [%H:%M:%S] Copilot:\n") t))
 
     (if (string= content copilot-chat--magic)
       (progn
