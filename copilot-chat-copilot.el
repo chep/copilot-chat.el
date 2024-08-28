@@ -70,32 +70,32 @@
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat--prompt-explain "Please write an explanation for the following code:\n"
+(defcustom copilot-chat-prompt-explain "Please write an explanation for the following code:\n"
   "The prompt used by copilot-chat-explain"
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat--prompt-review "Please review the following code:\n"
+(defcustom copilot-chat-prompt-review "Please review the following code:\n"
   "The prompt used by copilot-chat-review"
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat--prompt-doc "Please write documentation for the following code:\n"
+(defcustom copilot-chat-prompt-doc "Please write documentation for the following code:\n"
   "The prompt used by copilot-chat-doc"
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat--prompt-fix "There is a problem in this code. Please rewrite the code to show it with the bug fixed.\n"
+(defcustom copilot-chat-prompt-fix "There is a problem in this code. Please rewrite the code to show it with the bug fixed.\n"
   "The prompt used by copilot-chat-fix"
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat--prompt-optimize "Please optimize the following code to improve performance and readability:\n"
+(defcustom copilot-chat-prompt-optimize "Please optimize the following code to improve performance and readability:\n"
   "The prompt used by copilot-chat-optimize"
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat--prompt-test "Please generate tests for the following code:\n"
+(defcustom copilot-chat-prompt-test "Please generate tests for the following code:\n"
   "The prompt used by copilot-chat-test"
   :type 'string
   :group 'copilot-chat)
@@ -131,12 +131,12 @@
 ;; Functions
 (defun copilot-chat--prompts ()
   "Return assoc list of promts for each command"
-  `((explain . ,copilot-chat--prompt-explain)
-    (review . ,copilot-chat--prompt-review)
-    (doc . ,copilot-chat--prompt-doc)
-    (fix . ,copilot-chat--prompt-fix)
-    (optimize . ,copilot-chat--prompt-optimize)
-    (test . ,copilot-chat--prompt-test)))
+  `((explain . ,copilot-chat-prompt-explain)
+    (review . ,copilot-chat-prompt-review)
+    (doc . ,copilot-chat-prompt-doc)
+    (fix . ,copilot-chat-prompt-fix)
+    (optimize . ,copilot-chat-prompt-optimize)
+    (test . ,copilot-chat-prompt-test)))
 
 (defun copilot-chat--uuid ()
   "Generate a UUID."
