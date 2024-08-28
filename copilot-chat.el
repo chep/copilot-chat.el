@@ -174,7 +174,7 @@
     (copilot-chat--prepare-buffers)
     (with-current-buffer copilot-chat-prompt-buffer
       (erase-buffer)
-      (insert (concat (cdr (assoc prompt copilot-chat--prompts)) code)))
+      (insert (concat (cdr (assoc prompt (copilot-chat--prompts))) code)))
     (copilot-chat-prompt-send)))
 
 ;;;###autoload
