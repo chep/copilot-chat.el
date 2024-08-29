@@ -57,7 +57,7 @@
 (defun copilot-chat--shell-maker-ask-region(prompt)
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (with-current-buffer (copilot-chat--get-shell-buffer)
-      (insert (concat (cdr (assoc prompt copilot-chat--prompts)) code))
+      (insert (concat (cdr (assoc prompt (copilot-chat--prompts))) code))
       (shell-maker-submit))))
 
 
