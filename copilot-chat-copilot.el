@@ -186,7 +186,6 @@
     :headers `(("content-type" . "application/json")
             ("accept" . "application/json")
             ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-            ("accept-encoding" . "gzip,deflate,br")
             ("user-agent" . "CopilotChat.nvim/2.0.0")
             ("editor-version" . "Neovim/0.10.0"))
     :parser 'json-read
@@ -205,7 +204,6 @@
                        :type "POST"
                        :headers `(("content-type" . "application/json")
                              ("accept" . "application/json")
-                             ("accept-encoding" . "gzip,deflate,br")
                              ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
                              ("editor-version" . "Neovim/0.10.0")
                              ("user-agent" . "CopilotChat.nvim/2.0.0"))
