@@ -164,6 +164,8 @@
 (defun copilot-chat-ask-and-insert()
   "Send to Copilot a custom prompt and insert answer in current buffer at point."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (current-buf (current-buffer)))
     (copilot-chat--ask prompt (lambda (content)
