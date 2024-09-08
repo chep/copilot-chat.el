@@ -24,9 +24,9 @@ Clone repository and eval files in emacs.
 You will need a github acccount with access to copilot API. When sending the first prompt, you will need to authenticate to github. Follow instructions and everything will be fine.
 
 ### Backend
-If `copilot-chat-use-curl` is set to t (default), copilot-chat will use curl program for https requests. The path can be set in `copilot-chat-curl-program`. You can switch back to request library by setting `copilot-chat-use-curl` to nil.
+`copilot-chat-backend` can be set to `'curl` (default) or `'request`.
 
-With curl, answers will be written token by token.  
+With curl, answers will be written token by token. Curl path can be set with `copilot-chat-curl-program` variable.
 With request library, the text is written when all data is read and this can be long.
 
 ### Frontend
