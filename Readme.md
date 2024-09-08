@@ -26,7 +26,7 @@ You will need a github acccount with access to copilot API. When sending the fir
 ### Backend
 `copilot-chat-backend` can be set to `'curl` (default) or `'request`.
 
-With curl, answers will be written token by token. Curl path can be set with `copilot-chat-curl-program` variable.
+With curl, answers will be written token by token. Curl path can be set with `copilot-chat-curl-program` variable.  
 With request library, the text is written when all data is read and this can be long.
 
 ### Frontend
