@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'json)
+(require 'copilot-chat-common)
 
 (defvar copilot-chat--curl-current-data nil)
 
@@ -48,7 +49,6 @@
   "Curl github token request parsing."
   (goto-char (point-min))
   (let* ((json-data (json-parse-buffer
-					 :object-type 'alist
 					 :array-type 'list))
 		 (token (gethash "access_token" json-data))
 		 (token-dir (file-name-directory
@@ -63,7 +63,6 @@
   "Curl login request parsing."
   (goto-char (point-min))
   (let* ((json-data (json-parse-buffer
-					 :object-type 'alist
 					 :array-type 'list))
   		 (device-code (gethash "device_code" json-data))
 		 (user-code (gethash "user_code" json-data))
@@ -118,7 +117,8 @@ If your browser does not open automatically, browse to %s."
   (switch-to-buffer (current-buffer))
   (goto-char (point-min))
   (let ((json-data (json-parse-buffer
-					:object-type 'alist
+					:object-type 'alist ;need alist to be compatible with
+                                        ;copilot-chat-token format
 					:array-type 'list))
 		(cache-dir (file-name-directory (expand-file-name copilot-chat-token-cache))))
 	(setf (copilot-chat-token copilot-chat--instance) json-data)
