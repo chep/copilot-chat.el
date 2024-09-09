@@ -28,27 +28,10 @@
 
 
 ;;; Code:
-
+(require 'json)
+(require 'copilot-chat-common)
 (require 'copilot-chat-request)
 (require 'copilot-chat-curl)
-
-
-;; structs
-(cl-defstruct copilot-chat
-  ready
-  github-token
-  token
-  sessionid
-  machineid
-  authinfo
-  history
-  buffers
-)
-
-
-;; constants
-(defconst copilot-chat--magic "#cc#done#!$")
-
 
 ;; customs
 (defgroup copilot-chat nil
@@ -100,37 +83,11 @@
   :type 'string
   :group 'copilot-chat)
 
-
 (defcustom copilot-chat-backend 'curl
   "Copilot chat backend. Can be 'curl or 'request."
   :type 'symbol
   :group 'copilot-chat)
 
-
-(defcustom copilot-chat-use-curl t
-  "If set to t, `copilot-chat' will use curl instead of url Emacs api."
-  :type 'boolean
-  :group 'copilot-chat)
-
-(defcustom copilot-chat-curl-program "/usr/bin/curl"
-  "Curl program to use if `copilot-chat-use-curl' is set."
-  :type 'string
-  :group 'copilot-chat)
-
-
-
-;; variables
-(defvar copilot-chat--instance
-  (make-copilot-chat
-   :ready nil
-   :github-token nil
-   :token nil
-   :sessionid nil
-   :machineid nil
-   :authinfo nil
-   :history nil
-   :buffers nil
-   ))
 
 ;; Functions
 (defun copilot-chat--prompts ()
@@ -141,24 +98,6 @@
     (fix . ,copilot-chat-prompt-fix)
     (optimize . ,copilot-chat-prompt-optimize)
     (test . ,copilot-chat-prompt-test)))
-
-(defun copilot-chat--uuid ()
-  "Generate a UUID."
-  (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"
-          (random 65536) (random 65536)
-          (random 65536)
-          (logior (random 16384) 16384)
-          (logior (random 4096) 32768)
-          (random 65536) (random 65536) (random 65536)))
-
-(defun copilot-chat--machine-id ()
-  "Generate a machine ID."
-  (let ((hex-chars "0123456789abcdef")
-        (length 65)
-        (hex ""))
-    (dotimes (_ length)
-      (setq hex (concat hex (string (aref hex-chars (random 16))))))
-    hex))
 
 (defun copilot-chat--get-cached-token ()
   "Get the cached GitHub token."
@@ -180,34 +119,6 @@
                               :machineid (copilot-chat--machine-id)
                               :history nil
                               :buffers nil)))
-
-(defun copilot-chat--create-req(prompt)
-  "Create a request for Copilot.
-Argument PROMPT Copilot prompt to send."
-  (let ((messages nil))
-    ;; user prompt
-    (push (list (cons "content" prompt) (cons "role" "user")) messages)
-    ;; history
-    (dolist (history (copilot-chat-history copilot-chat--instance))
-      (push (list (cons "content" (car history)) (cons "role" (cadr history))) messages))
-    ;; buffers
-    (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
-                                                                     (copilot-chat-buffers copilot-chat--instance)))
-    (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
-      (when (buffer-live-p buffer)
-        (with-current-buffer buffer
-          (push (list (cons "content" (buffer-substring-no-properties (point-min) (point-max))) (cons "role" "user")) messages))))
-    ;; system
-    (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
-
-    (json-encode `(("messages" . ,(vconcat messages))
-                   ("top_p" . 1)
-                   ("model" . "gpt-4o-2024-05-13")
-                   ("stream" . t)
-                   ("n" . 1)
-                   ("intent" . t)
-                   ("temperature" . 0.1)))))
-
 
 (defun copilot-chat--login()
   (cond

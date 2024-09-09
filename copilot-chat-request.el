@@ -31,6 +31,7 @@
 
 (require 'json)
 (require 'request)
+(require 'copilot-chat-common)
 
 (cl-defun copilot-chat--request-token-cb (&key response
                                           &key data
