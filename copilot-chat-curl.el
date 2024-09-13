@@ -172,9 +172,14 @@ If your browser does not open automatically, browse to %s."
           ;; response
           (json-parse-error 'partial)
           (json-end-of-file 'partial)))))
-   ;; otherwise, the prefix was probably truncated (e.g. "dat", or "data:") => need more data from a
-   ;; future response
-   (t 'partial)))
+   ;; otherwise, try parsing the segment as a non-prefixed json (such as in
+   ;; error responses) When even this fails, then we have a partial response
+   ;; that was probably truncated (e.g. "dat", or "data:") => need more data
+   ;; from a future response
+   (t
+    (condition-case err
+        (json-parse-string segment :object-type 'alist)
+      (error 'partial)))))
 
 
 (defun copilot-chat--curl-analyze-response (proc string callback)
@@ -227,16 +232,35 @@ If your browser does not open automatically, browse to %s."
          ;; Final segment, all done:
          ((eq extracted 'done)
           (funcall callback copilot-chat--magic)
-	  (setf (copilot-chat-history copilot-chat--instance) (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance)))
-	  (setq copilot-chat--curl-answer nil))
-         ;; Otherwise, JSON parsed successfully, extract .choices[0].delta.content and pass that along:
+          (setf (copilot-chat-history copilot-chat--instance) (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance)))
+          (setq copilot-chat--curl-answer nil))
+
+         ;; Otherwise, JSON parsed successfully
          (extracted
-          (let* ((choices (alist-get 'choices extracted))
-                 (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
-                 (token (and delta (alist-get 'content delta))))
-            (when (and token (not (eq token :null)))
-              (funcall callback token)
-	      (setq copilot-chat--curl-answer (concat copilot-chat--curl-answer token))))))))))
+          (cond
+           ;; extract .choices[0].delta.content and pass that along:
+           ((alist-get 'choices extracted)
+            (let* ((choices (alist-get 'choices extracted))
+                   (delta (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
+                   (token (and delta (alist-get 'content delta))))
+              (when (and token (not (eq token :null)))
+                (funcall callback token)
+                (setq copilot-chat--curl-answer (concat copilot-chat--curl-answer token)))))
+
+           ;; display .error.message in the chat.
+           ((alist-get 'error extracted)
+            (let* ((err-response (alist-get 'error extracted))
+                   (err-message (alist-get 'message err-response))
+                   (answer (format "Error: %s" err-message)))
+              (message answer)
+              (funcall callback answer)
+              (funcall callback copilot-chat--magic)
+              ;; Add an empty response to the chat history to avoid confusing the assistant with its own error messages...
+              (setf (copilot-chat-history copilot-chat--instance) (cons (list "" "assistant") (copilot-chat-history copilot-chat--instance)))
+              (setq copilot-chat--curl-answer nil)))
+           ;; Fallback -- nag developers about possibly unhandled payloads
+           (t
+            (warn "Unhandled message from copilot: %S" extracted)))))))))
 
 
 (defun copilot-chat--curl-ask(prompt callback)
