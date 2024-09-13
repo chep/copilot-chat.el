@@ -47,6 +47,13 @@ You can also use `'shell-maker` if you want ( https://github.com/xenodium/chatgp
 
 Try them and choose wisely.
 
+### Proxy
+The proxy can be configured with the curl backend. For the emacs-request backend, please refer to the emacs-request documentation if you need to configure a proxy.
+
+Use the variables `copilot-chat-curl-proxy`, `copilot-chat-curl-proxy-user-pass`, and `copilot-chat-curl-proxy-insecure` to set up a proxy. Refer to the documentation for each variable to learn how to use them.
+
+Proxies have not been thoroughly tested yet, so there may be bugs. Many options are missing for HTTPS proxies. Please open an issue if you need additional features.
+
 ## Usage
 ### Basic
 Start chatting with `copilot-chat-display`. Type your question in `*copilot-chat-prompt*` buffer, then press `C-c RET`.  
