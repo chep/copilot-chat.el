@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'json)
+(require 'cl-lib)
 
 ;; constants
 (defconst copilot-chat--magic "#cc#done#!$")
