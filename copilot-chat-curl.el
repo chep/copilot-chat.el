@@ -38,6 +38,49 @@
   :type 'string
   :group 'copilot-chat)
 
+(defcustom copilot-chat-curl-proxy nil
+  "Curl will use this proxy if defined.
+The proxy string can be specified with a protocol:// prefix. No protocol
+specified or http:// it is treated as an HTTP proxy. Use socks4://,
+socks4a://, socks5:// or socks5h:// to request a specific SOCKS version
+to be used.
+
+Unix domain sockets are supported for socks proxy. Set localhost for the
+host part. e.g. socks5h://localhost/path/to/socket.sock
+
+HTTPS proxy support works set with the https:// protocol prefix for
+OpenSSL and GnuTLS. It also works for BearSSL, mbedTLS, rustls,
+Schannel, Secure Transport and wolfSSL (added in 7.87.0).
+
+Unrecognized and unsupported proxy protocols cause an error.  Ancient
+curl versions ignored unknown schemes and used http:// instead.
+
+If the port number is not specified in the proxy string, it is assumed
+to be 1080.
+
+This option overrides existing environment variables that set the proxy
+to use. If there is an environment variable setting a proxy, you can set
+proxy to \"\" to override it.
+
+User and password that might be provided in the proxy string are URL
+decoded by curl. This allows you to pass in special characters such as @
+by using %40 or pass in a colon with %3a."
+  :type 'string
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-curl-proxy-insecure nil
+  "Every secure connection curl makes is verified to be secure before the
+transfer takes place. This option makes curl skip the verification step
+with a proxy and proceed without checking."
+  :type 'boolean
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-curl-proxy-user-pass nil
+  "Specify the username and password <user:password> to use for proxy
+authentication."
+  :type 'boolean
+  :group 'copilot-chat)
+
 
 ;;variables
 (defvar copilot-chat--curl-answer nil)
@@ -45,6 +88,57 @@
 
 
 ;; functions
+(defun copilot-chat--curl-call-process(address method data &rest args)
+  (let ((curl-args (append
+                    (list address
+                          "-s"
+                          "-X" (if (eq method 'post) "POST" "GET")
+                          "-A" "user-agent: CopilotChat.nvim/2.0.0"
+  	                      "-H" "content-type: application/json"
+	                      "-H" "accept: application/json"
+	                      "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
+	                      "-H" "editor-version: Neovim/0.10.0")
+                    (when data (list "-d" data))
+                    (when copilot-chat-curl-proxy (list "-x" copilot-chat-curl-proxy))
+                    (when copilot-chat-curl-proxy-insecure (list "--proxy-insecure"))
+                    (when copilot-chat-curl-proxy-user-pass
+                      (list
+                       "-U"
+                       copilot-chat-curl-proxy-user-pass))
+                    args)))
+    (apply #'call-process
+           copilot-chat-curl-program
+           nil
+           t
+	       nil
+           curl-args)))
+
+(defun copilot-chat--curl-make-process(address method data filter &rest args)
+  (let ((command (append
+                    (list copilot-chat-curl-program
+                          address
+                          "-s"
+                          "-X" (if (eq method 'post) "POST" "GET")
+                          "-A" "user-agent: CopilotChat.nvim/2.0.0"
+  	                      "-H" "content-type: application/json"
+	                      "-H" "accept: application/json"
+	                      "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
+	                      "-H" "editor-version: Neovim/0.10.0")
+                    (when data (list "-d" data))
+                    (when copilot-chat-curl-proxy (list "-x" copilot-chat-curl-proxy))
+                    (when copilot-chat-curl-proxy-insecure (list "--proxy-insecure"))
+                    (when copilot-chat-curl-proxy-user-pass
+                      (list
+                       "-U"
+                       copilot-chat-curl-proxy-user-pass))
+                    args)))
+    (make-process
+     :name "copilot-chat-curl"
+     :buffer nil
+     :filter filter
+     :stderr (get-buffer-create "*copilot-chat-curl-stderr*")
+     :command command)))
+
 (defun copilot-chat--curl-parse-github-token()
   "Curl github token request parsing."
   (goto-char (point-min))
@@ -76,40 +170,20 @@ If your browser does not open automatically, browse to %s."
 	(browse-url verification-uri)
 	(read-from-minibuffer "Press ENTER after authorizing.")
 	(with-temp-buffer
-	  (call-process
-	   copilot-chat-curl-program
-	   nil
-	   t
-	   nil
+      (copilot-chat--curl-call-process
 	   "https://github.com/login/oauth/access_token"
-	   "-s"
-  	   "-X" "POST"
-	   "-A" "user-agent: CopilotChat.nvim/2.0.0"
-  	   "-H" "content-type: application/json"
-	   "-H" "accept: application/json"
-	   "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
-	   "-H" "editor-version: Neovim/0.10.0"
-	   "-d" (format "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"device_code\":\"%s\",\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"}" device-code))
+       'post
+       (format "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"device_code\":\"%s\",\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"}" device-code))
 	  (copilot-chat--curl-parse-github-token))))
 
 
 (defun copilot-chat--curl-login()
   "Manage github login."
   (with-temp-buffer
-	(call-process
-	 copilot-chat-curl-program
-	 nil
-	 t
-	 nil
-  	 "https://github.com/login/device/code"
-	 "-s"
-  	 "-X" "POST"
-	 "-A" "user-agent: CopilotChat.nvim/2.0.0"
-  	 "-H" "content-type: application/json"
-	 "-H" "accept: application/json"
-	 "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
-	 "-H" "editor-version: Neovim/0.10.0"
-	 "-d" "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"scope\":\"read:user\"}")
+    (copilot-chat--curl-call-process
+     "https://github.com/login/device/code"
+     'post
+     "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"scope\":\"read:user\"}")
 	(copilot-chat--curl-parse-login)))
 
 
@@ -133,19 +207,11 @@ If your browser does not open automatically, browse to %s."
 (defun copilot-chat--curl-renew-token()
   "Renew session token."
   (with-temp-buffer
-	(call-process
-	 copilot-chat-curl-program
-	 nil
-	 t
-	 nil
+    (copilot-chat--curl-call-process
 	 "https://api.github.com/copilot_internal/v2/token"
-	 "-X" "GET"
-	 "-s"
-	 "-A" "user-agent: CopilotChat.nvim/2.0.0"
-	 "-H" (format "authorization: token %s" (copilot-chat-github-token copilot-chat--instance))
-	 "-H" "accept: application/json"
-	 "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
-	 "-H" "editor-version: Neovim/0.10.0")
+     'get
+     nil
+	 "-H" (format "authorization: token %s" (copilot-chat-github-token copilot-chat--instance)))
 	(copilot-chat--curl-parse-renew-token)))
 
 
@@ -270,28 +336,18 @@ If your browser does not open automatically, browse to %s."
   (setq copilot-chat--curl-file (make-temp-file "copilot-chat"))
   (with-temp-file copilot-chat--curl-file
     (insert (copilot-chat--create-req prompt)))
-  (make-process
-   :name "copilot-chat-curl"
-   :buffer nil
-   :filter (lambda (proc string)
-             (copilot-chat--curl-analyze-response proc string callback))
-   :stderr (get-buffer-create "*copilot-chat-curl-stderr*")
-   :command `("curl"
-  			  "-X" "POST"
-              "https://api.githubcopilot.com/chat/completions"
-										;"http://localhost:8080"
-  			  "-H" "openai-intent: conversation-panel"
-  			  "-H" "content-type: application/json"
-  			  "-H" "editor-plugin-version: CopilotChat.nvim/2.0.0"
-  			  "-H" ,(concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat--instance)))
-  			  "-H" ,(concat "x-request-id: " (copilot-chat--uuid))
-  			  "-H" ,(concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat--instance))
-  			  "-H" ,(concat "vscode-machineid: " (copilot-chat-machineid copilot-chat--instance))
-  			  "-H" "copilot-integration-id: vscode-chat"
-  			  "-H" "User-Agent: CopilotChat.nvim/2.0.0"
-  			  "-H" "openai-organization: github-copilot"
-  			  "-H" "editor-version: Neovim/0.10.0"
-  			  "-d" ,(concat "@" copilot-chat--curl-file))))
+  (copilot-chat--curl-make-process
+   "https://api.githubcopilot.com/chat/completions"
+    'post
+    (concat "@" copilot-chat--curl-file)
+    (lambda (proc string)
+      (copilot-chat--curl-analyze-response proc string callback))
+    "-H" "openai-intent: conversation-panel"
+  	"-H" (concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat--instance)))
+  	"-H" (concat "x-request-id: " (copilot-chat--uuid))
+  	"-H" (concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat--instance))
+  	"-H" (concat "vscode-machineid: " (copilot-chat-machineid copilot-chat--instance))
+  	"-H" "copilot-integration-id: vscode-chat"))
 
 
 (provide 'copilot-chat-curl)
