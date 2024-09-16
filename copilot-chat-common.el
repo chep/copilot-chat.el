@@ -42,7 +42,6 @@
   token
   sessionid
   machineid
-  authinfo
   history
   buffers
 )
@@ -55,7 +54,6 @@
    :token nil
    :sessionid nil
    :machineid nil
-   :authinfo nil
    :history nil
    :buffers nil
    ))
