@@ -32,7 +32,8 @@
 
 ;; constants
 (defconst copilot-chat--magic "#cc#done#!$")
-
+(defconst copilot-chat--buffer "*Copilot-chat*")
+(defconst copilot-chat--prompt-buffer "*Copilot-chat-prompt*")
 
 ;; structs
 (cl-defstruct copilot-chat
@@ -58,7 +59,6 @@
    :history nil
    :buffers nil
    ))
-
 
 ;; Functions
 (defun copilot-chat--uuid ()

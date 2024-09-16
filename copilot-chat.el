@@ -40,6 +40,7 @@
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-org)
+(require 'copilot-chat-common)
 
 ;; customs
 (defcustom copilot-chat-frontend 'markdown
@@ -49,8 +50,6 @@
 
 ;; variables
 
-(defvar copilot-chat-buffer "*Copilot-chat*")
-(defvar copilot-chat-prompt-buffer "*Copilot-chat-prompt*")
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
 (defvar copilot-chat-mode-map
   (let ((map (make-keymap)))
@@ -111,7 +110,7 @@
   "Write content to the Copilot Chat buffer."
   (with-current-buffer (if buffer
                            buffer
-                         copilot-chat-buffer)
+                         copilot-chat--buffer)
 	(let ((inhibit-read-only t))
 	  (goto-char (point-max))
         (insert data))))
@@ -143,7 +142,7 @@
       (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
     (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer))
   (unless buffer
-    (with-current-buffer copilot-chat-buffer
+    (with-current-buffer copilot-chat--buffer
       (goto-char (point-max)))))
 
 (defun copilot-chat-prompt-send ()
@@ -151,8 +150,8 @@
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
-  (display-buffer copilot-chat-buffer)
-  (with-current-buffer copilot-chat-prompt-buffer
+  (display-buffer copilot-chat--buffer)
+  (with-current-buffer copilot-chat--prompt-buffer
     (let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
       (erase-buffer)
       (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt))
@@ -174,7 +173,7 @@
 (defun copilot-chat--ask-region(prompt)
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--prepare-buffers)
-    (with-current-buffer copilot-chat-prompt-buffer
+    (with-current-buffer copilot-chat--prompt-buffer
       (erase-buffer)
       (insert (concat (cdr (assoc prompt (copilot-chat--prompts))) code)))
     (copilot-chat-prompt-send)))
@@ -222,7 +221,7 @@
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" code)))
-    (with-current-buffer copilot-chat-prompt-buffer
+    (with-current-buffer copilot-chat--prompt-buffer
       (erase-buffer)
       (insert formatted-prompt))
     (copilot-chat-prompt-send)))
@@ -233,7 +232,7 @@
   "Open Copilot Chat buffer."
   (interactive)
   (copilot-chat-reset)
-  (let ((buffer copilot-chat-buffer))
+  (let ((buffer copilot-chat--buffer))
     (with-current-buffer buffer
       (copilot-chat-mode))
     (switch-to-buffer buffer)))
@@ -241,7 +240,7 @@
 (defun copilot-chat-prompt ()
   "Open Copilot Chat Prompt buffer."
   (interactive)
-  (let ((buffer copilot-chat-prompt-buffer))
+  (let ((buffer copilot-chat--prompt-buffer))
     (with-current-buffer buffer
       (copilot-chat-prompt-mode))
     (switch-to-buffer buffer)))
@@ -256,11 +255,11 @@
     (switch-to-buffer buffer)))
 
 (defun copilot-chat--prepare-buffers()
-  "Create the copilot-chat-buffer and copilot-chat-prompt-buffer."
+  "Create the copilot-chat--buffer and copilot-chat--prompt-buffer."
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
-  (let ((chat-buffer (get-buffer-create copilot-chat-buffer))
-        (prompt-buffer (get-buffer-create copilot-chat-prompt-buffer)))
+  (let ((chat-buffer (get-buffer-create copilot-chat--buffer))
+        (prompt-buffer (get-buffer-create copilot-chat--prompt-buffer)))
     (with-current-buffer chat-buffer
       (copilot-chat-mode))
     (with-current-buffer prompt-buffer
@@ -346,7 +345,7 @@
 
 (defun copilot-chat-prompt-history-previous()
   (interactive)
-  (with-current-buffer copilot-chat-prompt-buffer
+  (with-current-buffer copilot-chat--prompt-buffer
     (let ((prompt (if (null copilot-chat--prompt-history)
                       nil
                     (if (null copilot-chat--prompt-history-position)
@@ -364,7 +363,7 @@
 
 (defun copilot-chat-prompt-history-next()
   (interactive)
-  (with-current-buffer copilot-chat-prompt-buffer
+  (with-current-buffer copilot-chat--prompt-buffer
     (let ((prompt (if (null copilot-chat--prompt-history)
                     nil
                     (if (null copilot-chat--prompt-history-position)
@@ -379,8 +378,8 @@
 
 (defun copilot-chat-reset()
   (interactive)
-  (let ((cb (get-buffer copilot-chat-buffer))
-        (cpb (get-buffer copilot-chat-prompt-buffer)))
+  (let ((cb (get-buffer copilot-chat--buffer))
+        (cpb (get-buffer copilot-chat--prompt-buffer)))
     (when cb
       (kill-buffer cb))
     (when cpb
