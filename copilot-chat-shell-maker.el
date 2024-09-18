@@ -34,6 +34,10 @@
 (require 'copilot-chat-copilot)
 (require 'polymode)
 
+(defvar copilot-chat-shell-maker-use-polymode nil
+  "Use polymode for the copilot chat shell and display copilot answer with `mardown-view-mode`.")
+
+
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
   (make-shell-maker-config
@@ -77,8 +81,9 @@
   (let ((buffer (get-buffer copilot-chat--buffer)))
     (unless buffer
       (setq buffer (copilot-chat--shell))
-      (with-current-buffer copilot-chat--buffer
-        (poly-copilot-chat-shell-mode 1)))
+      (when copilot-chat-shell-maker-use-polymode
+        (with-current-buffer copilot-chat--buffer
+          (poly-copilot-chat-shell-mode 1))))
     (pop-to-buffer buffer)))
 
 
