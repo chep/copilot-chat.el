@@ -29,12 +29,12 @@
 
 
 (require 'shell-maker)
-(require 'copilot-chat-copilot)
+(require 'copilot-chat-common)
 (require 'polymode)
 
 (defvar copilot-chat-shell-maker-use-polymode nil
-  "Use polymode for the copilot chat shell and display copilot answer with `mardown-view-mode`.")
-
+  "Use polymode for the copilot chat shell and display copilot answer with
+`mardown-view-mode`.")
 
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
@@ -88,7 +88,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (pop-to-buffer buffer)))
 
 
-(defun copilot-chat--shell-cb-prompt (callback error-callback content)
+(defun copilot-chat--shell-cb-prompt (callback _error-callback content)
   "Callback for Copilot Chat shell-maker.
 Argument CALLBACK is the callback function to call.
 Argument ERROR-CALLBACK is the error callback function to call.

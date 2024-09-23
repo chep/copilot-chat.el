@@ -28,11 +28,12 @@
 ;;; Code:
 
 (require 'markdown-mode)
+(require 'copilot-chat-common)
 
 (defun copilot-chat--markdown-format-data (content type)
   "Format the CONTENT according to the frontend.
 Argument CONTENT is the data to format.
-Argument TYPE is the type of data to format: 'answer or 'prompt."
+Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((data ""))
     (if (eq type 'prompt)
 	  (progn

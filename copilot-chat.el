@@ -84,7 +84,6 @@
   "Copilot-chat prompt history.")
 (defvar copilot-chat--prompt-history-position nil
   "Current position in copilot-chat prompt history.")
-(defvar copilot-chat--first-word-answer t)
 (defvar copilot-chat-frontend-list '((markdown . copilot-chat-markdown-init)
                                      (org . copilot-chat-org-init))
     "Copilot-chat frontend list.  Must contain elements like this:
@@ -92,19 +91,14 @@
 
 
 ;; functions
-(defun copilot-chat-mode ()
-  "Major mode for Copilot Chat buffer."
-  (interactive)
-  (kill-all-local-variables)
-  (use-local-map copilot-chat-mode-map)
-  (setq major-mode 'copilot-chat-mode)
-  (setq mode-name "Copilot Chat")
-  (setq buffer-read-only t)
-  (run-hooks 'copilot-chat-mode-hook))
-
 (define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
   "Major mode for the Copilot Chat buffer."
-  (read-only-mode 1))
+  (read-only-mode 1)
+  (use-local-map copilot-chat-mode-map)
+  (setq major-mode 'copilot-chat-mode
+        mode-name "Copilot Chat"
+        buffer-read-only t)
+  (run-hooks 'copilot-chat-mode-hook))
 
 (defun copilot-chat--write-buffer(data &optional buffer)
   "Write content to the Copilot Chat BUFFER.
@@ -116,24 +110,19 @@ Argument DATA data to be inserted in buffer."
 	  (goto-char (point-max))
         (insert data))))
 
-(defun copilot-chat--format-data(content type)
+(defun copilot-chat--format-data(content _type)
     "Format the CONTENT according to the frontend.
 Argument CONTENT is the data to format.
-Argument TYPE is the type of data to format: 'answer or 'prompt."
+Argument TYPE is the type of data to format: `answer` or `prompt`."
     content)
 
 
-(defun copilot-chat-prompt-mode ()
-  "Major mode for Copilot Chat Prompt buffer."
-  (interactive)
-  (kill-all-local-variables)
-  (use-local-map copilot-chat-prompt-mode-map)
-  (setq major-mode 'copilot-chat-prompt-mode)
-  (setq mode-name "Copilot Chat Prompt")
-  (run-hooks 'copilot-chat-prompt-mode-hook))
-
 (define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt"
-  "Major mode for the Copilot Chat Prompt buffer.")
+  "Major mode for the Copilot Chat Prompt buffer."
+  (use-local-map copilot-chat-prompt-mode-map)
+  (setq major-mode 'copilot-chat-prompt-mode
+        mode-name "Copilot Chat Prompt")
+  (run-hooks 'copilot-chat-prompt-mode-hook))
 
 (define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
   "Major mode for listing and managing buffers in Copilot chat."
@@ -145,7 +134,7 @@ Argument TYPE is the type of data to format: 'answer or 'prompt."
 Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
-      (copilot-chat--write-buffer (copilot-chat--format-dataType of data, can be 'answer or 'prompt. "\n\n" 'answer) buffer)
+      (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
     (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer))
   (unless buffer
     (with-current-buffer copilot-chat--buffer

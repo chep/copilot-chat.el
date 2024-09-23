@@ -69,12 +69,15 @@ by using %40 or pass in a colon with %3a."
   :group 'copilot-chat)
 
 (defcustom copilot-chat-curl-proxy-insecure nil
-  "Every secure connection curl makes is verified to be secure before the transfer takes place.  This option makes curl skip the verification step with a proxy and proceed without checking."
+  "Every secure connection curl makes is verified to be secure before the
+transfer takes place.  This option makes curl skip the verification step
+with a proxy and proceed without checking."
   :type 'boolean
   :group 'copilot-chat)
 
 (defcustom copilot-chat-curl-proxy-user-pass nil
-  "Specify the username and password <user:password> to use for proxy authentication."
+  "Specify the username and password <user:password> to use for proxy
+authentication."
   :type 'boolean
   :group 'copilot-chat)
 
@@ -226,12 +229,12 @@ If your browser does not open automatically, browse to %s."
 
 (defun copilot-chat--curl-extract-segment (segment)
   "Extract data from an individual line-delimited SEGMENT, returning one of:
-- 'empty: if the segment has no data
-- 'partial: if the segment seems to be incomplete, i.e. more data in a
+- `empty` if the segment has no data
+- `partial`: if the segment seems to be incomplete, i.e. more data in a
   future response
-- 'done: if this segment indicates completion (data: [DONE])
+- `done`: if this segment indicates completion (data: [DONE])
 - otherwise, the entire JSON content (data: {...})
-Argument segment is data segment to parse."
+Argument SEGMENT is data segment to parse."
   (cond
    ;; empty
    ((string-empty-p segment) 'empty)
@@ -242,7 +245,7 @@ Argument segment is data segment to parse."
           ;; the magic done marker
           'done
         ;; not the done marker, so must be "done: {...json...}"
-        (condition-case err
+        (condition-case _err
             (json-parse-string data :object-type 'alist)
           ;; failure => the segment was probably truncated and we need more data from a future
           ;; response
@@ -253,12 +256,12 @@ Argument segment is data segment to parse."
    ;; that was probably truncated (e.g. "dat", or "data:") => need more data
    ;; from a future response
    (t
-    (condition-case err
+    (condition-case _err
         (json-parse-string segment :object-type 'alist)
       (error 'partial)))))
 
 
-(defun copilot-chat--curl-analyze-response (proc string callback)
+(defun copilot-chat--curl-analyze-response (_proc string callback)
   "Analyse curl resonse.
 Argument PROC is curl process.
 Argument STRING is the data returned by curl.
