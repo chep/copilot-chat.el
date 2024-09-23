@@ -1,4 +1,4 @@
-;;; copilot-chat-common.el --- copilot chat variables and const -*- lexical-binding:t; indent-tabs-mode: nil -*-
+;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- lexical-binding:t; indent-tabs-mode: nil -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 

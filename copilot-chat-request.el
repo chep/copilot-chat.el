@@ -1,4 +1,4 @@
-;;; copilot-chat-request.el --- copilot chat request backend -*- lexical-binding:t; indent-tabs-mode: nil -*-
+;;; copilot-chat --- copilot-chat-request.el --- copilot chat request backend -*- lexical-binding:t; indent-tabs-mode: nil -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -36,8 +36,11 @@
 (cl-defun copilot-chat--request-token-cb (&key response
                                           &key data
                                           &allow-other-keys)
+  "Manage token reception for github auth.
+Argument DATA is whatever PARSER function returns, or nil.
+Argument RESPONSE is request-response object."
   (unless (= (request-response-status-code response) 200)
-    (error "http error"))
+    (error "Http error"))
   (let ((token (alist-get 'access_token data))
         (token-dir (file-name-directory (expand-file-name copilot-chat-github-token-file))))
     (setf (copilot-chat-github-token copilot-chat--instance) token)
@@ -49,9 +52,11 @@
 (cl-defun copilot-chat--request-code-cb (&key response
                                          &key data
                                          &allow-other-keys)
-  "Manage user code reception for github buth."
+  "Manage user code reception for github buth.
+Argument RESPONSE is request-response object.
+Argument DATA is whatever PARSER function returns, or nil."
   (unless (= (request-response-status-code response) 200)
-    (error "http error"))
+    (error "Http error"))
   (let ((device-code (alist-get 'device_code data))
         (user-code (alist-get 'user_code data))
         (verification-uri (alist-get 'verification_uri data)))
@@ -94,6 +99,9 @@ If your browser does not open automatically, browse to %s."
 (cl-defun copilot-chat--request-renew-token-cb(&key response
                                                &key data
                                                &allow-other-keys)
+  "Renew token callback.
+Argument RESPONSE is request-response object.
+Argument DATA is whatever PARSER function returns, or nil."
   (unless (= (request-response-status-code response) 200)
     (error "Authentication error"))
   (setf (copilot-chat-token copilot-chat--instance) data)
@@ -120,6 +128,7 @@ If your browser does not open automatically, browse to %s."
 
 
 (defun copilot-chat--request-ask-parser ()
+  "Parser for copilot chat answer."
   (let ((content ""))
     (while (re-search-forward "^data: " nil t)
       (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
@@ -133,6 +142,9 @@ If your browser does not open automatically, browse to %s."
     content))
 
 (defun copilot-chat--request-ask (prompt callback)
+  "Ask a question to Copilot using request backend.
+Argument PROMPT is the prompt to send to copilot.
+Argument CALLBACK is the function to call with copilot answer as argument."
   (request "https://api.githubcopilot.com/chat/completions"
     :type "POST"
     :headers `(("openai-intent" . "conversation-panel")

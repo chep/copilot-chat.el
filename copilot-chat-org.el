@@ -1,5 +1,4 @@
-;; -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
-;;; copilot-chat-org.el --- copilot chat interface, org frontend
+;;; copilot-chat --- copilot-chat-org.el --- copilot chat interface, org frontend -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -32,6 +31,9 @@
 
 
 (defun copilot-chat--org-format-data(content type)
+  "Format data for org frontend.
+Argument CONTENT is the data to format.
+Argument TYPE is the type of the data (prompt or answer)."
   (let ((data ""))
     (if (eq type 'prompt)
 	  (progn
@@ -44,11 +46,13 @@
     data))
 
 (defun copilot-chat--org-clean()
+  "Clean the copilot chat org frontend."
   (advice-remove 'copilot-chat--format-data #'copilot-chat--org-format-data)
   (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean))
 
 
 (defun copilot-chat-org-init()
+  "Initialize the copilot chat org frontend."
   (setq copilot-chat-prompt "You are a world-class coding tutor. Your code explanations perfectly balance high-level concepts and granular details. Your approach ensures that students not only understand how to write code, but also grasp the underlying principles that guide effective programming.
 When asked for your name, you must respond with \"GitHub Copilot\".
 Follow the user's requirements carefully & to the letter.

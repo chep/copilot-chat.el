@@ -1,4 +1,4 @@
-;; -*- lexical-binding: t; indent-tabs-mode: nil -*-
+;;; copilot-chat --- copilot-chat.el --- copilot chat interface -*- lexical-binding: t; indent-tabs-mode: nil -*-
 
 ;;; copilot-chat.el --- copilot chat interface
 
@@ -81,14 +81,14 @@
     map)
   "Keymap for `copilot-chat-list-mode'.")
 (defvar copilot-chat--prompt-history nil
-  "copilot-chat prompt history.")
+  "Copilot-chat prompt history.")
 (defvar copilot-chat--prompt-history-position nil
-  "Current position in copilot-chat prompt history")
+  "Current position in copilot-chat prompt history.")
 (defvar copilot-chat--first-word-answer t)
 (defvar copilot-chat-frontend-list '((markdown . copilot-chat-markdown-init)
                                      (org . copilot-chat-org-init))
-    "Copilot-chat frontend list. Must contain elements like this:
-(type . init-function)")
+    "Copilot-chat frontend list.  Must contain elements like this:
+\(type . init-function)")
 
 
 ;; functions
@@ -107,7 +107,8 @@
   (read-only-mode 1))
 
 (defun copilot-chat--write-buffer(data &optional buffer)
-  "Write content to the Copilot Chat buffer."
+  "Write content to the Copilot Chat BUFFER.
+Argument DATA data to be inserted in buffer."
   (with-current-buffer (if buffer
                            buffer
                          copilot-chat--buffer)
@@ -116,7 +117,9 @@
         (insert data))))
 
 (defun copilot-chat--format-data(content type)
-    "Format the content according to the frontend."
+    "Format the CONTENT according to the frontend.
+Argument CONTENT is the data to format.
+Argument TYPE is the type of data to format: 'answer or 'prompt."
     content)
 
 
@@ -138,8 +141,11 @@
   (copilot-chat-list-refresh))
 
 (defun copilot-chat-prompt-cb (content &optional buffer)
+    "Function called by backend when data is received.
+Argument CONTENT is data received from backend.
+Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
-      (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
+      (copilot-chat--write-buffer (copilot-chat--format-dataType of data, can be 'answer or 'prompt. "\n\n" 'answer) buffer)
     (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer))
   (unless buffer
     (with-current-buffer copilot-chat--buffer
@@ -171,7 +177,9 @@
                                 (copilot-chat-prompt-cb content current-buf)))))
 
 (defun copilot-chat--ask-region(prompt)
-  (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
+    "Send to Copilot a prompt followed by the current selected code.
+Argument PROMPT is the prompt to send to Copilot."
+    (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--prepare-buffers)
     (with-current-buffer copilot-chat--prompt-buffer
       (erase-buffer)
@@ -268,7 +276,7 @@
 
 ;;;###autoload
 (defun copilot-chat-display ()
-  "Display copilot chat buffers"
+  "Display copilot chat buffers."
   (interactive)
   (let* ((buffers (copilot-chat--prepare-buffers))
          (chat-buffer (car buffers))
@@ -282,10 +290,12 @@
     (switch-to-buffer prompt-buffer)))
 
 (defun copilot-chat-add-current-buffer()
+  "Add current buffer in sent buffers list."
   (interactive)
   (copilot-chat--add-buffer (current-buffer)))
 
 (defun copilot-chat-del-current-buffer()
+  "Remove current buffer from sent buffers list."
   (interactive)
   (copilot-chat--del-buffer (current-buffer)))
 
@@ -335,6 +345,7 @@
   (copilot-chat-list-refresh))
 
 (defun copilot-chat-prompt-split-and-list()
+  "Split prompt window and display buffer list."
   (interactive)
   (let ((split-window-preferred-function nil)
         (split-height-threshold nil)
@@ -344,6 +355,7 @@
   (copilot-chat-list))
 
 (defun copilot-chat-prompt-history-previous()
+  "Insert previous prompt in prompt buffer."
   (interactive)
   (with-current-buffer copilot-chat--prompt-buffer
     (let ((prompt (if (null copilot-chat--prompt-history)
@@ -362,6 +374,7 @@
 
 
 (defun copilot-chat-prompt-history-next()
+  "Insert next prompt in prompt buffer."
   (interactive)
   (with-current-buffer copilot-chat--prompt-buffer
     (let ((prompt (if (null copilot-chat--prompt-history)
@@ -377,6 +390,7 @@
         (insert prompt)))))
 
 (defun copilot-chat-reset()
+  "Reset copilot chat session."
   (interactive)
   (let ((cb (get-buffer copilot-chat--buffer))
         (cpb (get-buffer copilot-chat--prompt-buffer)))
@@ -392,7 +406,8 @@
         (throw 'end nil))))
   (copilot-chat--create))
 
-(defun copilot-chat--clean())
+(defun copilot-chat--clean()
+  "Cleaning function for frontends.")
 
 (provide 'copilot-chat)
 

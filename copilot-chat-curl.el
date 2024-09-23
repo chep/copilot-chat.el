@@ -1,4 +1,4 @@
-;;; copilot-chat-curl.el --- copilot chat curl ackend -*- lexical-binding: t; indent-tabs-mode: nil -*-
+;;; copilot-chat --- copilot-chat-curl.el --- copilot chat curl backend -*- lexical-binding: t; indent-tabs-mode: nil -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -40,16 +40,16 @@
 
 (defcustom copilot-chat-curl-proxy nil
   "Curl will use this proxy if defined.
-The proxy string can be specified with a protocol:// prefix. No protocol
-specified or http:// it is treated as an HTTP proxy. Use socks4://,
+The proxy string can be specified with a protocol:// prefix.  No protocol
+specified or http:// it is treated as an HTTP proxy.  Use socks4://,
 socks4a://, socks5:// or socks5h:// to request a specific SOCKS version
 to be used.
 
-Unix domain sockets are supported for socks proxy. Set localhost for the
-host part. e.g. socks5h://localhost/path/to/socket.sock
+Unix domain sockets are supported for socks proxy.  Set localhost for the
+host part.  e.g. socks5h://localhost/path/to/socket.sock
 
 HTTPS proxy support works set with the https:// protocol prefix for
-OpenSSL and GnuTLS. It also works for BearSSL, mbedTLS, rustls,
+OpenSSL and GnuTLS.  It also works for BearSSL, mbedTLS, rustls,
 Schannel, Secure Transport and wolfSSL (added in 7.87.0).
 
 Unrecognized and unsupported proxy protocols cause an error.  Ancient
@@ -59,7 +59,7 @@ If the port number is not specified in the proxy string, it is assumed
 to be 1080.
 
 This option overrides existing environment variables that set the proxy
-to use. If there is an environment variable setting a proxy, you can set
+to use.  If there is an environment variable setting a proxy, you can set
 proxy to \"\" to override it.
 
 User and password that might be provided in the proxy string are URL
@@ -69,15 +69,12 @@ by using %40 or pass in a colon with %3a."
   :group 'copilot-chat)
 
 (defcustom copilot-chat-curl-proxy-insecure nil
-  "Every secure connection curl makes is verified to be secure before the
-transfer takes place. This option makes curl skip the verification step
-with a proxy and proceed without checking."
+  "Every secure connection curl makes is verified to be secure before the transfer takes place.  This option makes curl skip the verification step with a proxy and proceed without checking."
   :type 'boolean
   :group 'copilot-chat)
 
 (defcustom copilot-chat-curl-proxy-user-pass nil
-  "Specify the username and password <user:password> to use for proxy
-authentication."
+  "Specify the username and password <user:password> to use for proxy authentication."
   :type 'boolean
   :group 'copilot-chat)
 
@@ -89,6 +86,11 @@ authentication."
 
 ;; functions
 (defun copilot-chat--curl-call-process(address method data &rest args)
+  "Call curl synchronously.
+Argument ADDRESS is the URL to call.
+Argument METHOD is the HTTP method to use.
+Argument DATA is the data to send.
+Arguments ARGS are additional arguments to pass to curl."
   (let ((curl-args (append
                     (list address
                           "-s"
@@ -114,6 +116,12 @@ authentication."
            curl-args)))
 
 (defun copilot-chat--curl-make-process(address method data filter &rest args)
+  "Call curl asynchronously.
+Argument ADDRESS is the URL to call.
+Argument METHOD is the HTTP method to use.
+Argument DATA is the data to send.
+Argument FILTER is the function called to parse data.
+Optional argument ARGS are additional arguments to pass to curl."
   (let ((command (append
                     (list copilot-chat-curl-program
                           address
@@ -188,6 +196,7 @@ If your browser does not open automatically, browse to %s."
 
 
 (defun copilot-chat--curl-parse-renew-token()
+  "Curl renew token request parsing."
   (switch-to-buffer (current-buffer))
   (goto-char (point-min))
   (let ((json-data (json-parse-buffer
@@ -216,12 +225,13 @@ If your browser does not open automatically, browse to %s."
 
 
 (defun copilot-chat--curl-extract-segment (segment)
-  "Extract data from an individual line-delimited segment, returning one of:
-
-  - 'empty: if the segment has no data
-  - 'partial: if the segment seems to be incomplete, i.e. more data in a future response
-  - 'done: if this segment indicates completion (data: [DONE])
-  - otherwise, the entire JSON content (data: {...})"
+  "Extract data from an individual line-delimited SEGMENT, returning one of:
+- 'empty: if the segment has no data
+- 'partial: if the segment seems to be incomplete, i.e. more data in a
+  future response
+- 'done: if this segment indicates completion (data: [DONE])
+- otherwise, the entire JSON content (data: {...})
+Argument segment is data segment to parse."
   (cond
    ;; empty
    ((string-empty-p segment) 'empty)
@@ -249,6 +259,10 @@ If your browser does not open automatically, browse to %s."
 
 
 (defun copilot-chat--curl-analyze-response (proc string callback)
+  "Analyse curl resonse.
+Argument PROC is curl process.
+Argument STRING is the data returned by curl.
+Argument CALLBACK is the function to call with analysed data."
   ;; The API conceptually sends us big blob of line-deliminated information, e.g.
   ;;
   ;;     data: {"choices":[{...,"delta":{"content":"great"}}],...}
@@ -330,6 +344,9 @@ If your browser does not open automatically, browse to %s."
 
 
 (defun copilot-chat--curl-ask(prompt callback)
+  "Ask a question to Copilot using curl backend.
+Argument PROMPT is the prompt to send to copilot.
+Argument CALLBACK is the function to call with copilot answer as argument."
   (setq copilot-chat--curl-current-data nil)
   (when copilot-chat--curl-file
 	(delete-file copilot-chat--curl-file))
