@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- lexical-binding:t; indent-tabs-mode: nil -*-
+;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- indent-tabs-mode: nil; lexical-binding:t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -65,8 +65,7 @@
   sessionid
   machineid
   history
-  buffers
-)
+  buffers)
 
 ;; variables
 (defvar copilot-chat--instance
@@ -77,8 +76,7 @@
    :sessionid nil
    :machineid nil
    :history nil
-   :buffers nil
-   ))
+   :buffers nil))
 
 (defvar copilot-chat--first-word-answer t)
 

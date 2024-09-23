@@ -1,4 +1,5 @@
-;;; copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- lexical-binding: t; indent-tabs-mode: nil; lisp-indent-offset: 2 -*-
+;;; copilot-chat --- copilot-chat-markdown.el --- copilot chat interface,
+;;; markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 

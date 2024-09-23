@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat.el --- copilot chat interface -*- lexical-binding: t; indent-tabs-mode: nil -*-
+;;; Copilot-chat --- copilot-chat.el --- copilot chat interface -*- indent-tabs-mode: nil; lexical-binding: t -*-
 
 ;;; copilot-chat.el --- copilot chat interface
 
@@ -7,7 +7,7 @@
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
 ;; Version: 1.1.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((request) (markdown-mode) (org) (emacs "24.3"))
+;; Package-Requires: ((request) (markdown-mode) (org) (emacs "27.1"))
 ;; Keywords: github, copilot, chat
 
 

@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-copilot.el  --- copilot chat engine -*- lexical-binding: t; indent-tabs-mode: nil -*-
+;;; copilot-chat --- copilot-chat-copilot.el  --- copilot chat engine -*- indent-tabs-mode: nil; lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 

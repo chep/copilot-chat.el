@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-curl.el --- copilot chat curl backend -*- lexical-binding: t; indent-tabs-mode: nil -*-
+;;; copilot-chat --- copilot-chat-curl.el --- copilot chat curl backend -*- indent-tabs-mode: nil; lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
