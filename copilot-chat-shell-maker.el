@@ -90,7 +90,7 @@ Argument PROMPT is the prompt to send to Copilot."
   "Apply faces to the copilot chat buffer."
   (with-current-buffer copilot-chat--shell-maker-temp-buffer
     (save-restriction
-	  (widen)
+      (widen)
       (font-lock-ensure)
       (copilot-chat--shell-maker-font-lock-faces)
       (let ((content (buffer-substring (point-min) (point-max))))
