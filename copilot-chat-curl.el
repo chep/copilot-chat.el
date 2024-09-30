@@ -69,14 +69,16 @@ by using %40 or pass in a colon with %3a."
   :group 'copilot-chat)
 
 (defcustom copilot-chat-curl-proxy-insecure nil
-  "Every secure connection curl makes is verified to be secure before the
+  "Insecure flag for copilot-chat proxy with curl backend.
+Every secure connection curl makes is verified to be secure before the
 transfer takes place.  This option makes curl skip the verification step
 with a proxy and proceed without checking."
   :type 'boolean
   :group 'copilot-chat)
 
 (defcustom copilot-chat-curl-proxy-user-pass nil
-  "Specify the username and password <user:password> to use for proxy
+  "User password for copilot-chat proxy with curl backend.
+Specify the username and password <user:password> to use for proxy
 authentication."
   :type 'boolean
   :group 'copilot-chat)

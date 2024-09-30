@@ -1,14 +1,12 @@
-;;; Copilot-chat --- copilot-chat.el --- copilot chat interface -*- indent-tabs-mode: nil; lexical-binding: t -*-
-
-;;; copilot-chat.el --- copilot chat interface
+;;; copilot-chat.el --- Copilot chat interface -*- indent-tabs-mode: nil; lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
 ;; Version: 1.1.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((request) (markdown-mode) (org) (emacs "27.1"))
-;; Keywords: github, copilot, chat
+;; Package-Requires: ((request) (markdown-mode) (org) (emacs "27.1") (chatgpt-shell))
+;; Keywords: convenience, tools
 
 
 ;; The MIT License (MIT)
@@ -53,17 +51,17 @@
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
 (defvar copilot-chat-mode-map
   (let ((map (make-keymap)))
-    (define-key map (kbd "C-c q") 'bury-buffer)
+    (define-key map (kbd "C-c C-q") 'bury-buffer)
     map)
   "Keymap for Copilot Chat major mode.")
 (defvar copilot-chat-prompt-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
-    (define-key map (kbd "C-c q") (lambda()
+    (define-key map (kbd "C-c C-q") (lambda()
                                     (interactive)
                                     (bury-buffer)
                                     (delete-window)))
-    (define-key map (kbd "C-c l") 'copilot-chat-prompt-split-and-list)
+    (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
     (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
     (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
     map)
@@ -72,7 +70,7 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'copilot-chat-list-add-or-remove-buffer)
     (define-key map (kbd "SPC") 'copilot-chat-list-add-or-remove-buffer)
-    (define-key map (kbd "C-c c") 'copilot-chat-list-clear-buffers)
+    (define-key map (kbd "C-c C-c") 'copilot-chat-list-clear-buffers)
     (define-key map (kbd "g") 'copilot-chat-list-refresh)
     (define-key map (kbd "q") (lambda()
                                 (interactive)
@@ -252,7 +250,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (switch-to-buffer buffer)))
 
 (defun copilot-chat--prepare-buffers()
-  "Create the copilot-chat--buffer and copilot-chat--prompt-buffer."
+  "Create copilot-chat buffers"
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
   (let ((chat-buffer (get-buffer-create copilot-chat--buffer))

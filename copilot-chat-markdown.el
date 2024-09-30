@@ -1,5 +1,4 @@
-;;; copilot-chat --- copilot-chat-markdown.el --- copilot chat interface,
-;;; markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
+;;; Copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -39,10 +38,10 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
     (if (eq type 'prompt)
 	  (progn
 	    (setq copilot-chat--first-word-answer t)
-	    (setq data (concat "# " (format-time-string "*[%H:%M:%S]* ") (format "%s\n" content))))
+	    (setq data (concat "# " (format-time-string "*[%T]* ") (format "%s\n" content))))
 	  (when copilot-chat--first-word-answer
 	    (setq copilot-chat--first-word-answer nil)
-        (setq data (concat "## " (format-time-string "*[%H:%M:%S]* "))))
+        (setq data (concat "## " (format-time-string "*[%T]* "))))
 	  (setq data (concat data content)))
     data))
 

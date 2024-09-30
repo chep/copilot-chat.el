@@ -46,7 +46,7 @@
 Argument PROMPT is the prompt to send to Copilot."
   (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (with-current-buffer copilot-chat--buffer
-      (insert (concat (cdr (assoc prompt (copilot-chat--prompts))) code))
+      (insert (cdr (assoc prompt (copilot-chat--prompts))) code)
       (shell-maker-submit))))
 
 (defun copilot-chat-shell-maker-custom-prompt-selection()
@@ -79,7 +79,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (let ((inhibit-read-only t))
       (font-lock-ensure)
       (goto-char (point-min))
-      (while (< (point) (point-max))
+      (while (not (eobp))
         (let ((next-change (or (next-property-change (point) nil (point-max)) (point-max)))
                (face (get-text-property (point) 'face)))
           (when face
@@ -109,7 +109,7 @@ Argument CONTENT is copilot chat answer."
     (goto-char (point-max))
     (when copilot-chat--first-word-answer
       (setq copilot-chat--first-word-answer nil)
-      (let ((str (format-time-string "# [%H:%M:%S] Copilot:\n"))
+      (let ((str (format-time-string "# [%T] Copilot:\n"))
              (inhibit-read-only t))
         (with-current-buffer copilot-chat--shell-maker-temp-buffer
           (insert str))
@@ -134,7 +134,7 @@ Argument CALLBACK is the callback function to call.
 Argument ERROR-CALLBACK is the error callback function to call."
   (setq
     copilot-chat--shell-cb-fn
-    (apply-partially 'copilot-chat--shell-cb-prompt callback error-callback)
+    (apply-partially #'copilot-chat--shell-cb-prompt callback error-callback)
     copilot-chat--shell-maker-answer-point (point))
   (let ((inhibit-read-only t))
     (with-current-buffer copilot-chat--shell-maker-temp-buffer
