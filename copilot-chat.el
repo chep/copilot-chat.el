@@ -143,7 +143,7 @@ Optional argument BUFFER is the buffer to write data in."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
-  (display-buffer copilot-chat--buffer)
+  (select-window (display-buffer copilot-chat--buffer))
   (with-current-buffer copilot-chat--prompt-buffer
     (let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
       (erase-buffer)
