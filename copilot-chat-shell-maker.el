@@ -31,6 +31,8 @@
 (require 'shell-maker)
 (require 'copilot-chat-copilot)
 
+(declare-function copilot-chat-reset "copilot-chat")
+
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
   (make-shell-maker-config

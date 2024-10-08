@@ -3,9 +3,9 @@
 ;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
-;; Version: 1.1.0
+;; Version: 1.2.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((request) (markdown-mode) (org) (emacs "27.1") (chatgpt-shell))
+;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (chatgpt-shell "1.6.1"))
 ;; Keywords: convenience, tools
 
 
@@ -170,7 +170,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (copilot-chat--prepare-buffers)
     (with-current-buffer copilot-chat--prompt-buffer
       (erase-buffer)
-      (insert (concat (cdr (assoc prompt (copilot-chat--prompts))) code)))
+      (insert (cdr (assoc prompt (copilot-chat--prompts))) code))
     (copilot-chat-prompt-send)))
 
 ;;;###autoload
@@ -250,7 +250,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (switch-to-buffer buffer)))
 
 (defun copilot-chat--prepare-buffers()
-  "Create copilot-chat buffers"
+  "Create copilot-chat buffers."
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
   (let ((chat-buffer (get-buffer-create copilot-chat--buffer))
