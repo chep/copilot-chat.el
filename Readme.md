@@ -9,11 +9,21 @@ This plugin is unofficial and based on Copilot Chat for neovim repository: https
 Feel free to contribute, report issues or discuss new features.
 
 ## Installation
-### Straight
+### Melpa
+Copilot-chat is available on melpa :
 ```
+M-x package-install RET copilot-chat RET
+```
+With `use-package` :
+``` emacs-lisp
+(use-package copilot-chat)
+```
+
+### Straight
+``` emacs-lisp
 (use-package copilot-chat
   :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
-  :after (request))
+  :after (request org markdown-mode))
 ```
 
 ### Manual
@@ -33,7 +43,17 @@ With request library, the text is written when all data is read and this can be 
 Several frontends are available. You can select your favorite by setting the `copilot-chat-frontend` variable to `'markdown` or `'org`.
 
 You can also use `'shell-maker` if you want ( https://github.com/xenodium/chatgpt-shell ).
+
+With Melpa :
+``` emacs-lisp
+(require 'copilot-chat-shell-maker)
+(push '(shell-maker . copilot-chat-shell-maker-init) copilot-chat-frontend-list)
+(setq copilot-chat-frontend 'shell-maker)
+(copilot-chat-shell-maker-init)
 ```
+
+With use-package :
+``` emacs-lisp
 (use-package copilot-chat
   :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
   :after (request shell-maker)
@@ -81,12 +101,15 @@ Selected buffers will be sent with each prompt until you remove them.
 - `copilot-chat-ask-and-insert` ask for a custom prompt and write answer in current buffer at point.
 
 ### Key bindings
+Warning : key bindings have changed since Melpa integration needs to avoid `C-c <letter>` bindings.
+
+
 #### Prompt buffer
 - `C-c RET` send prompt. Answer will be written in chat buffer.
 - `M-p` previous prompt.
 - `M-n` next prompt.
-- `C-c l` open buffer list.
-- `C-c q` bury buffer and delete window
+- `C-c C-l` open buffer list.
+- `C-c C-q` bury buffer and delete window
 
 #### Chat buffer
 - `q` bury buffer
@@ -94,6 +117,6 @@ Selected buffers will be sent with each prompt until you remove them.
 #### Buffer list buffer
 - `RET` select or deselect buffer on point
 - `space` select or deselect buffer on point
-- `C-c` clear buffer list
+- `C-c C-c` clear buffer list
 - `g` refresh list
 - `q` bury buffer and delete window
