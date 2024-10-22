@@ -33,7 +33,7 @@
 (defvar copilot-chat--curl-current-data nil)
 
 ;; customs
-(defcustom copilot-chat-curl-program "/usr/bin/curl"
+(defcustom copilot-chat-curl-program "curl"
   "Curl program to use if `copilot-chat-use-curl' is set."
   :type 'string
   :group 'copilot-chat)
