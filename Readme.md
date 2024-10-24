@@ -4,8 +4,6 @@ This plugin allows you to chat with github copilot.
 
 ![copilot-chat demo](chat.gif?raw=true "copilot-chat demo")
 
-This plugin is unofficial and based on Copilot Chat for neovim repository: https://github.com/CopilotC-Nvim/CopilotChat.nvim
-
 Feel free to contribute, report issues or discuss new features.
 
 ## Installation
@@ -67,6 +65,14 @@ With use-package :
 
 Try them and choose wisely.
 
+### Magit commits
+You can use copilot to generate your commit messages :
+``` emacs-lisp
+(add-hook 'git-commit-setup-hook 'copilot-chat-insert-commit-message)
+```
+
+Or call manually `(copilot-chat-insert-commit-message)` when in the commit message buffer.
+
 ### Proxy
 The proxy can be configured with the curl backend. For the emacs-request backend, please refer to the emacs-request documentation if you need to configure a proxy.
 
@@ -96,9 +102,10 @@ Selected buffers will be sent with each prompt until you remove them.
 - `(copilot-chat-add-current-buffer)` add current buffer to copilot chat. Its content will be sent with every request.
 - `(copilot-chat-del-current-buffer)` remove current buffer.
 - `(copilot-chat-list)` open buffer list.
-- `copilot-chat-prompt-history-previous` insert previous prompt from history in prompt buffer.
-- `copilot-chat-prompt-history-next` insert next prompt from history in prompt buffer.
-- `copilot-chat-ask-and-insert` ask for a custom prompt and write answer in current buffer at point.
+- `(copilot-chat-prompt-history-previous)` insert previous prompt from history in prompt buffer.
+- `(copilot-chat-prompt-history-next)` insert next prompt from history in prompt buffer.
+- `(copilot-chat-ask-and-insert)` ask for a custom prompt and write answer in current buffer at point.
+- `(copilot-chat-insert-commit-message)` "Insert in the current buffer a copilot generated commit message.
 
 ### Key bindings
 Warning : key bindings have changed since Melpa integration needs to avoid `C-c <letter>` bindings.
@@ -120,3 +127,9 @@ Warning : key bindings have changed since Melpa integration needs to avoid `C-c
 - `C-c C-c` clear buffer list
 - `g` refresh list
 - `q` bury buffer and delete window
+
+
+## Notes
+This plugin is unofficial and based on Copilot Chat for neovim repository: https://github.com/CopilotC-Nvim/CopilotChat.nvim
+
+The prompt for git commit messages comes from [gpt-commit](https://github.com/ywkim/gpt-commit).
