@@ -263,7 +263,7 @@ Argument SEGMENT is data segment to parse."
       (error 'partial)))))
 
 
-(defun copilot-chat--curl-analyze-response (_proc string callback)
+(defun copilot-chat--curl-analyze-response (_proc string callback no-history)
   "Analyse curl resonse.
 Argument PROC is curl process.
 Argument STRING is the data returned by curl.
@@ -317,7 +317,8 @@ Argument CALLBACK is the function to call with analysed data."
          ;; Final segment, all done:
          ((eq extracted 'done)
           (funcall callback copilot-chat--magic)
-          (setf (copilot-chat-history copilot-chat--instance) (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance)))
+          (unless no-history
+            (setf (copilot-chat-history copilot-chat--instance) (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance))))
           (setq copilot-chat--curl-answer nil))
 
          ;; Otherwise, JSON parsed successfully
@@ -348,22 +349,23 @@ Argument CALLBACK is the function to call with analysed data."
             (warn "Unhandled message from copilot: %S" extracted)))))))))
 
 
-(defun copilot-chat--curl-ask(prompt callback)
+(defun copilot-chat--curl-ask(prompt callback out-of-context)
   "Ask a question to Copilot using curl backend.
 Argument PROMPT is the prompt to send to copilot.
-Argument CALLBACK is the function to call with copilot answer as argument."
+Argument CALLBACK is the function to call with copilot answer as argument.
+Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
   (setq copilot-chat--curl-current-data nil)
   (when copilot-chat--curl-file
 	(delete-file copilot-chat--curl-file))
   (setq copilot-chat--curl-file (make-temp-file "copilot-chat"))
   (with-temp-file copilot-chat--curl-file
-    (insert (copilot-chat--create-req prompt)))
+    (insert (copilot-chat--create-req prompt out-of-context)))
   (copilot-chat--curl-make-process
    "https://api.githubcopilot.com/chat/completions"
     'post
     (concat "@" copilot-chat--curl-file)
     (lambda (proc string)
-      (copilot-chat--curl-analyze-response proc string callback))
+      (copilot-chat--curl-analyze-response proc string callback out-of-context))
     "-H" "openai-intent: conversation-panel"
   	"-H" (concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat--instance)))
   	"-H" (concat "x-request-id: " (copilot-chat--uuid))

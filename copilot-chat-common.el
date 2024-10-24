@@ -99,22 +99,26 @@
       (setq hex (concat hex (string (aref hex-chars (random 16))))))
     hex))
 
-(defun copilot-chat--create-req(prompt)
+(defun copilot-chat--create-req(prompt no-context)
   "Create a request for Copilot.
-Argument PROMPT Copilot prompt to send."
+Argument PROMPT Copilot prompt to send.
+Argument NOCONTEXT tells copilot-chat to not send history and buffers."
   (let ((messages nil))
     ;; user prompt
     (push (list (cons "content" prompt) (cons "role" "user")) messages)
-    ;; history
-    (dolist (history (copilot-chat-history copilot-chat--instance))
-      (push (list (cons "content" (car history)) (cons "role" (cadr history))) messages))
-    ;; buffers
-    (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
-                                                                      (copilot-chat-buffers copilot-chat--instance)))
-    (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
-      (when (buffer-live-p buffer)
-        (with-current-buffer buffer
-          (push (list (cons "content" (buffer-substring-no-properties (point-min) (point-max))) (cons "role" "user")) messages))))
+
+    (unless no-context
+      ;; history
+      (dolist (history (copilot-chat-history copilot-chat--instance))
+        (push (list (cons "content" (car history)) (cons "role" (cadr history))) messages))
+      ;; buffers
+      (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
+                                                                        (copilot-chat-buffers copilot-chat--instance)))
+      (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
+        (when (buffer-live-p buffer)
+          (with-current-buffer buffer
+            (push (list (cons "content" (buffer-substring-no-properties (point-min) (point-max))) (cons "role" "user")) messages)))))
+      
     ;; system
     (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
 

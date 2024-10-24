@@ -140,21 +140,23 @@ Then we need a session token."
             (> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat--instance))))
     (copilot-chat--renew-token)))
 
-(defun copilot-chat--ask (prompt callback)
+(defun copilot-chat--ask (prompt callback &optional out-of-context)
   "Ask a question to Copilot.
 Argument PROMPT is the prompt to send to copilot.
-Argument CALLBACK is the function to call with copilot answer as argument."
+Argument CALLBACK is the function to call with copilot answer as argument.
+Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
  (let* ((history (copilot-chat-history copilot-chat--instance))
          (new-history (cons (list prompt "user") history)))
     (copilot-chat--auth)
     (cond
      ((eq copilot-chat-backend 'curl)
-      (copilot-chat--curl-ask prompt callback))
+      (copilot-chat--curl-ask prompt callback out-of-context))
      ((eq copilot-chat-backend 'request)
-      (copilot-chat--request-ask prompt callback))
+      (copilot-chat--request-ask prompt callback out-of-context))
      (t
       (error "Unknown backend: %s" copilot-chat-backend)))
-    (setf (copilot-chat-history copilot-chat--instance) new-history)))
+    (unless out-of-context
+      (setf (copilot-chat-history copilot-chat--instance) new-history))))
 
 (defun copilot-chat--add-buffer (buffer)
   "Add a BUFFER to copilot buffers list.
