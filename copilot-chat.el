@@ -5,7 +5,7 @@
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
 ;; Version: 1.2.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (chatgpt-shell "1.6.1"))
+;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (chatgpt-shell "1.6.1") (magit "4.0.0"))
 ;; Keywords: convenience, tools
 
 
@@ -39,11 +39,64 @@
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-org)
 (require 'copilot-chat-common)
+(require 'magit)
 
 ;; customs
 (defcustom copilot-chat-frontend 'markdown
   "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-maker."
   :type 'symbol
+  :group 'copilot-chat)
+
+
+(defcustom copilot-chat-commit-prompt
+  "Here is the result of running `git diff --cached`. Please suggest a conventional commit message. Don't add anything else to the response. The following describes conventional commits.
+Do not use any markers around the commit message.
+
+# Conventional Commits 1.0.0
+
+## Summary
+
+The Conventional Commits specification is a lightweight convention on top of commit messages.
+It provides an easy set of rules for creating an explicit commit history;
+which makes it easier to write automated tools on top of.
+This convention dovetails with [SemVer](http://semver.org),
+by describing the features, fixes, and breaking changes made in commit messages.
+
+The commit message should be structured as follows:
+
+---
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+---
+
+<br />
+The commit contains the following structural elements, to communicate intent to the
+consumers of your library:
+
+1. **fix:** a commit of the _type_ `fix` patches a bug in your codebase (this correlates with [`PATCH`](http://semver.org/#summary) in Semantic Versioning).
+1. **feat:** a commit of the _type_ `feat` introduces a new feature to the codebase (this correlates with [`MINOR`](http://semver.org/#summary) in Semantic Versioning).
+1. **BREAKING CHANGE:** a commit that has a footer `BREAKING CHANGE:`, or appends a `!` after the type/scope, introduces a breaking API change (correlating with [`MAJOR`](http://semver.org/#summary) in Semantic Versioning).
+A BREAKING CHANGE can be part of commits of any _type_.
+1. _types_ other than `fix:` and `feat:` are allowed, for example [@commitlint/config-conventional](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional) (based on the [Angular convention](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines)) recommends `build:`, `chore:`,
+  `ci:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, and others.
+1. _footers_ other than `BREAKING CHANGE: <description>` may be provided and follow a convention similar to
+  [git trailer format](https://git-scm.com/docs/git-interpret-trailers).
+
+Additional types are not mandated by the Conventional Commits specification, and have no implicit effect in Semantic Versioning (unless they include a BREAKING CHANGE).
+<br /><br />
+A scope may be provided to a commit's type, to provide additional contextual information and is contained within parenthesis, e.g., `feat(parser): add ability to parse arrays`.
+
+
+Here is the result of `git diff --cached`:
+"
+  "The prompt used to generate a commit message."
+  :type 'string
   :group 'copilot-chat)
 
 ;; variables
@@ -395,6 +448,37 @@ Argument PROMPT is the prompt to send to Copilot."
 
 (defun copilot-chat--clean()
   "Cleaning function for frontends.")
+
+(defun copilot-chat--get-diff ()
+  "Get the diff of all staged files in the current repository and return it as a string."
+  (interactive)
+  (let ((default-directory (magit-toplevel)))
+    (if default-directory
+        (with-temp-buffer
+          (magit-git-insert "diff" "--cached")
+            (buffer-string))
+      (message "Not inside a Git repository"))))
+
+
+;;;###autoload
+(defun copilot-chat-insert-commit-message()
+  "Insert in the current buffer a copilot generated commit message."
+    (interactive)
+    (unless (copilot-chat--ready-p)
+      (copilot-chat-reset))
+
+    ;; get magit staged diff
+    (let* ((diff (copilot-chat--get-diff))
+           (prompt (concat copilot-chat-commit-prompt diff))
+           (current-buf (current-buffer)))
+      (copilot-chat--ask prompt
+                         (lambda (content)
+                           (with-current-buffer current-buf
+                             (if (string= content copilot-chat--magic)
+                                 (insert "\n")
+                                (insert content))))
+                         t)))
+
 
 (provide 'copilot-chat)
 

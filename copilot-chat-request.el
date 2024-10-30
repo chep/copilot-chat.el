@@ -141,10 +141,11 @@ Argument DATA is whatever PARSER function returns, or nil."
           (setq content (concat content token)))))
     content))
 
-(defun copilot-chat--request-ask (prompt callback)
+(defun copilot-chat--request-ask (prompt callback out-of-context)
   "Ask a question to Copilot using request backend.
 Argument PROMPT is the prompt to send to copilot.
-Argument CALLBACK is the function to call with copilot answer as argument."
+Argument CALLBACK is the function to call with copilot answer as argument.
+Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
   (request "https://api.githubcopilot.com/chat/completions"
     :type "POST"
     :headers `(("openai-intent" . "conversation-panel")
@@ -168,7 +169,8 @@ Argument CALLBACK is the function to call with copilot answer as argument."
                    (unless (= (request-response-status-code response) 200)
                      (error "Authentication error"))
                    (funcall callback data)
-                   (setf (copilot-chat-history copilot-chat--instance) (cons (list prompt "assistant") (copilot-chat-history copilot-chat--instance)))
+                   (unless out-of-context
+                     (setf (copilot-chat-history copilot-chat--instance) (cons (list prompt "assistant") (copilot-chat-history copilot-chat--instance))))
                    (funcall callback copilot-chat--magic)))))
 
 (provide 'copilot-chat-request)
