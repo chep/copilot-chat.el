@@ -80,12 +80,11 @@
 
 (defun copilot-chat--get-cached-token ()
   "Get the cached GitHub token."
-  (or (getenv "GITHUB_TOKEN")
-      (let ((token-file (expand-file-name copilot-chat-github-token-file)))
-        (when (file-exists-p token-file)
-          (with-temp-buffer
-            (insert-file-contents token-file)
-            (buffer-substring-no-properties (point-min) (point-max)))))))
+  (let ((token-file (expand-file-name copilot-chat-github-token-file)))
+    (when (file-exists-p token-file)
+      (with-temp-buffer
+        (insert-file-contents token-file)
+        (buffer-substring-no-properties (point-min) (point-max))))))
 
 
 (defun copilot-chat--create ()
