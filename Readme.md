@@ -133,3 +133,5 @@ Warning : key bindings have changed since Melpa integration needs to avoid `C-c
 This plugin is unofficial and based on Copilot Chat for neovim repository: https://github.com/CopilotC-Nvim/CopilotChat.nvim
 
 The prompt for git commit messages comes from [gpt-commit](https://github.com/ywkim/gpt-commit).
+
+For github copilot code completion in emacs, checkout [copilot.el](https://github.com/copilot-emacs/copilot.el)
