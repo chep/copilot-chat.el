@@ -274,6 +274,23 @@ Argument PROMPT is the prompt to send to Copilot."
       (insert formatted-prompt))
     (copilot-chat-prompt-send)))
 
+;;;###autoload
+(defun copilot-chat-explain-symbol-at-line()
+  "Ask Copilot to explain symbol under point, given the code line as background info."
+  (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+  (let* ((symbol (thing-at-point 'symbol))
+         (line (buffer-substring-no-properties 
+                (line-beginning-position)
+                (line-end-position)))
+         (prompt (format "Please explain what '%s' means in the context of this code line:\n%s" 
+                        symbol line)))
+    (copilot-chat--prepare-buffers)
+    (with-current-buffer copilot-chat--prompt-buffer
+      (erase-buffer)
+      (insert prompt))
+    (copilot-chat-prompt-send)))
 
 
 (defun copilot-chat ()
@@ -423,8 +440,9 @@ Argument PROMPT is the prompt to send to Copilot."
                       nil
                       (if (= 0 copilot-chat--prompt-history-position)
                         ""
-                        (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
-                        (nth copilot-chat--prompt-history-position copilot-chat--prompt-history))))))
+                        (progn
+                          (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
+                          (nth copilot-chat--prompt-history-position copilot-chat--prompt-history)))))))
       (when prompt
         (erase-buffer)
         (insert prompt)))))
