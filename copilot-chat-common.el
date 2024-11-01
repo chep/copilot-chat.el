@@ -57,6 +57,11 @@
   :type 'string
   :group 'copilot-chat)
 
+(defcustom copilot-chat-model "gpt-4o-2024-05-13"
+  "The model to use for Copilot chat."
+  :type 'string
+  :group 'copilot-chat)
+
 ;; structs
 (cl-defstruct copilot-chat
   ready
@@ -124,7 +129,7 @@ Argument NOCONTEXT tells copilot-chat to not send history and buffers."
 
     (json-encode `(("messages" . ,(vconcat messages))
                    ("top_p" . 1)
-                   ("model" . "gpt-4o-2024-05-13")
+                   ("model" . ,copilot-chat-model)
                    ("stream" . t)
                    ("n" . 1)
                    ("intent" . t)
