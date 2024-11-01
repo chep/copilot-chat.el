@@ -57,7 +57,8 @@
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat-model "gpt-4o-2024-05-13"
+;;  OpenAI models: https://platform.openai.com/docs/models
+(defcustom copilot-chat-model "gpt-4o"
   "The model to use for Copilot chat."
   :type 'string
   :group 'copilot-chat)
