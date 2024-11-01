@@ -284,8 +284,11 @@ Argument PROMPT is the prompt to send to Copilot."
          (line (buffer-substring-no-properties 
                 (line-beginning-position)
                 (line-end-position)))
-         (prompt (format "Please explain what '%s' means in the context of this code line:\n%s" 
-                        symbol line)))
+         (lang (replace-regexp-in-string
+                "-mode$" ""
+                (symbol-name major-mode)))
+         (prompt (format "In %s programming language, please explain what '%s' means in the context of this code line:\n%s" 
+                        lang symbol line)))
     (copilot-chat--prepare-buffers)
     (with-current-buffer copilot-chat--prompt-buffer
       (erase-buffer)
