@@ -274,9 +274,29 @@ Argument PROMPT is the prompt to send to Copilot."
       (insert formatted-prompt))
     (copilot-chat-prompt-send)))
 
+(defun copilot-chat--explain-symbol-prompt(symbol line)
+  "Returns explain symbol prompt."
+  (let ((lang (replace-regexp-in-string
+               "-mode$" ""
+               (symbol-name major-mode))))
+    (format "In %s programming language, please explain what '%s' means in the context of this code line:\n%s" 
+            lang symbol line)))
+
+(defun copilot-chat--explain-symbol-at-line(prompt)
+  "Ask Copilot to explain symbol under point.
+Code line is given as background info.
+Frontend may override this function.
+PROMPT is the prompt to send to copilot"
+    (copilot-chat--prepare-buffers)
+    (with-current-buffer copilot-chat--prompt-buffer
+      (erase-buffer)
+      (insert prompt))
+    (copilot-chat-prompt-send))
+
 ;;;###autoload
 (defun copilot-chat-explain-symbol-at-line()
-  "Ask Copilot to explain symbol under point, given the code line as background info."
+  "Ask Copilot to explain symbol under point.
+Code line is given as background info."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
@@ -284,16 +304,8 @@ Argument PROMPT is the prompt to send to Copilot."
          (line (buffer-substring-no-properties 
                 (line-beginning-position)
                 (line-end-position)))
-         (lang (replace-regexp-in-string
-                "-mode$" ""
-                (symbol-name major-mode)))
-         (prompt (format "In %s programming language, please explain what '%s' means in the context of this code line:\n%s" 
-                        lang symbol line)))
-    (copilot-chat--prepare-buffers)
-    (with-current-buffer copilot-chat--prompt-buffer
-      (erase-buffer)
-      (insert prompt))
-    (copilot-chat-prompt-send)))
+         (prompt (copilot-chat--explain-symbol-prompt symbol line)))
+    (copilot-chat--explain-symbol-at-line prompt)))
 
 
 (defun copilot-chat ()
