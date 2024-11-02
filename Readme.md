@@ -21,7 +21,7 @@ With `use-package` :
 ``` emacs-lisp
 (use-package copilot-chat
   :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
-  :after (request org markdown-mode))
+  :after (request org markdown-mode shell-maker))
 ```
 
 ### Manual
@@ -38,30 +38,7 @@ With curl, answers will be written token by token. Curl path can be set with `co
 With request library, the text is written when all data is read and this can be long.
 
 ### Frontend
-Several frontends are available. You can select your favorite by setting the `copilot-chat-frontend` variable to `'markdown` or `'org`.
-
-You can also use `'shell-maker` if you want ( https://github.com/xenodium/chatgpt-shell ).
-
-With Melpa :
-``` emacs-lisp
-(require 'copilot-chat-shell-maker)
-(push '(shell-maker . copilot-chat-shell-maker-init) copilot-chat-frontend-list)
-(setq copilot-chat-frontend 'shell-maker)
-(copilot-chat-shell-maker-init)
-```
-
-With use-package :
-``` emacs-lisp
-(use-package copilot-chat
-  :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
-  :after (request shell-maker)
-  :custom
-  (copilot-chat-frontend 'shell-maker)
-  :config
-  (require 'copilot-chat-shell-maker)
-  (push '(shell-maker . copilot-chat-shell-maker-init) copilot-chat-frontend-list)
-  (copilot-chat-shell-maker-init))
-```
+Several frontends are available. You can select your favorite one by setting the `copilot-chat-frontend` variable to `'markdown`, `'org` or `'shell-maker` ( https://github.com/xenodium/chatgpt-shell ).
 
 Try them and choose wisely.
 
@@ -133,3 +110,5 @@ Warning : key bindings have changed since Melpa integration needs to avoid `C-c
 This plugin is unofficial and based on Copilot Chat for neovim repository: https://github.com/CopilotC-Nvim/CopilotChat.nvim
 
 The prompt for git commit messages comes from [gpt-commit](https://github.com/ywkim/gpt-commit).
+
+For github copilot code completion in emacs, checkout [copilot.el](https://github.com/copilot-emacs/copilot.el)

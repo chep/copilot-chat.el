@@ -37,6 +37,7 @@
 
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
+(require 'copilot-chat-shell-maker)
 (require 'copilot-chat-org)
 (require 'copilot-chat-common)
 (require 'magit)
@@ -136,7 +137,8 @@ Here is the result of `git diff --cached`:
 (defvar copilot-chat--prompt-history-position nil
   "Current position in copilot-chat prompt history.")
 (defvar copilot-chat-frontend-list '((markdown . copilot-chat-markdown-init)
-                                     (org . copilot-chat-org-init))
+                                     (org . copilot-chat-org-init)
+                                     (shell-maker . copilot-chat-shell-maker-init))
     "Copilot-chat frontend list.  Must contain elements like this:
 \(type . init-function)")
 
@@ -230,36 +232,48 @@ Argument PROMPT is the prompt to send to Copilot."
 (defun copilot-chat-explain()
   "Ask Copilot to explain the current selected code."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (copilot-chat--ask-region 'explain))
 
 ;;;###autoload
 (defun copilot-chat-review()
   "Ask Copilot to review the current selected code."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (copilot-chat--ask-region 'review))
 
 ;;;###autoload
 (defun copilot-chat-doc()
   "Ask Copilot to write documentation for the current selected code."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (copilot-chat--ask-region 'doc))
 
 ;;;###autoload
 (defun copilot-chat-fix()
   "Ask Copilot to fix the current selected code."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (copilot-chat--ask-region 'fix))
 
 ;;;###autoload
 (defun copilot-chat-optimize()
   "Ask Copilot to optimize the current selected code."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (copilot-chat--ask-region 'optimize))
 
 ;;;###autoload
 (defun copilot-chat-test()
   "Ask Copilot to generate tests for the current selected code."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (copilot-chat--ask-region 'test))
 
 (defun copilot-chat--send-prompt (prompt)
@@ -270,10 +284,10 @@ Argument PROMPT is the prompt to send to Copilot."
     (insert prompt))
   (copilot-chat-prompt-send))
 
-;;;###autoload
-(defun copilot-chat-custom-prompt-selection()
-  "Send to Copilot a custom prompt followed by the current selected code."
-  (interactive)
+(defun copilot-chat--custom-prompt-selection()
+  "Send to Copilot a custom prompt followed by the current selected code.
+This function can be overriden by frontend."
+  (copilot-chat--prepare-buffers)
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" code)))
@@ -296,23 +310,13 @@ Argument PROMPT is the prompt to send to Copilot."
                         lang symbol line)))
     (copilot-chat--send-prompt prompt)))
 
-
-(defun copilot-chat ()
-  "Open Copilot Chat buffer."
+;;;###autoload
+(defun copilot-chat-custom-prompt-selection()
+  "Send to Copilot a custom prompt followed by the current selected code."
   (interactive)
-  (copilot-chat-reset)
-  (let ((buffer copilot-chat--buffer))
-    (with-current-buffer buffer
-      (copilot-chat-mode))
-    (switch-to-buffer buffer)))
-
-(defun copilot-chat-prompt ()
-  "Open Copilot Chat Prompt buffer."
-  (interactive)
-  (let ((buffer copilot-chat--prompt-buffer))
-    (with-current-buffer buffer
-      (copilot-chat-prompt-mode))
-    (switch-to-buffer buffer)))
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+  (copilot-chat--custom-prompt-selection))
 
 ;;;###autoload
 (defun copilot-chat-list ()
@@ -325,8 +329,6 @@ Argument PROMPT is the prompt to send to Copilot."
 
 (defun copilot-chat--prepare-buffers()
   "Create copilot-chat buffers."
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
   (let ((chat-buffer (get-buffer-create copilot-chat--buffer))
         (prompt-buffer (get-buffer-create copilot-chat--prompt-buffer)))
     (with-current-buffer chat-buffer
@@ -335,10 +337,9 @@ Argument PROMPT is the prompt to send to Copilot."
       (copilot-chat-prompt-mode))
   (list chat-buffer prompt-buffer)))
 
-;;;###autoload
-(defun copilot-chat-display ()
-  "Display copilot chat buffers."
-  (interactive)
+(defun copilot-chat--display ()
+  "Internal function to display copilot chat buffers.
+This can be overrided by frontend."
   (let* ((buffers (copilot-chat--prepare-buffers))
          (chat-buffer (car buffers))
          (prompt-buffer (cadr buffers)))
@@ -349,6 +350,15 @@ Argument PROMPT is the prompt to send to Copilot."
       (split-window-below (floor (* 0.8 (window-total-height)))))
     (other-window 1)
     (switch-to-buffer prompt-buffer)))
+  
+
+;;;###autoload
+(defun copilot-chat-display ()
+  "Display copilot chat buffers."
+  (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+  (copilot-chat--display))
 
 (defun copilot-chat-add-current-buffer()
   "Add current buffer in sent buffers list."
