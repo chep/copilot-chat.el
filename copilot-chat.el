@@ -276,6 +276,13 @@ Argument PROMPT is the prompt to send to Copilot."
     (copilot-chat-reset))
   (copilot-chat--ask-region 'test))
 
+(defun copilot-chat--send-prompt (prompt)
+  "Helper function to prepare buffers and send PROMPT to Copilot."
+  (copilot-chat--prepare-buffers)
+  (with-current-buffer copilot-chat--prompt-buffer
+    (erase-buffer)
+    (insert prompt))
+  (copilot-chat-prompt-send))
 
 (defun copilot-chat--custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code.
@@ -284,11 +291,24 @@ This function can be overriden by frontend."
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" code)))
-    (with-current-buffer copilot-chat--prompt-buffer
-      (erase-buffer)
-      (insert formatted-prompt))
-    (copilot-chat-prompt-send)))
+    (copilot-chat--send-prompt formatted-prompt)))
 
+;;;###autoload
+(defun copilot-chat-explain-symbol-at-line()
+  "Ask Copilot to explain symbol under point, given the code line as background info."
+  (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+  (let* ((symbol (thing-at-point 'symbol))
+         (line (buffer-substring-no-properties 
+                (line-beginning-position)
+                (line-end-position)))
+         (lang (replace-regexp-in-string
+                "-mode$" ""
+                (symbol-name major-mode)))
+         (prompt (format "In %s programming language, please explain what '%s' means in the context of this code line:\n%s" 
+                        lang symbol line)))
+    (copilot-chat--send-prompt prompt)))
 
 ;;;###autoload
 (defun copilot-chat-custom-prompt-selection()
@@ -434,8 +454,9 @@ This can be overrided by frontend."
                       nil
                       (if (= 0 copilot-chat--prompt-history-position)
                         ""
-                        (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
-                        (nth copilot-chat--prompt-history-position copilot-chat--prompt-history))))))
+                        (progn
+                          (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
+                          (nth copilot-chat--prompt-history-position copilot-chat--prompt-history)))))))
       (when prompt
         (erase-buffer)
         (insert prompt)))))
