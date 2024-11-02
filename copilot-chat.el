@@ -223,10 +223,9 @@ Optional argument BUFFER is the buffer to write data in."
 Argument PROMPT is the prompt to send to Copilot."
     (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--prepare-buffers)
-    (with-current-buffer copilot-chat--prompt-buffer
-      (erase-buffer)
-      (insert (cdr (assoc prompt (copilot-chat--prompts))) code))
-    (copilot-chat-prompt-send)))
+    (copilot-chat--insert-and-send-prompt
+     (concat (cdr (assoc prompt (copilot-chat--prompts)))
+             code))))
 
 ;;;###autoload
 (defun copilot-chat-explain()
@@ -276,8 +275,9 @@ Argument PROMPT is the prompt to send to Copilot."
     (copilot-chat-reset))
   (copilot-chat--ask-region 'test))
 
-(defun copilot-chat--send-prompt (prompt)
-  "Helper function to prepare buffers and send PROMPT to Copilot."
+(defun copilot-chat--insert-and-send-prompt (prompt)
+  "Helper function to prepare buffers and send PROMPT to Copilot.
+This function may be overriden by frontend."
   (copilot-chat--prepare-buffers)
   (with-current-buffer copilot-chat--prompt-buffer
     (erase-buffer)
@@ -291,7 +291,7 @@ This function can be overriden by frontend."
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" code)))
-    (copilot-chat--send-prompt formatted-prompt)))
+    (copilot-chat--insert-and-send-prompt formatted-prompt)))
 
 ;;;###autoload
 (defun copilot-chat-explain-symbol-at-line()
@@ -308,7 +308,7 @@ This function can be overriden by frontend."
                 (symbol-name major-mode)))
          (prompt (format "In %s programming language, please explain what '%s' means in the context of this code line:\n%s" 
                         lang symbol line)))
-    (copilot-chat--send-prompt prompt)))
+    (copilot-chat--insert-and-send-prompt prompt)))
 
 ;;;###autoload
 (defun copilot-chat-custom-prompt-selection()

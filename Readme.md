@@ -69,6 +69,7 @@ Selected buffers will be sent with each prompt until you remove them.
 ### Functions
 - `(copilot-chat-reset)` reset everything including history, buffers and frontend.
 - `(copilot-chat-display)` display copilot chat buffers.
+- `(copilot-chat-explain-symbol-at-line)` ask Copilot to explain symbol under point.
 - `(copilot-chat-explain)` ask copilot to explain selected code.
 - `(copilot-chat-review)` ask copilot to review selected code.
 - `(copilot-chat-doc)` ask copilot to document selected code.
@@ -82,7 +83,7 @@ Selected buffers will be sent with each prompt until you remove them.
 - `(copilot-chat-prompt-history-previous)` insert previous prompt from history in prompt buffer.
 - `(copilot-chat-prompt-history-next)` insert next prompt from history in prompt buffer.
 - `(copilot-chat-ask-and-insert)` ask for a custom prompt and write answer in current buffer at point.
-- `(copilot-chat-insert-commit-message)` "Insert in the current buffer a copilot generated commit message.
+- `(copilot-chat-insert-commit-message)` Insert in the current buffer a copilot generated commit message.
 
 ### Key bindings
 Warning : key bindings have changed since Melpa integration needs to avoid `C-c <letter>` bindings.
