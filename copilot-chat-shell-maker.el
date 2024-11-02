@@ -154,6 +154,7 @@ Argument ERROR-CALLBACK is the error callback function to call."
   "Clean the copilot chat shell-maker frontend."
   (advice-remove 'copilot-chat--ask-region #'copilot-chat--shell-maker-ask-region)
   (advice-remove 'copilot-chat-custom-prompt-selection #'copilot-chat-shell-maker-custom-prompt-selection)
+  (advice-remove 'copilot-chat-explain-symbol-at-line #'copilot-chat-explain-symbol-at-line)
   (advice-remove 'copilot-chat-display #'copilot-chat-shell-maker-display)
   (advice-remove 'copilot-chat--clean #'copilot-chat--shell-maker-clean))
 
@@ -163,6 +164,7 @@ Argument ERROR-CALLBACK is the error callback function to call."
 
   (advice-add 'copilot-chat--ask-region :override #'copilot-chat--shell-maker-ask-region)
   (advice-add 'copilot-chat-custom-prompt-selection :override #'copilot-chat-shell-maker-custom-prompt-selection)
+  (advice-add 'copilot-chat-explain-symbol-at-line :override #'copilot-chat-explain-symbol-at-line)
   (advice-add 'copilot-chat-display :override #'copilot-chat-shell-maker-display)
   (advice-add 'copilot-chat--clean :after #'copilot-chat--shell-maker-clean))
 
