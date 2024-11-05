@@ -102,7 +102,7 @@
           (delete-region (point) (+ (point) (length content)))
           (goto-char (point-max)))))))
 
-(defun copilot-chat--shell-cb-prompt (callback _error-callback content)
+(defun copilot-chat--shell-cb-prompt (shell content)
   "Callback for Copilot Chat shell-maker.
 Argument CALLBACK is the callback function to call.
 Argument ERROR-CALLBACK is the error callback function to call.
@@ -115,10 +115,10 @@ Argument CONTENT is copilot chat answer."
              (inhibit-read-only t))
         (with-current-buffer copilot-chat--shell-maker-temp-buffer
           (insert str))
-        (funcall callback str t)))
+        (funcall (map-elt shell :write-output) str)))
     (if (string= content copilot-chat--magic)
       (progn
-        (funcall callback "" nil) ; the end, partial = nil
+        (funcall (map-elt shell :finish-output) t); the end
         (copilot-chat--shell-maker-copy-faces)
         (setq copilot-chat--first-word-answer t))
       (progn
@@ -126,17 +126,17 @@ Argument CONTENT is copilot chat answer."
           (goto-char (point-max))
           (let ((inhibit-read-only t))
             (insert content)))
-        (funcall callback content t))))) ; partial = t
+        (funcall (map-elt shell :write-output) content)))))
 
 
-(defun copilot-chat--shell-cb (command _history callback error-callback)
+(defun copilot-chat--shell-cb (command shell)
   "Callback for Copilot Chat shell-maker.
 Argument COMMAND is the command to send to Copilot.
 Argument CALLBACK is the callback function to call.
 Argument ERROR-CALLBACK is the error callback function to call."
   (setq
     copilot-chat--shell-cb-fn
-    (apply-partially #'copilot-chat--shell-cb-prompt callback error-callback)
+    (apply-partially #'copilot-chat--shell-cb-prompt shell)
     copilot-chat--shell-maker-answer-point (point))
   (let ((inhibit-read-only t))
     (with-current-buffer copilot-chat--shell-maker-temp-buffer
