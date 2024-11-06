@@ -59,7 +59,7 @@ Proxies have not been thoroughly tested yet, so there may be bugs. Many options 
 
 ## Usage
 ### Basic
-Start chatting with `copilot-chat-display`. Type your question in `*copilot-chat-prompt*` buffer, then press `C-c RET`.  
+Start chatting with `copilot-chat-display`. Type your question in `*copilot-chat-prompt*` buffer, then press `C-c C-c` or `C-c RET`.  
 You may need to authenticate to github. Follow instructions.
 
 You can select buffers that will be added as context in your prompt. Use `copilot-chat-add-current-buffer` and `copilot-chat-del-current-buffer`. You can also manage buffers by using `copilot-chat-list`.  

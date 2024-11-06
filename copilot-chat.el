@@ -111,6 +111,7 @@ Here is the result of `git diff --cached`:
 (defvar copilot-chat-prompt-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
+    (define-key map (kbd "C-c C-c") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-q") (lambda()
                                     (interactive)
                                     (bury-buffer)
