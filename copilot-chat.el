@@ -3,7 +3,7 @@
 ;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
-;; Version:  1.2.0
+;; Version: 1.2.0
 ;; URL: https://github.com/chep/copilot-chat.el
 ;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (chatgpt-shell "1.6.1") (magit "4.0.0"))
 ;; Keywords: convenience, tools
@@ -522,14 +522,12 @@ This can be overrided by frontend."
   (let* ((type (get 'copilot-chat-model 'custom-type))
          (choices (when (eq (car type) 'choice)
                    (cdr type))))
-    (message "Raw choices: %S" choices) ;; Debug raw choices
     (let ((mapped-choices
            (mapcar (lambda (choice)
                      (when (eq (car choice) 'const)
                        (cons (plist-get (cdr choice) :tag)
                              (car (last choice))))) ;; Get the string value
                    choices)))
-      (message "Mapped choices: %S" mapped-choices) ;; Debug mapped choices
       mapped-choices)))
 
 
@@ -539,12 +537,9 @@ This can be overrided by frontend."
   (interactive
    (let* ((choices (copilot-chat--get-model-choices))
           (choice (completing-read "Select Copilot Chat model: " (mapcar 'car choices))))
-     (message "Selected choice: %s" choice)
-     (message "Available choices: %S" choices)
      (let ((model-value (cdr (assoc choice choices))))
        (message "Setting model to: %s" model-value)
        (list model-value))))
-  (message "Model parameter received: %s" model)
   (setq copilot-chat-model model)
   (customize-save-variable 'copilot-chat-model copilot-chat-model)
   (message "Copilot Chat model set to %s" copilot-chat-model))
