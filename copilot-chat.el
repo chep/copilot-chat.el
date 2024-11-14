@@ -364,12 +364,15 @@ This can be overrided by frontend."
 (defun copilot-chat-add-current-buffer()
   "Add current buffer in sent buffers list."
   (interactive)
-  (copilot-chat--add-buffer (current-buffer)))
+  (copilot-chat--add-buffer (current-buffer))
+  (copilot-chat-list-refresh))
 
 (defun copilot-chat-del-current-buffer()
   "Remove current buffer from sent buffers list."
   (interactive)
-  (copilot-chat--del-buffer (current-buffer)))
+  (copilot-chat--del-buffer (current-buffer))
+  (copilot-chat-list-refresh))
+
 
 (defun copilot-chat-list-refresh ()
   "Refresh the list of buffers in the current Copilot chat list buffer."
@@ -380,18 +383,19 @@ This can be overrided by frontend."
                               (lambda (a b)
                                 (string< (symbol-name (buffer-local-value 'major-mode a))
                                          (symbol-name (buffer-local-value 'major-mode b)))))))
-    (erase-buffer)
-    (dolist (buffer sorted-buffers)
-      (let ((buffer-name (buffer-name buffer))
-            (cop-bufs (copilot-chat--get-buffers)))
-        (when (and (not (string-prefix-p " " buffer-name))
-                   (not (string-prefix-p "*" buffer-name)))
-          (insert (propertize buffer-name
-                              'face (if (member buffer cop-bufs)
-                                        'font-lock-keyword-face
-                                      'default))
-                  "\n"))))
-    (goto-char pt)))
+    (with-current-buffer (get-buffer-create copilot-chat-list-buffer)
+      (erase-buffer)
+      (dolist (buffer sorted-buffers)
+        (let ((buffer-name (buffer-name buffer))
+              (cop-bufs (copilot-chat--get-buffers)))
+          (when (and (not (string-prefix-p " " buffer-name))
+                     (not (string-prefix-p "*" buffer-name)))
+            (insert (propertize buffer-name
+                                'face (if (member buffer cop-bufs)
+                                          'font-lock-keyword-face
+                                        'default))
+                    "\n"))))
+      (goto-char pt))))
 
 
 (defun copilot-chat-list-add-or-remove-buffer ()
