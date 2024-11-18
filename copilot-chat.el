@@ -517,6 +517,33 @@ This can be overrided by frontend."
                          t)))
 
 
+(defun copilot-chat--get-model-choices ()
+  "Get the list of available models for Copilot Chat."
+  (let* ((type (get 'copilot-chat-model 'custom-type))
+         (choices (when (eq (car type) 'choice)
+                   (cdr type))))
+    (let ((mapped-choices
+           (mapcar (lambda (choice)
+                     (when (eq (car choice) 'const)
+                       (cons (plist-get (cdr choice) :tag)
+                             (car (last choice))))) ;; Get the string value
+                   choices)))
+      mapped-choices)))
+
+
+;;;###autoload
+(defun copilot-chat-set-model (model)
+  "Set the Copilot Chat model to MODEL."
+  (interactive
+   (let* ((choices (copilot-chat--get-model-choices))
+          (choice (completing-read "Select Copilot Chat model: " (mapcar 'car choices))))
+     (let ((model-value (cdr (assoc choice choices))))
+       (message "Setting model to: %s" model-value)
+       (list model-value))))
+  (setq copilot-chat-model model)
+  (customize-save-variable 'copilot-chat-model copilot-chat-model)
+  (message "Copilot Chat model set to %s" copilot-chat-model))
+
 (provide 'copilot-chat)
 
 ;;; copilot-chat.el ends here

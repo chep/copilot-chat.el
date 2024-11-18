@@ -60,7 +60,9 @@
 ;;  OpenAI models: https://platform.openai.com/docs/models
 (defcustom copilot-chat-model "gpt-4o"
   "The model to use for Copilot chat."
-  :type 'string
+  :type '(choice (const :tag "GPT-4o" "gpt-4o")
+                 (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
+                 (const :tag "GPT-4o1-(preview)" "o1-preview"))
   :group 'copilot-chat)
 
 ;; structs
