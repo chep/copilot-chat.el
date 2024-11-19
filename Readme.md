@@ -77,6 +77,10 @@ Selected buffers will be sent with each prompt until you remove them.
 - `(copilot-chat-optimize)` ask copilot to optimize selected code.
 - `(copilot-chat-test)` ask copilot to write tests for selected code.
 - `(copilot-chat-custom-prompt-selection)` ask for a prompt in minibuffer and pastes selection after it before sending it to copilot.
+- `(copilot-chat-explain-defun)` ask copilot to explain currnet function under point.
+- `(copilot-chat-custom-prompt-function)` ask copilot to apply a custom prompt to the function body under point. Eg. instruct on how to refactor the function.
+- `(copilot-chat-review-whole-buffer)` ask copilot to review the current whole buffer. It can be used to review the full class, or, review the magit diff for my change, or other people's change.
+- `(copilot-chat-switch-to-buffer)` switch to Copilot Chat buffer, side by side with the current code editing buffer.
 - `(copilot-chat-add-current-buffer)` add current buffer to copilot chat. Its content will be sent with every request.
 - `(copilot-chat-del-current-buffer)` remove current buffer.
 - `(copilot-chat-list)` open buffer list.
