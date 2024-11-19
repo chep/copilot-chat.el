@@ -160,7 +160,7 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
               ("copilot-integration-id" . "vscode-chat")
               ("openai-organization" . "github-copilot")
               ("editor-version" . "Neovim/0.10.0"))
-      :data (copilot-chat--create-req  prompt)
+      :data (copilot-chat--create-req  prompt out-of-context)
       :parser #'copilot-chat--request-ask-parser
       :complete (cl-function
                  (lambda (&key response

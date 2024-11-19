@@ -111,6 +111,7 @@ Here is the result of `git diff --cached`:
 (defvar copilot-chat-prompt-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
+    (define-key map (kbd "C-c C-c") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-q") (lambda()
                                     (interactive)
                                     (bury-buffer)
@@ -223,10 +224,9 @@ Optional argument BUFFER is the buffer to write data in."
 Argument PROMPT is the prompt to send to Copilot."
     (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--prepare-buffers)
-    (with-current-buffer copilot-chat--prompt-buffer
-      (erase-buffer)
-      (insert (cdr (assoc prompt (copilot-chat--prompts))) code))
-    (copilot-chat-prompt-send)))
+    (copilot-chat--insert-and-send-prompt
+     (concat (cdr (assoc prompt (copilot-chat--prompts)))
+             code))))
 
 ;;;###autoload
 (defun copilot-chat-explain()
@@ -276,8 +276,9 @@ Argument PROMPT is the prompt to send to Copilot."
     (copilot-chat-reset))
   (copilot-chat--ask-region 'test))
 
-(defun copilot-chat--send-prompt (prompt)
-  "Helper function to prepare buffers and send PROMPT to Copilot."
+(defun copilot-chat--insert-and-send-prompt (prompt)
+  "Helper function to prepare buffers and send PROMPT to Copilot.
+This function may be overriden by frontend."
   (copilot-chat--prepare-buffers)
   (with-current-buffer copilot-chat--prompt-buffer
     (erase-buffer)
@@ -291,7 +292,7 @@ This function can be overriden by frontend."
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" code)))
-    (copilot-chat--send-prompt formatted-prompt)))
+    (copilot-chat--insert-and-send-prompt formatted-prompt)))
 
 ;;;###autoload
 (defun copilot-chat-explain-symbol-at-line()
@@ -308,7 +309,7 @@ This function can be overriden by frontend."
                 (symbol-name major-mode)))
          (prompt (format "In %s programming language, please explain what '%s' means in the context of this code line:\n%s" 
                         lang symbol line)))
-    (copilot-chat--send-prompt prompt)))
+    (copilot-chat--insert-and-send-prompt prompt)))
 
 ;;;###autoload
 (defun copilot-chat-custom-prompt-selection()
@@ -363,12 +364,15 @@ This can be overrided by frontend."
 (defun copilot-chat-add-current-buffer()
   "Add current buffer in sent buffers list."
   (interactive)
-  (copilot-chat--add-buffer (current-buffer)))
+  (copilot-chat--add-buffer (current-buffer))
+  (copilot-chat-list-refresh))
 
 (defun copilot-chat-del-current-buffer()
   "Remove current buffer from sent buffers list."
   (interactive)
-  (copilot-chat--del-buffer (current-buffer)))
+  (copilot-chat--del-buffer (current-buffer))
+  (copilot-chat-list-refresh))
+
 
 (defun copilot-chat-list-refresh ()
   "Refresh the list of buffers in the current Copilot chat list buffer."
@@ -379,18 +383,19 @@ This can be overrided by frontend."
                               (lambda (a b)
                                 (string< (symbol-name (buffer-local-value 'major-mode a))
                                          (symbol-name (buffer-local-value 'major-mode b)))))))
-    (erase-buffer)
-    (dolist (buffer sorted-buffers)
-      (let ((buffer-name (buffer-name buffer))
-            (cop-bufs (copilot-chat--get-buffers)))
-        (when (and (not (string-prefix-p " " buffer-name))
-                   (not (string-prefix-p "*" buffer-name)))
-          (insert (propertize buffer-name
-                              'face (if (member buffer cop-bufs)
-                                        'font-lock-keyword-face
-                                      'default))
-                  "\n"))))
-    (goto-char pt)))
+    (with-current-buffer (get-buffer-create copilot-chat-list-buffer)
+      (erase-buffer)
+      (dolist (buffer sorted-buffers)
+        (let ((buffer-name (buffer-name buffer))
+              (cop-bufs (copilot-chat--get-buffers)))
+          (when (and (not (string-prefix-p " " buffer-name))
+                     (not (string-prefix-p "*" buffer-name)))
+            (insert (propertize buffer-name
+                                'face (if (member buffer cop-bufs)
+                                          'font-lock-keyword-face
+                                        'default))
+                    "\n"))))
+      (goto-char pt))))
 
 
 (defun copilot-chat-list-add-or-remove-buffer ()
@@ -511,6 +516,33 @@ This can be overrided by frontend."
                                 (insert content))))
                          t)))
 
+
+(defun copilot-chat--get-model-choices ()
+  "Get the list of available models for Copilot Chat."
+  (let* ((type (get 'copilot-chat-model 'custom-type))
+         (choices (when (eq (car type) 'choice)
+                   (cdr type))))
+    (let ((mapped-choices
+           (mapcar (lambda (choice)
+                     (when (eq (car choice) 'const)
+                       (cons (plist-get (cdr choice) :tag)
+                             (car (last choice))))) ;; Get the string value
+                   choices)))
+      mapped-choices)))
+
+
+;;;###autoload
+(defun copilot-chat-set-model (model)
+  "Set the Copilot Chat model to MODEL."
+  (interactive
+   (let* ((choices (copilot-chat--get-model-choices))
+          (choice (completing-read "Select Copilot Chat model: " (mapcar 'car choices))))
+     (let ((model-value (cdr (assoc choice choices))))
+       (message "Setting model to: %s" model-value)
+       (list model-value))))
+  (setq copilot-chat-model model)
+  (customize-save-variable 'copilot-chat-model copilot-chat-model)
+  (message "Copilot Chat model set to %s" copilot-chat-model))
 
 (provide 'copilot-chat)
 
