@@ -343,6 +343,8 @@ It can be used to review the magit diff for my change, or other people's"
 (defun copilot-chat-switch-to-buffer ()
   "Switch to Copilot Chat buffer, side by side with the current code editing buffer."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (switch-to-buffer-other-window copilot-chat--buffer))
 
 ;;;###autoload
