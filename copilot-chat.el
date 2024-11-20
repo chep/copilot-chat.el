@@ -312,6 +312,42 @@ This function can be overriden by frontend."
     (copilot-chat--insert-and-send-prompt prompt)))
 
 ;;;###autoload
+(defun copilot-chat-explain-defun ()
+  "Mark current function definition and ask Copilot to explain it, then unmark."
+  (interactive)
+  (save-excursion
+    (mark-defun)
+    (copilot-chat-explain)
+    (deactivate-mark)))
+
+;;;###autoload
+(defun copilot-chat-custom-prompt-function ()
+  "Mark current function and ask copilot-chat with custom prompt."
+  (interactive)
+  (save-excursion
+    (mark-defun)
+    (copilot-chat-custom-prompt-selection)
+    (deactivate-mark)))
+
+;;;###autoload
+(defun copilot-chat-review-whole-buffer ()
+  "Mark whole buffer, ask Copilot to review it, then unmark.
+It can be used to review the magit diff for my change, or other people's"
+  (interactive)
+  (save-excursion
+    (mark-whole-buffer)
+    (copilot-chat-review)
+    (deactivate-mark)))
+
+;;;###autoload
+(defun copilot-chat-switch-to-buffer ()
+  "Switch to Copilot Chat buffer, side by side with the current code editing buffer."
+  (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+  (switch-to-buffer-other-window copilot-chat--buffer))
+
+;;;###autoload
 (defun copilot-chat-custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code."
   (interactive)
