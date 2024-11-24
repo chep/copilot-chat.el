@@ -103,6 +103,7 @@ Warning : key bindings have changed since Melpa integration needs to avoid `C-c
 
 #### Chat buffer
 - `q` bury buffer
+- `SPC` ask question from mini-buffer
 
 #### Buffer list buffer
 - `RET` select or deselect buffer on point
