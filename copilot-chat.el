@@ -106,6 +106,7 @@ Here is the result of `git diff --cached`:
 (defvar copilot-chat-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c C-q") 'bury-buffer)
+    (define-key map (kbd "SPC") 'copilot-chat-custom-prompt-mini-buffer)
     map)
   "Keymap for Copilot Chat major mode.")
 (defvar copilot-chat-prompt-mode-map
@@ -354,6 +355,15 @@ It can be used to review the magit diff for my change, or other people's"
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
   (copilot-chat--custom-prompt-selection))
+
+;;;###autoload
+(defun copilot-chat-custom-prompt-mini-buffer ()
+  "Read a string with Helm completion, showing historical inputs."
+  (interactive)
+  (let* ((prompt "Question for copilot-chat: ")
+         (input (read-string prompt nil 'copilot-chat--prompt-history)))
+    (copilot-chat--send-prompt input)
+    ))
 
 ;;;###autoload
 (defun copilot-chat-list ()
