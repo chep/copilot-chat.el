@@ -362,7 +362,7 @@ It can be used to review the magit diff for my change, or other people's"
   (interactive)
   (let* ((prompt "Question for copilot-chat: ")
          (input (read-string prompt nil 'copilot-chat--prompt-history)))
-    (copilot-chat--send-prompt input)
+    (copilot-chat--insert-and-send-prompt input)
     ))
 
 ;;;###autoload
