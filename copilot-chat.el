@@ -280,9 +280,9 @@ Argument PROMPT is the prompt to send to Copilot."
   "Helper function to prepare buffers and send PROMPT to Copilot.
 This function may be overriden by frontend."
   (let* ((prompt-suffix (copilot-chat--build-prompt-suffix))
-           (final-prompt (if prompt-suffix
-                             (concat prompt "\n" prompt-suffix)
-                           prompt)))
+         (final-prompt (if prompt-suffix
+                           (concat prompt "\n" prompt-suffix)
+                         prompt)))
     (copilot-chat--prepare-buffers)
     (with-current-buffer copilot-chat--prompt-buffer
       (erase-buffer)
@@ -291,13 +291,15 @@ This function may be overriden by frontend."
 
 (defun copilot-chat--build-prompt-suffix ()
     "Build a prompt suffix with the current buffer name."
-    (let* ((major-mode-str (symbol-name major-mode))
-           (lang (replace-regexp-in-string "-mode$" "" major-mode-str))
-           (dynamic-suffix (format "current programming language is: %s" lang))
-           (suffix (if copilot-chat-prompt-suffix
-                       (concat dynamic-suffix ", " copilot-chat-prompt-suffix)
-                     dynamic-suffix)))
-        suffix))
+    (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
+        (let* ((major-mode-str (symbol-name major-mode))
+               (lang (replace-regexp-in-string "-mode$" "" major-mode-str))
+               (dynamic-suffix (format "current programming language is: %s" lang))
+               (suffix (if copilot-chat-prompt-suffix
+                           (concat dynamic-suffix ", " copilot-chat-prompt-suffix)
+                         dynamic-suffix)))
+          suffix)
+      copilot-chat-prompt-suffix))
 
 (defun copilot-chat--custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code.
