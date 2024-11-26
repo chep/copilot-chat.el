@@ -65,6 +65,12 @@
                  (const :tag "GPT-4o1-(preview)" "o1-preview"))
   :group 'copilot-chat)
 
+(defcustom copilot-chat-prompt-suffix nil
+  "Suffix to be added to the end of the prompt before sending to Copilot Chat. For Example: Reply in Chinese (or any other language)
+If nil, no suffix will be added."
+  :type 'string
+  :group 'copilot-chat)
+
 ;; structs
 (cl-defstruct copilot-chat
   ready

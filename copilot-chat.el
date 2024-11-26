@@ -224,7 +224,6 @@ Optional argument BUFFER is the buffer to write data in."
     "Send to Copilot a prompt followed by the current selected code.
 Argument PROMPT is the prompt to send to Copilot."
     (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
-    (copilot-chat--prepare-buffers)
     (copilot-chat--insert-and-send-prompt
      (concat (cdr (assoc prompt (copilot-chat--prompts)))
              code))))
@@ -280,11 +279,25 @@ Argument PROMPT is the prompt to send to Copilot."
 (defun copilot-chat--insert-and-send-prompt (prompt)
   "Helper function to prepare buffers and send PROMPT to Copilot.
 This function may be overriden by frontend."
-  (copilot-chat--prepare-buffers)
-  (with-current-buffer copilot-chat--prompt-buffer
-    (erase-buffer)
-    (insert prompt))
-  (copilot-chat-prompt-send))
+  (let* ((prompt-suffix (copilot-chat--build-prompt-suffix))
+           (final-prompt (if prompt-suffix
+                             (concat prompt "\n" prompt-suffix)
+                           prompt)))
+    (copilot-chat--prepare-buffers)
+    (with-current-buffer copilot-chat--prompt-buffer
+      (erase-buffer)
+      (insert final-prompt))
+    (copilot-chat-prompt-send)))
+
+(defun copilot-chat--build-prompt-suffix ()
+    "Build a prompt suffix with the current buffer name."
+    (let* ((major-mode-str (symbol-name major-mode))
+           (lang (replace-regexp-in-string "-mode$" "" major-mode-str))
+           (dynamic-suffix (format "current programming language is: %s" lang))
+           (suffix (if copilot-chat-prompt-suffix
+                       (concat dynamic-suffix ", " copilot-chat-prompt-suffix)
+                     dynamic-suffix)))
+        suffix))
 
 (defun copilot-chat--custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code.
@@ -305,11 +318,8 @@ This function can be overriden by frontend."
          (line (buffer-substring-no-properties 
                 (line-beginning-position)
                 (line-end-position)))
-         (lang (replace-regexp-in-string
-                "-mode$" ""
-                (symbol-name major-mode)))
-         (prompt (format "In %s programming language, please explain what '%s' means in the context of this code line:\n%s" 
-                        lang symbol line)))
+         (prompt (format "Please explain what '%s' means in the context of this code line:\n%s" 
+                         symbol line)))
     (copilot-chat--insert-and-send-prompt prompt)))
 
 ;;;###autoload
