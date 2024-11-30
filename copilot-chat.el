@@ -445,25 +445,53 @@ This can be overrided by frontend."
     (copilot-chat-reset))
   (copilot-chat--display))
 
-(defun copilot-chat-add-current-buffer()
+(defun copilot-chat-add-current-buffer ()
   "Add current buffer in sent buffers list."
   (interactive)
   (copilot-chat--add-buffer (current-buffer))
   (copilot-chat-list-refresh))
 
-(defun copilot-chat-del-current-buffer()
+(defun copilot-chat-del-current-buffer ()
   "Remove current buffer from sent buffers list."
   (interactive)
   (copilot-chat--del-buffer (current-buffer))
   (copilot-chat-list-refresh))
 
+(defun copilot-chat-add-file (file-path)
+  "Add FILE-PATH to copilot-chat buffers without changing current window layout."
+  (interactive "fFile to add: ")
+  (save-window-excursion
+    (let ((current-buf (current-buffer)))
+      (find-file file-path)
+      (copilot-chat-add-current-buffer)
+      (switch-to-buffer current-buf))))
+
+(defun copilot-chat-add-files-under-dir ()
+  "Add all files with same suffix as current file under current directory.
+If there are more than 10 files, refuse to add and show warning message."
+  (interactive)
+  (if (not buffer-file-name)
+      (message "Current buffer is not visiting a file")
+    (let* ((current-suffix (file-name-extension buffer-file-name))
+           (dir (file-name-directory buffer-file-name))
+           (max-files 40)
+           (files (directory-files dir t 
+                                   (concat "\\." current-suffix "$")
+                                   t))) ; t means don't include . and ..
+      (if (> (length files) max-files)
+          (message "Too many files (%d, > %d) found with suffix .%s. Aborting." 
+                   (length files) max-files current-suffix)
+        (dolist (file files)
+          (copilot-chat-add-file file))
+        (message "Added %d files with suffix .%s" 
+                 (length files) current-suffix)))))
 
 (defun copilot-chat-list-refresh ()
   "Refresh the list of buffers in the current Copilot chat list buffer."
   (interactive)
   (let ((pt (point))
         (inhibit-read-only t)
-        (sorted-buffers (sort (buffer-list)
+        (sorted-buffers (sort (copilot-chat-buffers copilot-chat--instance)
                               (lambda (a b)
                                 (string< (symbol-name (buffer-local-value 'major-mode a))
                                          (symbol-name (buffer-local-value 'major-mode b)))))))
@@ -553,6 +581,7 @@ This can be overrided by frontend."
 (defun copilot-chat-reset()
   "Reset copilot chat session."
   (interactive)
+  (copilot-chat-list-clear-buffers)
   (let ((cb (get-buffer copilot-chat--buffer))
         (cpb (get-buffer copilot-chat--prompt-buffer)))
     (when cb
