@@ -90,6 +90,40 @@ Selected buffers will be sent with each prompt until you remove them.
 - `(copilot-chat-insert-commit-message)` Insert in the current buffer a copilot generated commit message.
 - `(copilot-chat-set-model)` Select AI model to use.
 
+### Customizable Variables
+All variables can be customized using `M-x customize-group RET copilot-chat RET`
+
+#### Backend Options
+- `copilot-chat-backend` - Backend to use for API calls. Can be 'curl (default) or 'request.
+- `copilot-chat-curl-program` - Path to curl executable when using curl backend.
+- `copilot-chat-curl-proxy` - Proxy configuration for curl backend. Supports HTTP/HTTPS/SOCKS protocols.
+- `copilot-chat-curl-proxy-insecure` - Skip SSL verification for proxy connections in curl backend.
+- `copilot-chat-curl-proxy-user-pass` - Proxy authentication credentials for curl backend.
+
+#### Frontend Options
+- `copilot-chat-frontend` - Frontend interface to use. Can be 'markdown, 'org or 'shell-maker.
+
+#### Storage and Cache
+- `copilot-chat-github-token-file` - File path to store GitHub authentication token.
+- `copilot-chat-token-cache` - File path to store session token cache.
+
+#### Model Settings
+- `copilot-chat-model` - AI model to use. Available options:
+  - GPT-4o (default)
+  - Claude 3.5 Sonnet
+  - GPT-4o1-(preview)
+
+#### Prompts
+Default prompts used by various commands:
+- `copilot-chat-prompt` - Base system prompt configuring Copilot's behavior
+- `copilot-chat-prompt-explain` - Prompt for explain command
+- `copilot-chat-prompt-review` - Prompt for code review command
+- `copilot-chat-prompt-doc` - Prompt for documentation command
+- `copilot-chat-prompt-fix` - Prompt for fix command
+- `copilot-chat-prompt-optimize` - Prompt for optimization command
+- `copilot-chat-prompt-test` - Prompt for test generation command
+- `copilot-chat-commit-prompt` - Prompt for generating commit messages
+
 ### Key bindings
 Warning : key bindings have changed since Melpa integration needs to avoid `C-c <letter>` bindings.
 
