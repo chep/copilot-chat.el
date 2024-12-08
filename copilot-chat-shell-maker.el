@@ -171,9 +171,10 @@ Argument ERROR-CALLBACK is the error callback function to call."
 
 (defun copilot-chat--shell-maker-clean()
   "Clean the copilot chat shell-maker frontend."
-  (advice-remove 'copilot-chat--ask-region #'copilot-chat--shell-maker-ask-region)
-  (advice-remove 'copilot-chat-custom-prompt-selection #'copilot-chat-shell-maker-custom-prompt-selection)
-  (advice-remove 'copilot-chat--display #'copilot-chat-shell-maker-display)
+  (advice-remove 'copilot-chat--insert-and-send-prompt #'copilot-chat--shell-maker-insert-and-send-prompt)
+  (advice-remove 'copilot-chat--custom-prompt-selection #'copilot-chat--shell-maker-custom-prompt-selection)
+  (advice-remove 'copilot-chat--display #'copilot-chat--shell-maker-display)
+  (advice-remove 'copilot-chat--prepare-buffers #'copilot-chat--shell-maker-prepare-buffers)
   (advice-remove 'copilot-chat--clean #'copilot-chat--shell-maker-clean))
 
 (defun copilot-chat-shell-maker-init()
