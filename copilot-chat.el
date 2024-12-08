@@ -44,8 +44,10 @@
 
 ;; customs
 (defcustom copilot-chat-frontend 'markdown
-  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-maker."
-  :type 'symbol
+  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-makerauieuie."
+  :type '(choice (const :tag "markdown" markdown)
+                 (const :tag "org-mode" org)
+                 (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
 
