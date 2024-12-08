@@ -1,4 +1,6 @@
 
+;; tests for copilot-chat--build-prompt-suffix
+
 (require 'ert)
 
 (defvar copilot-chat-prompt-suffix nil)
@@ -28,3 +30,4 @@
                    "current programming language is: python, extra details"))
     (should (equal (test-major-mode 'c-mode)
                    "current programming language is: c, extra details"))))
+
