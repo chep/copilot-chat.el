@@ -329,10 +329,10 @@ This function can be overriden by frontend."
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
   (let* ((symbol (thing-at-point 'symbol))
-         (line (buffer-substring-no-properties 
+         (line (buffer-substring-no-properties
                 (line-beginning-position)
                 (line-end-position)))
-         (prompt (format "Please explain what '%s' means in the context of this code line:\n%s" 
+         (prompt (format "Please explain what '%s' means in the context of this code line:\n%s"
                          symbol line)))
     (copilot-chat--insert-and-send-prompt prompt)))
 
@@ -421,7 +421,7 @@ This can be overrided by frontend."
       (split-window-below (floor (* 0.8 (window-total-height)))))
     (other-window 1)
     (switch-to-buffer prompt-buffer)))
-  
+
 
 ;;;###autoload
 (defun copilot-chat-display ()
@@ -544,7 +544,10 @@ This can be overrided by frontend."
     (when cb
       (kill-buffer cb))
     (when cpb
-        (kill-buffer cpb)))
+      (let ((window (get-buffer-window cpb)))
+        (when window
+          (delete-window window)))
+      (kill-buffer cpb)))
   (copilot-chat--clean)
   (catch 'end
     (dolist (f copilot-chat-frontend-list)
