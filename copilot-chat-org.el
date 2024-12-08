@@ -45,6 +45,12 @@ Argument TYPE is the type of the data (prompt or answer)."
 	  (setq data (concat data content)))
     data))
 
+(defun copilot-chat--org-create-req (orig-fun &rest args)
+  "Advice to modify the PROMPT argument before executing the original function."
+  (let ((prompt (concat (nth 0 args) "\n\n(Please use only emacs org-mode syntax)"))
+        (no-context (nth 1 args)))
+    (apply orig-fun (list prompt no-context))))
+
 (defun copilot-chat--org-clean()
   "Clean the copilot chat org frontend."
   (advice-remove 'copilot-chat--format-data #'copilot-chat--org-format-data)
@@ -97,7 +103,8 @@ Provide clear and relevant examples aligned with any provided context.
   (define-derived-mode copilot-chat-prompt-mode org-mode "Copilot Chat Prompt")
 
   (advice-add 'copilot-chat--format-data :override #'copilot-chat--org-format-data)
-  (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean))
+  (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean)
+  (advice-add 'copilot-chat--create-req :around #'copilot-chat--org-create-req))
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here
