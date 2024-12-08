@@ -54,7 +54,8 @@ Argument TYPE is the type of the data (prompt or answer)."
 (defun copilot-chat--org-clean()
   "Clean the copilot chat org frontend."
   (advice-remove 'copilot-chat--format-data #'copilot-chat--org-format-data)
-  (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean))
+  (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean)
+  (advice-remove 'copilot-chat--create-req #'copilot-chat--org-create-req))
 
 
 (defun copilot-chat-org-init()
