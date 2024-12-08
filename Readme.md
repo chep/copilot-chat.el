@@ -103,6 +103,9 @@ All variables can be customized using `M-x customize-group RET copilot-chat RET`
 #### Frontend Options
 - `copilot-chat-frontend` - Frontend interface to use. Can be 'markdown, 'org or 'shell-maker.
 
+##### Shell-maker frontend
+- `copilot-chat-shell-maker-follow` - If t (default), point follows answer in buffer.
+
 #### Storage and Cache
 - `copilot-chat-github-token-file` - File path to store GitHub authentication token.
 - `copilot-chat-token-cache` - File path to store session token cache.

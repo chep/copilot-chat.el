@@ -33,6 +33,13 @@
 
 (declare-function copilot-chat-reset "copilot-chat")
 
+;; Customs
+(defcustom copilot-chat-shell-maker-follow t
+  "If t, point follows answer in buffer."
+  :type 'boolean :group 'copilot-chat)
+
+
+;; Variables
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
   (make-shell-maker-config
@@ -41,8 +48,12 @@
 (defvar copilot-chat--shell-maker-answer-point 0
   "Start of the current answer.")
 
+
+;; Constants
 (defconst copilot-chat--shell-maker-temp-buffer "*copilot-chat-shell-maker-temp*")
 
+
+;; Functions
 (defun copilot-chat--shell-maker-custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code."
   (unless (copilot-chat--ready-p)
@@ -104,8 +115,7 @@
 
 (defun copilot-chat--shell-cb-prompt (shell content)
   "Callback for Copilot Chat shell-maker.
-Argument CALLBACK is the callback function to call.
-Argument ERROR-CALLBACK is the error callback function to call.
+Argument SHELL is the shell-maker instance.
 Argument CONTENT is copilot chat answer."
   (with-current-buffer copilot-chat--buffer
     (goto-char (point-max))
@@ -128,6 +138,15 @@ Argument CONTENT is copilot chat answer."
             (insert content)))
         (funcall (map-elt shell :write-output) content)))))
 
+(defun copilot-chat--shell-cb-prompt-wrapper (shell content)
+  "Wrapper around copilot-chat--shell-cb-prompt.
+When copilot-chat-shell-maker-follow is nil, copilot-chat--shell-cb-prompt is called in `save-excursion` block.
+Argument SHELL is the shell-maker instance.
+Argument CONTENT is copilot chat answer."
+  (if copilot-chat-shell-maker-follow
+    (copilot-chat--shell-cb-prompt shell content)
+    (save-excursion
+      (copilot-chat--shell-cb-prompt shell content))))
 
 (defun copilot-chat--shell-cb (command shell)
   "Callback for Copilot Chat shell-maker.
@@ -136,7 +155,7 @@ Argument CALLBACK is the callback function to call.
 Argument ERROR-CALLBACK is the error callback function to call."
   (setq
     copilot-chat--shell-cb-fn
-    (apply-partially #'copilot-chat--shell-cb-prompt shell)
+    (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
     copilot-chat--shell-maker-answer-point (point))
   (let ((inhibit-read-only t))
     (with-current-buffer copilot-chat--shell-maker-temp-buffer
