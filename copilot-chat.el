@@ -100,8 +100,18 @@ Here is the result of `git diff --cached`:
   :type 'string
   :group 'copilot-chat)
 
-;; variables
+;; Faces
+(defface copilot-chat-list-selected-buffer-face
+  '((t :inherit font-lock-keyword-face))
+  "Face used for selected buffers in copilot-chat buffer list."
+  :group 'copilot-chat)
+(defface copilot-chat-list-default-face
+  '((t :inherit default))
+  "Face used for unselected buffers in copilot-chat buffer list."
+  :group 'copilot-chat)
 
+
+;; Variables
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
 (defvar copilot-chat-mode-map
   (let ((map (make-keymap)))
@@ -145,7 +155,7 @@ Here is the result of `git diff --cached`:
 \(type . init-function)")
 
 
-;; functions
+;; Functions
 (define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
   "Major mode for the Copilot Chat buffer."
   (read-only-mode 1)
@@ -450,8 +460,8 @@ This can be overrided by frontend."
                      (not (string-prefix-p "*" buffer-name)))
             (insert (propertize buffer-name
                                 'face (if (member buffer cop-bufs)
-                                          'font-lock-keyword-face
-                                        'default))
+                                          'copilot-chat-list-selected-buffer-face
+                                        'copilot-chat-list-default-face))
                     "\n"))))
       (goto-char pt))))
 
