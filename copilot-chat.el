@@ -44,8 +44,10 @@
 
 ;; customs
 (defcustom copilot-chat-frontend 'markdown
-  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-maker."
-  :type 'symbol
+  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-makerauieuie."
+  :type '(choice (const :tag "markdown" markdown)
+                 (const :tag "org-mode" org)
+                 (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
 
@@ -100,8 +102,18 @@ Here is the result of `git diff --cached`:
   :type 'string
   :group 'copilot-chat)
 
-;; variables
+;; Faces
+(defface copilot-chat-list-selected-buffer-face
+  '((t :inherit font-lock-keyword-face))
+  "Face used for selected buffers in copilot-chat buffer list."
+  :group 'copilot-chat)
+(defface copilot-chat-list-default-face
+  '((t :inherit default))
+  "Face used for unselected buffers in copilot-chat buffer list."
+  :group 'copilot-chat)
 
+
+;; Variables
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
 (defvar copilot-chat-mode-map
   (let ((map (make-keymap)))
@@ -145,7 +157,7 @@ Here is the result of `git diff --cached`:
 \(type . init-function)")
 
 
-;; functions
+;; Functions
 (define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
   "Major mode for the Copilot Chat buffer."
   (read-only-mode 1)
@@ -317,10 +329,10 @@ This function can be overriden by frontend."
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
   (let* ((symbol (thing-at-point 'symbol))
-         (line (buffer-substring-no-properties 
+         (line (buffer-substring-no-properties
                 (line-beginning-position)
                 (line-end-position)))
-         (prompt (format "Please explain what '%s' means in the context of this code line:\n%s" 
+         (prompt (format "Please explain what '%s' means in the context of this code line:\n%s"
                          symbol line)))
     (copilot-chat--insert-and-send-prompt prompt)))
 
@@ -435,7 +447,7 @@ This can be overrided by frontend."
       (split-window-below (floor (* 0.8 (window-total-height)))))
     (other-window 1)
     (switch-to-buffer prompt-buffer)))
-  
+
 
 ;;;###autoload
 (defun copilot-chat-display ()
@@ -504,8 +516,8 @@ If there are more than 10 files, refuse to add and show warning message."
                      (not (string-prefix-p "*" buffer-name)))
             (insert (propertize buffer-name
                                 'face (if (member buffer cop-bufs)
-                                          'font-lock-keyword-face
-                                        'default))
+                                          'copilot-chat-list-selected-buffer-face
+                                        'copilot-chat-list-default-face))
                     "\n"))))
       (goto-char pt))))
 
@@ -587,7 +599,10 @@ If there are more than 10 files, refuse to add and show warning message."
     (when cb
       (kill-buffer cb))
     (when cpb
-        (kill-buffer cpb)))
+      (let ((window (get-buffer-window cpb)))
+        (when window
+          (delete-window window)))
+      (kill-buffer cpb)))
   (copilot-chat--clean)
   (catch 'end
     (dolist (f copilot-chat-frontend-list)
