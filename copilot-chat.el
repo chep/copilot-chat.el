@@ -466,7 +466,7 @@ This can be overrided by frontend."
 
 (defun copilot-chat-add-files-under-dir ()
   "Add all files with same suffix as current file under current directory.
-If there are more than 10 files, refuse to add and show warning message."
+If there are more than 40 files, refuse to add and show warning message."
   (interactive)
   (if (not buffer-file-name)
       (message "Current buffer is not visiting a file")
