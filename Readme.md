@@ -103,6 +103,9 @@ All variables can be customized using `M-x customize-group RET copilot-chat RET`
 #### Frontend Options
 - `copilot-chat-frontend` - Frontend interface to use. Can be 'markdown, 'org or 'shell-maker.
 
+##### Shell-maker frontend
+- `copilot-chat-shell-maker-follow` - If t (default), point follows answer in buffer.
+
 #### Storage and Cache
 - `copilot-chat-github-token-file` - File path to store GitHub authentication token.
 - `copilot-chat-token-cache` - File path to store session token cache.
@@ -123,6 +126,11 @@ Default prompts used by various commands:
 - `copilot-chat-prompt-optimize` - Prompt for optimization command
 - `copilot-chat-prompt-test` - Prompt for test generation command
 - `copilot-chat-commit-prompt` - Prompt for generating commit messages
+
+### Faces
+You can customize the appearance of the buffer list by modifying these faces:
+- `copilot-chat-list-default-face` - Face used for unselected buffers in the buffer list.
+- `copilot-chat-list-selected-buffer-face` - Face used for selected buffers in the buffer list.
 
 ### Key bindings
 Warning : key bindings have changed since Melpa integration needs to avoid `C-c <letter>` bindings.
