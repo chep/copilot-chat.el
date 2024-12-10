@@ -305,7 +305,7 @@ This function may be overriden by frontend."
     "Build a prompt suffix with the current buffer name."
     (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
         (let* ((major-mode-str (symbol-name major-mode))
-               (lang (replace-regexp-in-string "-mode$" "" major-mode-str))
+               (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str))
                (dynamic-suffix (format "current programming language is: %s" lang))
                (suffix (if copilot-chat-prompt-suffix
                            (concat dynamic-suffix ", " copilot-chat-prompt-suffix)
