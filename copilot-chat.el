@@ -398,38 +398,12 @@ It can be used to review the magit diff for my change, or other people's"
       (copilot-chat-list-mode))
     (switch-to-buffer buffer)))
 
-(defun copilot-chat--inherit-source-highlighting (source-buffer chat-buffer)
-  "Inherit syntax highlighting settings from SOURCE-BUFFER."
-  (with-current-buffer source-buffer
-    (let ((source-keywords font-lock-keywords)
-          (source-keywords-only font-lock-keywords-only)
-          (source-keywords-case-fold-search font-lock-keywords-case-fold-search)
-          (source-syntax-table (syntax-table))
-          (source-defaults font-lock-defaults))
-      (with-current-buffer chat-buffer
-        (set-syntax-table source-syntax-table)
-        (setq font-lock-defaults
-              (if source-defaults
-                  source-defaults
-                `((,source-keywords)
-                  nil
-                  ,source-keywords-case-fold-search)))
-        (setq font-lock-keywords source-keywords
-              font-lock-keywords-only source-keywords-only
-              font-lock-keywords-case-fold-search source-keywords-case-fold-search)
-        (font-lock-mode 1)
-        (font-lock-ensure)))))
-
 (defun copilot-chat--prepare-buffers()
   "Create copilot-chat buffers."
-  (let ((source-buffer (window-buffer (selected-window)))
-        (chat-buffer (get-buffer-create copilot-chat--buffer))
+  (let ((chat-buffer (get-buffer-create copilot-chat--buffer))
         (prompt-buffer (get-buffer-create copilot-chat--prompt-buffer)))
     (with-current-buffer chat-buffer
-      (copilot-chat-mode)
-      (when (with-current-buffer source-buffer
-              (derived-mode-p 'prog-mode))
-        (copilot-chat--inherit-source-highlighting source-buffer chat-buffer)))
+      (copilot-chat-mode))
     (with-current-buffer prompt-buffer
       (copilot-chat-prompt-mode))
   (list chat-buffer prompt-buffer)))
