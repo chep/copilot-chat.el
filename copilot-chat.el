@@ -478,6 +478,18 @@ This can be overrided by frontend."
       (copilot-chat-add-current-buffer)
       (switch-to-buffer current-buf))))
 
+(defun copilot-chat-add-buffers-in-current-window ()
+  "Add files in all buffers in the current Emacs window to the Copilot chat."
+  (interactive)
+  (let ((buffers (mapcar 'window-buffer (window-list)))
+        (added-buffers '()))
+    (dolist (buffer buffers)
+      (with-current-buffer buffer
+        (when buffer-file-name
+          (copilot-chat-add-current-buffer)
+          (push (buffer-name buffer) added-buffers))))
+    (message "Added buffers: %s" (string-join added-buffers ", "))))
+
 (defun copilot-chat-add-files-under-dir ()
   "Add all files with same suffix as current file under current directory.
 If there are more than 10 files, refuse to add and show warning message."
