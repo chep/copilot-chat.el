@@ -82,6 +82,8 @@ Selected buffers will be sent with each prompt until you remove them.
 - `(copilot-chat-review-whole-buffer)` ask copilot to review the current whole buffer. It can be used to review the full class, or, review the magit diff for my change, or other people's change.
 - `(copilot-chat-switch-to-buffer)` switch to Copilot Chat buffer, side by side with the current code editing buffer.
 - `(copilot-chat-add-current-buffer)` add current buffer to copilot chat. Its content will be sent with every request.
+- `(copilot-chat-add-buffers-in-current-window)` add all buffers in current Emacs window to copilot chat.
+- `(copilot-chat-add-files-under-dir)` Add all files with same suffix as current file under current directory. If there are more than 40 files, refuse to add and show warning message.
 - `(copilot-chat-del-current-buffer)` remove current buffer.
 - `(copilot-chat-list)` open buffer list.
 - `(copilot-chat-prompt-history-previous)` insert previous prompt from history in prompt buffer.
