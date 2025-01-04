@@ -489,7 +489,7 @@ If there are more than 40 files, refuse to add and show warning message."
   (interactive)
   (let ((pt (point))
         (inhibit-read-only t)
-        (sorted-buffers (sort (copilot-chat-buffers copilot-chat--instance)
+        (sorted-buffers (sort (buffer-list) ;; TODO: consider using added buffer list for future? (copilot-chat-buffers copilot-chat--instance)
                               (lambda (a b)
                                 (string< (symbol-name (buffer-local-value 'major-mode a))
                                          (symbol-name (buffer-local-value 'major-mode b)))))))
