@@ -305,7 +305,7 @@ This function may be overriden by frontend."
     "Build a prompt suffix with the current buffer name."
     (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
         (let* ((major-mode-str (symbol-name major-mode))
-               (lang (replace-regexp-in-string "-mode$" "" major-mode-str))
+               (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str))
                (dynamic-suffix (format "current programming language is: %s" lang))
                (suffix (if copilot-chat-prompt-suffix
                            (concat dynamic-suffix ", " copilot-chat-prompt-suffix)
@@ -431,25 +431,65 @@ This can be overrided by frontend."
     (copilot-chat-reset))
   (copilot-chat--display))
 
-(defun copilot-chat-add-current-buffer()
+(defun copilot-chat-add-current-buffer ()
   "Add current buffer in sent buffers list."
   (interactive)
   (copilot-chat--add-buffer (current-buffer))
   (copilot-chat-list-refresh))
 
-(defun copilot-chat-del-current-buffer()
+(defun copilot-chat-del-current-buffer ()
   "Remove current buffer from sent buffers list."
   (interactive)
   (copilot-chat--del-buffer (current-buffer))
   (copilot-chat-list-refresh))
 
+(defun copilot-chat-add-file (file-path)
+  "Add FILE-PATH to copilot-chat buffers without changing current window layout."
+  (interactive "fFile to add: ")
+  (save-window-excursion
+    (let ((current-buf (current-buffer)))
+      (find-file file-path)
+      (copilot-chat-add-current-buffer)
+      (switch-to-buffer current-buf))))
+
+(defun copilot-chat-add-buffers-in-current-window ()
+  "Add files in all buffers in the current Emacs window to the Copilot chat."
+  (interactive)
+  (let ((buffers (mapcar 'window-buffer (window-list)))
+        (added-buffers '()))
+    (dolist (buffer buffers)
+      (with-current-buffer buffer
+        (when buffer-file-name
+          (copilot-chat-add-current-buffer)
+          (push (buffer-name buffer) added-buffers))))
+    (message "Added buffers: %s" (string-join added-buffers ", "))))
+
+(defun copilot-chat-add-files-under-dir ()
+  "Add all files with same suffix as current file under current directory.
+If there are more than 40 files, refuse to add and show warning message."
+  (interactive)
+  (if (not buffer-file-name)
+      (message "Current buffer is not visiting a file")
+    (let* ((current-suffix (file-name-extension buffer-file-name))
+           (dir (file-name-directory buffer-file-name))
+           (max-files 40)
+           (files (directory-files dir t 
+                                   (concat "\\." current-suffix "$")
+                                   t))) ; t means don't include . and ..
+      (if (> (length files) max-files)
+          (message "Too many files (%d, > %d) found with suffix .%s. Aborting." 
+                   (length files) max-files current-suffix)
+        (dolist (file files)
+          (copilot-chat-add-file file))
+        (message "Added %d files with suffix .%s" 
+                 (length files) current-suffix)))))
 
 (defun copilot-chat-list-refresh ()
   "Refresh the list of buffers in the current Copilot chat list buffer."
   (interactive)
   (let ((pt (point))
         (inhibit-read-only t)
-        (sorted-buffers (sort (buffer-list)
+        (sorted-buffers (sort (buffer-list) ;; TODO: consider using added buffer list for future? (copilot-chat-buffers copilot-chat--instance)
                               (lambda (a b)
                                 (string< (symbol-name (buffer-local-value 'major-mode a))
                                          (symbol-name (buffer-local-value 'major-mode b)))))))
@@ -539,6 +579,7 @@ This can be overrided by frontend."
 (defun copilot-chat-reset()
   "Reset copilot chat session."
   (interactive)
+  (copilot-chat-list-clear-buffers)
   (let ((cb (get-buffer copilot-chat--buffer))
         (cpb (get-buffer copilot-chat--prompt-buffer)))
     (when cb
