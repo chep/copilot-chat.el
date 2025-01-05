@@ -600,6 +600,12 @@ If there are more than 40 files, refuse to add and show warning message."
 (defun copilot-chat--clean()
   "Cleaning function for frontends.")
 
+(defun copilot-chat-send-to-buffer(buffer)
+    "Send the code block at point to buffer.
+Replace selection if any.
+This function should be overridden by frontends."
+  (interactive))
+
 (defun copilot-chat--get-diff ()
   "Get the diff of all staged files in the current repository and return it as a string."
   (interactive)

@@ -89,6 +89,7 @@ Selected buffers will be sent with each prompt until you remove them.
 - `(copilot-chat-prompt-history-previous)` insert previous prompt from history in prompt buffer.
 - `(copilot-chat-prompt-history-next)` insert next prompt from history in prompt buffer.
 - `(copilot-chat-ask-and-insert)` ask for a custom prompt and write answer in current buffer at point.
+- `(copilot-chat-send-to-buffer)` send a code block to a chosen buffer. Replace selection if any.
 - `(copilot-chat-insert-commit-message)` Insert in the current buffer a copilot generated commit message.
 - `(copilot-chat-set-model)` Select AI model to use.
 

@@ -57,6 +57,32 @@ Argument TYPE is the type of the data (prompt or answer)."
   (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean)
   (advice-remove 'copilot-chat--create-req #'copilot-chat--org-create-req))
 
+(defun copilot-chat--get-org-block-content-at-point ()
+  "Get the content of the org block at point."
+  (let* ((element (org-element-at-point))
+         (type (org-element-type element)))
+    (when (memq type '(src-block quote-block example-block))
+      (let ((content (org-element-property :value element)))
+        content))))
+
+(defun copilot-chat-org-send-to-buffer(buffer)
+    "Send the code block at point to buffer.
+Replace selection if any."
+  (interactive
+    (list
+    (completing-read "Choose buffer: "
+                    (mapcar #'buffer-name (buffer-list))
+                    nil  ; PREDICATE
+                    t    ; REQUIRE-MATCH
+                    nil  ; INITIAL-INPUT
+                    'buffer-name-history
+                    (buffer-name (current-buffer)))))
+  (let ((content (copilot-chat--get-org-block-content-at-point)))
+    (when content
+      (with-current-buffer buffer
+        (when (use-region-p)
+          (delete-region (region-beginning) (region-end)))
+        (insert content)))))
 
 (defun copilot-chat-org-init()
   "Initialize the copilot chat org frontend."
@@ -105,7 +131,9 @@ Provide clear and relevant examples aligned with any provided context.
 
   (advice-add 'copilot-chat--format-data :override #'copilot-chat--org-format-data)
   (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean)
-  (advice-add 'copilot-chat--create-req :around #'copilot-chat--org-create-req))
+  (advice-add 'copilot-chat--create-req :around #'copilot-chat--org-create-req)
+
+  (advice-add 'copilot-chat-send-to-buffer :override #'copilot-chat-org-send-to-buffer))
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here
