@@ -38,10 +38,10 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
     (if (eq type 'prompt)
 	  (progn
 	    (setq copilot-chat--first-word-answer t)
-	    (setq data (concat "# " (format-time-string "*[%T]* ") (format "%s\n" content))))
+	    (setq data (concat "\n# " (format-time-string "*[%T]* You\n") (format "%s\n" content))))
 	  (when copilot-chat--first-word-answer
 	    (setq copilot-chat--first-word-answer nil)
-        (setq data (concat "## " (format-time-string "*[%T]* "))))
+        (setq data (concat "\n## " (format-time-string "*[%T]* Copilot\n"))))
 	  (setq data (concat data content)))
     data))
 
