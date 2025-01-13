@@ -86,7 +86,7 @@ Selected buffers will be sent with each prompt until you remove them.
 - ~(copilot-chat-ask-and-insert)~ ask for a custom prompt and write answer in current buffer at point.
 
 *** Answer manipulation
-- ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any. (Org frontend only)
+- ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any. (Org and markdown frontends only)
 
 *** Buffers
 - ~(copilot-chat-add-current-buffer)~ add current buffer to copilot chat. Its content will be sent with every request.

@@ -50,6 +50,42 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
   (advice-remove 'copilot-chat--format-data #'copilot-chat--markdown-format-data)
   (advice-remove 'copilot-chat--clean #'copilot-chat--markdown-clean))
 
+(defun copilot-chat--get-markdown-block-content-at-point ()
+  "Get the content of the markdown block at point."
+  (let* ((props (text-properties-at (point)))
+         (face (plist-get props 'face)))
+    (when (and (listp face)
+               (or (memq 'markdown-pre-face face)
+                   (memq 'markdown-code-face face)))
+      (let* ((begin-block (previous-single-property-change (point) 'face))
+             (end-block (next-single-property-change (point) 'face))
+             (content (when (and begin-block end-block)
+                       (buffer-substring-no-properties begin-block end-block)))
+             ;; Try to get language from previous text properties
+             (lang-props (text-properties-at (max (- begin-block 1) (point-min))))
+             (lang (plist-get lang-props 'markdown-language)))
+        (when content
+          (list :content content
+                :language lang))))))
+
+(defun copilot-chat-markdown-send-to-buffer(buffer)
+    "Send the code block at point to buffer.
+Replace selection if any."
+    (interactive
+    (list
+    (completing-read "Choose buffer: "
+                    (mapcar #'buffer-name (buffer-list))
+                    nil  ; PREDICATE
+                    t    ; REQUIRE-MATCH
+                    nil  ; INITIAL-INPUT
+                    'buffer-name-history
+                    (buffer-name (current-buffer)))))
+  (let* ((content (copilot-chat--get-markdown-block-content-at-point)))
+    (when content
+      (with-current-buffer buffer
+        (when (use-region-p)
+          (delete-region (region-beginning) (region-end)))
+        (insert (plist-get content :content))))))
 
 (defun copilot-chat-markdown-init()
   "Initialize the copilot chat markdown frontend."
@@ -62,7 +98,9 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
   (define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt")
 
   (advice-add 'copilot-chat--format-data :override #'copilot-chat--markdown-format-data)
-  (advice-add 'copilot-chat--clean :after #'copilot-chat--markdown-clean))
+  (advice-add 'copilot-chat--clean :after #'copilot-chat--markdown-clean)
+
+  (advice-add 'copilot-chat-send-to-buffer :override #'copilot-chat-markdown-send-to-buffer))
 
 (provide 'copilot-chat-markdown)
 ;;; copilot-chat-markdown.el ends here
