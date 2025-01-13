@@ -65,24 +65,45 @@ Argument TYPE is the type of the data (prompt or answer)."
       (let ((content (org-element-property :value element)))
         content))))
 
-(defun copilot-chat-org-send-to-buffer(buffer)
-    "Send the code block at point to buffer.
+(defun copilot-chat--get-language-mode (element)
+  "Get major mode name from org source block language."
+  (when (eq (org-element-type element) 'src-block)
+    (let ((language (org-element-property :language element)))
+      (org-src-get-lang-mode language))))
+
+(defun copilot-chat--find-matching-buffer (mode)
+  "Find most recent buffer with major-mode matching MODE."
+  (seq-find (lambda (buf)
+              (with-current-buffer buf
+                (eq major-mode mode)))
+            (buffer-list)))
+
+(defun copilot-chat-org-send-to-buffer (buffer)
+  "Send the code block at point to buffer.
 Replace selection if any."
   (interactive
-    (list
-    (completing-read "Choose buffer: "
-                    (mapcar #'buffer-name (buffer-list))
-                    nil  ; PREDICATE
-                    t    ; REQUIRE-MATCH
-                    nil  ; INITIAL-INPUT
-                    'buffer-name-history
-                    (buffer-name (current-buffer)))))
+   (let* ((element (org-element-at-point))
+          (mode (copilot-chat--get-language-mode element))
+          (matching-buffer (when mode (copilot-chat--find-matching-buffer mode)))
+          (default-buffer (or matching-buffer (current-buffer))))
+     (list
+      (completing-read "Choose buffer: "
+                      (mapcar #'buffer-name (buffer-list))
+                      nil  ; PREDICATE
+                      t    ; REQUIRE-MATCH
+                      nil  ; INITIAL-INPUT
+                      'buffer-name-history
+                      (buffer-name default-buffer)))))
   (let ((content (copilot-chat--get-org-block-content-at-point)))
     (when content
       (with-current-buffer buffer
         (when (use-region-p)
           (delete-region (region-beginning) (region-end)))
-        (insert content)))))
+        (insert content))
+      (let ((window (get-buffer-window buffer)))
+        (if window
+          (select-window window)
+          (switch-to-buffer buffer))))))
 
 (defun copilot-chat-org-init()
   "Initialize the copilot chat org frontend."
