@@ -86,6 +86,8 @@ Selected buffers will be sent with each prompt until you remove them.
 - ~(copilot-chat-ask-and-insert)~ ask for a custom prompt and write answer in current buffer at point.
 
 *** Answer manipulation
+- ~(copilot-chat-yank)~ yank the last code block at point. (Org frontend only)
+- ~(copilot-chat-yank-pop)~ Replace last yank with previous block, or use argument to choose the block. Acts like ~(yank-pop)~. (Org frontend only)
 - ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any. (Org and markdown frontends only)
 
 *** Buffers

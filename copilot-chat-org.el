@@ -38,10 +38,10 @@ Argument TYPE is the type of the data (prompt or answer)."
     (if (eq type 'prompt)
 	  (progn
 	    (setq copilot-chat--first-word-answer t)
-	    (setq data (concat "\n* " (format-time-string "*[%T]* You\n") (format "%s\n" content))))
+	    (setq data (concat "\n* " (format-time-string "*[%T]* You                 :you:\n") (format "%s\n" content))))
 	  (when copilot-chat--first-word-answer
 	    (setq copilot-chat--first-word-answer nil)
-        (setq data (concat "\n** " (format-time-string "*[%T]* Copilot\n"))))
+        (setq data (concat "\n** " (format-time-string "*[%T]* Copilot                 :copilot:\n"))))
 	  (setq data (concat data content)))
     data))
 
@@ -105,6 +105,49 @@ Replace selection if any."
           (select-window window)
           (switch-to-buffer buffer))))))
 
+(defun copilot-chat--org-get-code-blocks-under-heading (heading-regex)
+  "Get source blocks under headings matching HEADING-REGEX."
+  (let ((blocks))
+    (org-map-entries
+      (lambda ()
+        (let* ((heading-end (save-excursion (org-end-of-subtree t)))
+                (element-start (point)))
+          (setq blocks
+            (append blocks
+              (org-element-map
+                (org-element-parse-buffer 'element)
+                'src-block
+                (lambda (src-block)
+                  (when (and (>= (org-element-property :begin src-block) element-start)
+                          (<= (org-element-property :begin src-block) heading-end))
+                    (list :language (org-element-property :language src-block)
+                      :content (org-element-property :value src-block)
+                      :begin (org-element-property :begin src-block)
+                      :end (org-element-property :end src-block)))))))))
+      heading-regex)
+	blocks))
+
+(defun copilot-chat--org-yank()
+  (let ((content ""))
+	(with-current-buffer copilot-chat--buffer
+	  (let ((blocks (copilot-chat--org-get-code-blocks-under-heading "copilot")))
+		(when blocks
+		  (while (< copilot-chat--yank-index 1)
+			(setq copilot-chat--yank-index (+ (length blocks)
+                                             copilot-chat--yank-index)))
+          (when (> copilot-chat--yank-index (length blocks))
+			(setq copilot-chat--yank-index (- copilot-chat--yank-index
+                                             (length blocks))))
+		  (setq content (plist-get (car (last blocks copilot-chat--yank-index)) :content)))))
+	;; Delete previous yank if exists
+    (when (and copilot-chat--last-yank-start
+               copilot-chat--last-yank-end)
+	  (delete-region copilot-chat--last-yank-start copilot-chat--last-yank-end))
+    ;; Insert new content
+    (setq copilot-chat--last-yank-start (point))
+    (insert content)
+    (setq copilot-chat--last-yank-end (point))))
+
 (defun copilot-chat-org-init()
   "Initialize the copilot chat org frontend."
   (setq copilot-chat-prompt "You are a world-class coding tutor. Your code explanations perfectly balance high-level concepts and granular details. Your approach ensures that students not only understand how to write code, but also grasp the underlying principles that guide effective programming.
@@ -154,7 +197,8 @@ Provide clear and relevant examples aligned with any provided context.
   (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean)
   (advice-add 'copilot-chat--create-req :around #'copilot-chat--org-create-req)
 
-  (advice-add 'copilot-chat-send-to-buffer :override #'copilot-chat-org-send-to-buffer))
+  (advice-add 'copilot-chat-send-to-buffer :override #'copilot-chat-org-send-to-buffer)
+  (advice-add 'copilot-chat--yank :override #'copilot-chat--org-yank))
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here

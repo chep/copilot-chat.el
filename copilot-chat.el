@@ -664,6 +664,33 @@ This function should be overridden by frontends."
   (customize-save-variable 'copilot-chat-model copilot-chat-model)
   (message "Copilot Chat model set to %s" copilot-chat-model))
 
+
+(defun copilot-chat-yank()
+  "Insert last code block given by copilot-chat."
+  (interactive)
+  (setq copilot-chat--yank-index 1
+		copilot-chat--last-yank-start nil
+		copilot-chat--last-yank-end nil)
+  (copilot-chat--yank))
+
+(defun copilot-chat-yank-pop(&optional inc)
+  "Replace just-yanked code block with a different block.
+INC is the number to use as increment for index in block ring."
+  (interactive "*p")
+  (if (not (eq last-command 'copilot-chat-yank-pop))
+      (unless (eq last-command 'copilot-chat-yank)
+        (error "Previous command was not a yank")))
+  (if inc
+      (setq copilot-chat--yank-index (+ copilot-chat--yank-index inc))
+    (setq copilot-chat--yank-index (1+ copilot-chat--yank-index)))
+  (copilot-chat--yank)
+  (setq this-command 'copilot-chat-yank-pop))
+
+(defun copilot-chat--yank()
+  "Insert the code block at the current index in the block ring.
+This function should be overridden by frontends.")
+
+
 (provide 'copilot-chat)
 
 ;;; copilot-chat.el ends here

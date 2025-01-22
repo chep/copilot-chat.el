@@ -94,6 +94,13 @@ If nil, no suffix will be added."
 
 (defvar copilot-chat--first-word-answer t)
 
+(defvar copilot-chat--yank-index 1
+  "Next index to yank")
+(defvar copilot-chat--last-yank-start nil
+  "Start position of last yank")
+(defvar copilot-chat--last-yank-end nil
+  "End position of last yank")
+
 ;; Functions
 (defun copilot-chat--uuid ()
   "Generate a UUID."
