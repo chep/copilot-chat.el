@@ -47,7 +47,7 @@ Argument TYPE is the type of the data (prompt or answer)."
 
 (defun copilot-chat--org-create-req (orig-fun &rest args)
   "Advice to modify the PROMPT argument before executing the original function."
-  (let ((prompt (concat (nth 0 args) "\n\n(Please use only emacs org-mode syntax)"))
+  (let ((prompt (concat (nth 0 args) "\n\n(Remember: please use only emacs org-mode syntax))"))
         (no-context (nth 1 args)))
     (apply orig-fun (list prompt no-context))))
 
@@ -125,13 +125,13 @@ Replace selection if any."
                       :begin (org-element-property :begin src-block)
                       :end (org-element-property :end src-block)))))))))
       heading-regex)
-	blocks))
+    (seq-uniq blocks #'equal)))
 
 (defun copilot-chat--org-yank()
   (let ((content ""))
 	(with-current-buffer copilot-chat--buffer
 	  (let ((blocks (copilot-chat--org-get-code-blocks-under-heading "copilot")))
-		(when blocks
+        (when blocks
 		  (while (< copilot-chat--yank-index 1)
 			(setq copilot-chat--yank-index (+ (length blocks)
                                              copilot-chat--yank-index)))
@@ -159,7 +159,8 @@ Avoid content that violates copyrights.
 For questions not related to software development, simply give a reminder that you are an AI programming assistant.
 Keep your answers short and impersonal.
 
-Use only Emacs org-mode formatting in your answers
+Use only Emacs org-mode formatting in your answers.
+When using heading to structure your answer, please start at level 3 (i.e with 3 stars or more)
 Make sure to include the programming language name at the start of the org-mode code blocks.
 This is an example of python code block in emacs org-mode syntax:
 #+BEGIN_SRC python
