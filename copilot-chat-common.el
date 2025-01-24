@@ -71,6 +71,10 @@ If nil, no suffix will be added."
   :type 'string
   :group 'copilot-chat)
 
+(defcustom copilot-chat-follow t
+  "If t, point follows answer in buffer."
+  :type 'boolean :group 'copilot-chat)
+
 ;; structs
 (cl-defstruct copilot-chat
   ready
@@ -139,7 +143,7 @@ Argument NOCONTEXT tells copilot-chat to not send history and buffers."
         (when (buffer-live-p buffer)
           (with-current-buffer buffer
             (push (list (cons "content" (buffer-substring-no-properties (point-min) (point-max))) (cons "role" "user")) messages)))))
-      
+
     ;; system
     (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
 

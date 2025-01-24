@@ -115,18 +115,18 @@ Selected buffers will be sent with each prompt until you remove them.
 ** Customizable Variables
 All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 
-*** Backend Options
+*** Backend
 - ~copilot-chat-backend~ - Backend to use for API calls. Can be ~'curl~ (default) or ~'request~.
 - ~copilot-chat-curl-program~ - Path to curl executable when using curl backend.
 - ~copilot-chat-curl-proxy~ - Proxy configuration for curl backend. Supports HTTP/HTTPS/SOCKS protocols.
 - ~copilot-chat-curl-proxy-insecure~ - Skip SSL verification for proxy connections in curl backend.
 - ~copilot-chat-curl-proxy-user-pass~ - Proxy authentication credentials for curl backend.
 
-*** Frontend Options
+*** Frontend
 - ~copilot-chat-frontend~ - Frontend interface to use. Can be ~'org~ (default), ~'markdown~ or ~'shell-maker~.
 
-**** Shell-maker frontend
-- ~copilot-chat-shell-maker-follow~ - If ~t~ (default), point follows answer in buffer.
+*** Display
+- ~copilot-chat-follow~ - If ~t~ (default), point follows answer in buffer.
 
 *** Storage and Cache
 - ~copilot-chat-github-token-file~ - File path to store GitHub authentication token.

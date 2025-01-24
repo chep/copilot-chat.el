@@ -33,12 +33,6 @@
 
 (declare-function copilot-chat-reset "copilot-chat")
 
-;; Customs
-(defcustom copilot-chat-shell-maker-follow t
-  "If t, point follows answer in buffer."
-  :type 'boolean :group 'copilot-chat)
-
-
 ;; Variables
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
@@ -140,10 +134,10 @@ Argument CONTENT is copilot chat answer."
 
 (defun copilot-chat--shell-cb-prompt-wrapper (shell content)
   "Wrapper around copilot-chat--shell-cb-prompt.
-When copilot-chat-shell-maker-follow is nil, copilot-chat--shell-cb-prompt is called in `save-excursion` block.
+When copilot-chat-follow is nil, copilot-chat--shell-cb-prompt is called in `save-excursion` block.
 Argument SHELL is the shell-maker instance.
 Argument CONTENT is copilot chat answer."
-  (if copilot-chat-shell-maker-follow
+  (if copilot-chat-follow
     (copilot-chat--shell-cb-prompt shell content)
     (save-excursion
       (copilot-chat--shell-cb-prompt shell content))))

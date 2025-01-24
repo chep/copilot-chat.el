@@ -167,6 +167,13 @@ Here is the result of `git diff --cached`:
         buffer-read-only t)
   (run-hooks 'copilot-chat-mode-hook))
 
+
+(defun copilot-chat--write-buffer-raw(data)
+    "Really write data to the buffer.
+Argument DATA data to be inserted in current buffer."
+	(goto-char (point-max))
+    (insert data))
+
 (defun copilot-chat--write-buffer(data &optional buffer)
   "Write content to the Copilot Chat BUFFER.
 Argument DATA data to be inserted in buffer."
@@ -174,8 +181,10 @@ Argument DATA data to be inserted in buffer."
                            buffer
                          copilot-chat--buffer)
 	(let ((inhibit-read-only t))
-	  (goto-char (point-max))
-        (insert data))))
+      (if copilot-chat-follow
+          (copilot-chat--write-buffer-raw data)
+        (save-excursion
+          (copilot-chat--write-buffer-raw data))))))
 
 (defun copilot-chat--format-data(content _type)
     "Format the CONTENT according to the frontend.
@@ -202,10 +211,7 @@ Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
       (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
-    (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer))
-  (unless buffer
-    (with-current-buffer copilot-chat--buffer
-      (goto-char (point-max)))))
+    (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)))
 
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
@@ -473,15 +479,15 @@ If there are more than 40 files, refuse to add and show warning message."
     (let* ((current-suffix (file-name-extension buffer-file-name))
            (dir (file-name-directory buffer-file-name))
            (max-files 40)
-           (files (directory-files dir t 
+           (files (directory-files dir t
                                    (concat "\\." current-suffix "$")
                                    t))) ; t means don't include . and ..
       (if (> (length files) max-files)
-          (message "Too many files (%d, > %d) found with suffix .%s. Aborting." 
+          (message "Too many files (%d, > %d) found with suffix .%s. Aborting."
                    (length files) max-files current-suffix)
         (dolist (file files)
           (copilot-chat-add-file file))
-        (message "Added %d files with suffix .%s" 
+        (message "Added %d files with suffix .%s"
                  (length files) current-suffix)))))
 
 (defun copilot-chat-list-refresh ()
