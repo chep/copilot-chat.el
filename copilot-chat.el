@@ -41,6 +41,7 @@
 (require 'copilot-chat-org)
 (require 'copilot-chat-common)
 (require 'magit)
+(require 'transient)
 
 ;; customs
 (defcustom copilot-chat-frontend 'markdown
@@ -696,6 +697,63 @@ INC is the number to use as increment for index in block ring."
   "Insert the code block at the current index in the block ring.
 This function should be overridden by frontends.")
 
+
+
+;; Transient
+
+(transient-define-prefix copilot-chat-transient ()
+  "Copilot chat command menu."
+  [["Commands"
+    ("d" "Display chat" copilot-chat-display)
+    ("r" "Reset & reopen" (lambda ()
+                            (interactive)
+                            (copilot-chat-reset)
+                            (copilot-chat-display)))
+    ("R" "Reset" copilot-chat-reset)
+    ("g" "Go to buffer" copilot-chat-switch-to-buffer)
+    ("m" "Set model" copilot-chat-set-model)]
+   ["Prompt"
+    ("c" "Custom prompt" copilot-chat-custom-prompt-selection)
+    ("i" "Ask and insert" copilot-chat-ask-and-insert)]
+   ["Data"
+    ("y" "Yank last code block" copilot-chat-yank)
+    ("s" "Send code to buffer" copilot-chat-send-to-buffer)]
+   ["Buffers"
+    ("B" "Buffers" copilot-chat-transient-buffers)]
+   ["Code"
+    ("C" "Code helpers" copilot-chat-transient-code)]
+   ["Magit"
+    ("M" "Magit" copilot-chat-transient-magit)]
+   ])
+
+(transient-define-prefix copilot-chat-transient-buffers ()
+  "Copilot chat buffers menu."
+  [["Buffers"
+    ("a" "Add current buffer" copilot-chat-add-current-buffer)
+    ("A" "Add all buffers in current frame" copilot-chat-add-buffers-in-current-window)
+    ("D" "Delete current buffer" copilot-chat-del-current-buffer)
+    ("f" "Add files under current directory" copilot-chat-add-files-under-dir)
+    ("l" "Display buffer list" copilot-chat-list)
+    ("c" "Clear buffers" copilot-chat-list-clear-buffers)]])
+
+(transient-define-prefix copilot-chat-transient-code ()
+  "Copilot chat code helpers menu."
+  [["Code helpers"
+    ("e" "Explain" copilot-chat-explain)
+    ("E" "Explain symbol" copilot-chat-explain-symbol-at-line)
+    ("r" "Review" copilot-chat-review)
+    ("d" "Doc" copilot-chat-doc)
+    ("f" "Fix" copilot-chat-fix)
+    ("o" "Optimize" copilot-chat-optimize)
+    ("t" "Test" copilot-chat-test)
+    ("F" "Explain function" copilot-chat-explain-defun)
+    ("c" "Custom prompt function" copilot-chat-custom-prompt-function)
+    ("R" "Review whole buffer" copilot-chat-review-whole-buffer)]])
+
+(transient-define-prefix copilot-chat-transient-magit ()
+  "Copilot chat magit menu."
+  [["Magit"
+    ("i" "Insert commit message" copilot-chat-insert-commit-message)]])
 
 (provide 'copilot-chat)
 

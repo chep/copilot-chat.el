@@ -72,6 +72,9 @@ You can select buffers that will be added as context in your prompt. Use ~copilo
 
 Selected buffers will be sent with each prompt until you remove them.
 
+** Transient
+You can call ~(copilot-chat-transient)~ to open transient menu. Almost all functions are accessible.
+
 ** Functions
 *** Basic functions
 - ~(copilot-chat-reset)~ reset everything including history, buffers and frontend.
@@ -111,6 +114,12 @@ Selected buffers will be sent with each prompt until you remove them.
 
 *** Magit 
 - ~(copilot-chat-insert-commit-message)~ Insert in the current buffer a copilot generated commit message.
+
+*** Transient
+- ~(copilot-chat-transient)~ display main transient menu to access all functions.
+- ~(copilot-chat-transient-buffers)~ display transient menu for buffer management.
+- ~(copilot-chat-transient-code)~ display transient menu for code helper functions.
+- ~(copilot-chat-transient-magit)~ display transient menu for magit functions.
 
 ** Customizable Variables
 All variables can be customized using ~M-x customize-group RET copilot-chat RET~
