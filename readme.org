@@ -136,6 +136,7 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 
 *** Display
 - ~copilot-chat-follow~ - If ~t~ (default), point follows answer in buffer.
+- ~copilot-chat-list-added-buffers-only~ - By default, buffer list displays all buffers and uses faces to highlight added buffer. If set to ~t~, only added buffer are displayed.
 
 *** Storage and Cache
 - ~copilot-chat-github-token-file~ - File path to store GitHub authentication token.

@@ -51,6 +51,10 @@
                  (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
+(defcustom copilot-chat-list-added-buffers-only nil
+  "If non-nil, only show buffers that have been added to the Copilot chat list."
+  :type 'boolean
+  :group 'copilot-chat)
 
 (defcustom copilot-chat-commit-prompt
   "Here is the result of running `git diff --cached`. Please suggest a conventional commit message. Don't add anything else to the response. The following describes conventional commits.
@@ -494,12 +498,15 @@ If there are more than 40 files, refuse to add and show warning message."
 (defun copilot-chat-list-refresh ()
   "Refresh the list of buffers in the current Copilot chat list buffer."
   (interactive)
-  (let ((pt (point))
-        (inhibit-read-only t)
-        (sorted-buffers (sort (buffer-list) ;; TODO: consider using added buffer list for future? (copilot-chat-buffers copilot-chat--instance)
-                              (lambda (a b)
-                                (string< (symbol-name (buffer-local-value 'major-mode a))
-                                         (symbol-name (buffer-local-value 'major-mode b)))))))
+  (let* ((pt (point))
+         (inhibit-read-only t)
+         (buffers (if copilot-chat-list-added-buffers-only
+                      (copilot-chat-buffers copilot-chat--instance)
+                    (buffer-list)))
+         (sorted-buffers (sort buffers
+                               (lambda (a b)
+                                 (string< (symbol-name (buffer-local-value 'major-mode a))
+                                          (symbol-name (buffer-local-value 'major-mode b)))))))
     (with-current-buffer (get-buffer-create copilot-chat-list-buffer)
       (erase-buffer)
       (dolist (buffer sorted-buffers)
