@@ -706,8 +706,10 @@ This function should be overridden by frontends.")
 
 
 
+
 ;; Transient
 
+;;;###autoload (autoload 'copilot-chat-transient "copilot-chat" nil t)
 (transient-define-prefix copilot-chat-transient ()
   "Copilot chat command menu."
   [["Commands"
@@ -733,6 +735,7 @@ This function should be overridden by frontends.")
     ("M" "Magit" copilot-chat-transient-magit)]
    ])
 
+;;;###autoload (autoload 'copilot-chat-transient-buffers "copilot-chat" nil t)
 (transient-define-prefix copilot-chat-transient-buffers ()
   "Copilot chat buffers menu."
   [["Buffers"
@@ -743,6 +746,7 @@ This function should be overridden by frontends.")
     ("l" "Display buffer list" copilot-chat-list)
     ("c" "Clear buffers" copilot-chat-list-clear-buffers)]])
 
+;;;###autoload (autoload 'copilot-chat-transient-code "copilot-chat" nil t)
 (transient-define-prefix copilot-chat-transient-code ()
   "Copilot chat code helpers menu."
   [["Code helpers"
@@ -757,6 +761,7 @@ This function should be overridden by frontends.")
     ("c" "Custom prompt function" copilot-chat-custom-prompt-function)
     ("R" "Review whole buffer" copilot-chat-review-whole-buffer)]])
 
+;;;###autoload (autoload 'copilot-chat-transient-magit "copilot-chat" nil t)
 (transient-define-prefix copilot-chat-transient-magit ()
   "Copilot chat magit menu."
   [["Magit"
