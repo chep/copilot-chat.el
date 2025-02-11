@@ -538,6 +538,27 @@ This can be overrided by frontend."
     (other-window 1)
     (switch-to-buffer prompt-buffer)))
 
+(defun copilot-chat--hide-chat (chat-buffer)
+  "Internal function to hide the copilot chat window"
+  (let ((window (get-buffer-window chat-buffer)))
+        (when window
+          (delete-window window))))
+
+(defun copilot-chat--hide-prompt (prompt-buffer)
+  "Internal function to hide the copilot chat prompt window"
+  (let ((window (get-buffer-window prompt-buffer)))
+        (when window
+          (delete-window window))))
+
+(defun copilot-chat--hide ()
+  "Internal function to hide copilot chat buffers."
+  (let ((chat-buffer (get-buffer copilot-chat--buffer))
+        (prompt-buffer (get-buffer copilot-chat--prompt-buffer)))
+    (when chat-buffer
+      (copilot-chat--hide-chat chat-buffer))
+    (when prompt-buffer
+      (copilot-chat--hide-prompt prompt-buffer))))
+
 
 ;;;###autoload
 (defun copilot-chat-display ()
@@ -546,6 +567,12 @@ This can be overrided by frontend."
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
   (copilot-chat--display))
+
+;;;###autoload
+(defun copilot-chat-hide ()
+  "Hide copilot chat buffers."
+  (interactive)
+  (copilot-chat--hide))
 
 (defun copilot-chat-add-current-buffer ()
   "Add current buffer in sent buffers list."
@@ -819,6 +846,7 @@ This function should be overridden by frontends.")
   "Copilot chat command menu."
   [["Commands"
     ("d" "Display chat" copilot-chat-display)
+    ("h" "Hide chat" copilot-chat-hide)
     ("r" "Reset & reopen" (lambda ()
                             (interactive)
                             (copilot-chat-reset)
