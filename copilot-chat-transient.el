@@ -82,3 +82,5 @@
     ("c" "Custom prompt function" copilot-chat-custom-prompt-function)
     ("R" "Review whole buffer" copilot-chat-review-whole-buffer)
 	("q" "Quit" transient-quit-one)]])
+
+(provide 'copilot-chat-transient)
