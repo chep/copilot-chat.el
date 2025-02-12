@@ -354,7 +354,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--insert-and-send-prompt
      (concat (cdr (assoc prompt (copilot-chat--prompts)))
-             code))))
+             (copilot-chat--md-code code)))))
 
 ;;;###autoload
 (defun copilot-chat-explain()
@@ -435,7 +435,7 @@ This function can be overriden by frontend."
   (copilot-chat--prepare-buffers)
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
-         (formatted-prompt (concat prompt "\n" code)))
+         (formatted-prompt (concat prompt "\n" (copilot-chat--md-code code))))
     (copilot-chat--insert-and-send-prompt formatted-prompt)))
 
 ;;;###autoload
@@ -449,7 +449,7 @@ This function can be overriden by frontend."
                 (line-beginning-position)
                 (line-end-position)))
          (prompt (format "Please explain what '%s' means in the context of this code line:\n%s"
-                         symbol line)))
+                         symbol (copilot-chat--md-verbatim line))))
     (copilot-chat--insert-and-send-prompt prompt)))
 
 ;;;###autoload

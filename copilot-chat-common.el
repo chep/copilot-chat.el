@@ -155,6 +155,14 @@ Argument NOCONTEXT tells copilot-chat to not send history and buffers."
                    ("intent" . t)
                    ("temperature" . 0.1)))))
 
+(defun copilot-chat--md-code(code)
+  "Return CODE wrapped in Markdown code block syntax."
+  (concat "```\n" code "\n```"))
+
+(defun copilot-chat--md-verbatim(code-line)
+  "Return CODE-LINE wrapped in Markdown verbatim syntax."
+  (concat "`" code "`"))
+
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
