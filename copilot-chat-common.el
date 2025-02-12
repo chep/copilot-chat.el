@@ -157,7 +157,11 @@ Argument NOCONTEXT tells copilot-chat to not send history and buffers."
 
 (defun copilot-chat--md-code(code)
   "Return CODE wrapped in Markdown code block syntax."
-  (concat "```\n" code "\n```"))
+  (let* ((lang1 (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" (symbol-name major-mode)))
+         (lang (if (member lang1 '("fundamental"))
+                   "text"
+                 lang1)))
+    (format "\n```%s\n%s\n```" lang code)))
 
 (defun copilot-chat--md-verbatim(code-line)
   "Return CODE-LINE wrapped in Markdown verbatim syntax."
