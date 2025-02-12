@@ -836,7 +836,20 @@ INC is the number to use as increment for index in block ring."
   "Insert the code block at the current index in the block ring.
 This function should be overridden by frontends.")
 
-
+;;;###autoload
+(defun copilot-chat-clear-auth-cache()
+  "Clear the auth cache for Copilot Chat."
+  (interactive)
+  (copilot-chat-reset)
+  ;; remove copilot-chat-token-cache file
+  (let ((token-cache-file (expand-file-name copilot-chat-token-cache))
+        (github-token-file (expand-file-name copilot-chat-github-token-file)))
+    (when (file-exists-p token-cache-file)
+      (delete-file token-cache-file))
+    (when (file-exists-p github-token-file))
+    (delete-file github-token-file))
+  (message "Auth cache cleared.")
+  (copilot-chat--create))
 
 
 ;; Transient

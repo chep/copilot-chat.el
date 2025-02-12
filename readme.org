@@ -121,6 +121,10 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-transient-code)~ display transient menu for code helper functions.
 - ~(copilot-chat-transient-magit)~ display transient menu for magit functions.
 
+*** Troubleshooting
+- ~(copilot-chat-clear-auth-cache)~ clears the auth cache for Copilot Chat. You will have to login again.
+
+
 ** Customizable Variables
 All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 
