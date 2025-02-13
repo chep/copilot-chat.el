@@ -63,12 +63,6 @@
 
 ;; Variables
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
-(defvar copilot-chat-mode-map
-  (let ((map (make-keymap)))
-    (define-key map (kbd "C-c C-q") 'bury-buffer)
-    (define-key map (kbd "SPC") 'copilot-chat-custom-prompt-mini-buffer)
-    map)
-  "Keymap for Copilot Chat major mode.")
 (defvar copilot-chat-prompt-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
@@ -81,7 +75,7 @@
     (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
     (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
     map)
-  "Keymap for Copilot Chat Prompt major mode.")
+  "Keymap for Copilot Chat Prompt mode.")
 (defvar copilot-chat-list-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'copilot-chat-list-add-or-remove-buffer)
@@ -100,15 +94,15 @@
   "Current position in copilot-chat prompt history.")
 
 ;; Functions
-(define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
-  "Major mode for the Copilot Chat buffer."
-  (read-only-mode 1)
-  (use-local-map copilot-chat-mode-map)
-  (setq major-mode 'copilot-chat-mode
-        mode-name "Copilot Chat"
-        buffer-read-only t)
-  (run-hooks 'copilot-chat-mode-hook))
+(define-minor-mode copilot-chat-prompt-mode
+  "Minor mode for the Copilot Chat Prompt region."
+  (use-local-map copilot-chat-prompt-mode-map)
+  (run-hooks 'copilot-chat-prompt-mode-hook))
 
+(define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
+  "Major mode for listing and managing buffers in Copilot chat."
+  (setq buffer-read-only t)
+  (copilot-chat-list-refresh))
 
 (defun copilot-chat--write-buffer(data &optional buffer)
   "Write content to the Copilot Chat BUFFER.
@@ -130,18 +124,6 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
     (if format-fn
         (funcall format-fn content _type)
       content)))
-
-(define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt"
-  "Major mode for the Copilot Chat Prompt region."
-  (use-local-map copilot-chat-prompt-mode-map)
-  (setq major-mode 'copilot-chat-prompt-mode
-        mode-name "Copilot Chat Prompt")
-  (run-hooks 'copilot-chat-prompt-mode-hook))
-
-(define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
-  "Major mode for listing and managing buffers in Copilot chat."
-  (setq buffer-read-only t)
-  (copilot-chat-list-refresh))
 
 (defun copilot-chat-prompt-cb (content &optional buffer)
     "Function called by backend when data is received.

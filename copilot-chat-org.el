@@ -39,17 +39,24 @@
   "The delimiter used to identify copilot chat input.")
 
 ;;; Polymode
+(define-derived-mode copilot-chat-org-prompt-mode org-mode "Copilot Chat org Prompt"
+  "Major mode for the Copilot Chat Prompt region."
+  (setq major-mode 'copilot-chat-org-prompt-mode
+    mode-name "Copilot Chat org prompt")
+  (copilot-chat-prompt-mode))
+
+
 (define-hostmode poly-copilot-org-hostmode
   :mode 'org-mode)
 
 (define-innermode poly-copilot-org-prompt-innermode
-  :mode 'copilot-chat-prompt-mode
+  :mode 'copilot-chat-org-prompt-mode
   :head-matcher (concat copilot-chat--org-delimiter "\n")
   :tail-matcher "\\'"
   :head-mode 'host
   :tail-mode 'host)
 
-(define-polymode copilot-chat-org-mode
+(define-polymode copilot-chat-org-poly-mode
   :hostmode 'poly-copilot-org-hostmode
   :innermodes '(poly-copilot-org-prompt-innermode))
 
@@ -171,7 +178,7 @@ Replace selection if any."
 (defun copilot-chat--org-write(data)
   "Write data at the end of the chat part of the buffer."
   (copilot-chat--org-goto-input)
-  (forward-line -2)
+  (forward-line -3)
   (end-of-line)
   (insert data))
 
@@ -183,21 +190,20 @@ The input is created if not found."
   (let ((span (pm-innermost-span (point))))
     (if (and span
           (not (eq (car span) nil)))  ; nil span-type means host mode
-      (goto-char (+ 2 (car (pm-innermost-range (point)))))
+      (goto-char (+ 1 (car (pm-innermost-range (point)))))
       (insert "\n\n")
       (let ((start (point))
              (inhibit-read-only t))
-        (insert copilot-chat--org-delimiter "\n ")
+        (insert copilot-chat--org-delimiter "\n\n")
         (add-text-properties start (point)
-          '(read-only t front-sticky t rear-nonsticky (read-only)))
-        (insert " ")))))
+          '(read-only t front-sticky t rear-nonsticky (read-only)))))))
 
 (defun copilot-chat--org-get-buffer()
   "Create copilot-chat buffers."
   (unless (buffer-live-p copilot-chat--buffer)
     (setq copilot-chat--buffer (get-buffer-create copilot-chat--buffer-name))
     (with-current-buffer copilot-chat--buffer
-      (copilot-chat-org-mode)
+      (copilot-chat-org-poly-mode)
       (copilot-chat--org-goto-input)))
   copilot-chat--buffer)
 
