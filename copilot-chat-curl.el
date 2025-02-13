@@ -113,12 +113,15 @@ Arguments ARGS are additional arguments to pass to curl."
                        "-U"
                        copilot-chat-curl-proxy-user-pass))
                     args)))
-    (apply #'call-process
-           copilot-chat-curl-program
-           nil
-           t
-	       nil
-           curl-args)))
+    (let ((result
+           (apply #'call-process
+                  copilot-chat-curl-program
+                  nil
+                  t
+                  nil
+                  curl-args)) )
+      (when (/= result 0)
+        (error (format "curl returned non-zero result: %d" result))))))
 
 (defun copilot-chat--curl-make-process(address method data filter &rest args)
   "Call curl asynchronously.
@@ -149,6 +152,10 @@ Optional argument ARGS are additional arguments to pass to curl."
      :name "copilot-chat-curl"
      :buffer nil
      :filter filter
+     :sentinel (lambda (proc exit)
+                 (when (/= (process-exit-status proc) 0)
+                   (error (format "curl returned non-zero status %d" (process-exit-status proc))))
+                 )
      :stderr (get-buffer-create "*copilot-chat-curl-stderr*")
      :command command)))
 
