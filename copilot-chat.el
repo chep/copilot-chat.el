@@ -43,20 +43,13 @@
 (require 'copilot-chat-transient)
 (require 'copilot-chat-prompts)
 (require 'magit)
+(require 'cl-lib)
 
 ;; customs
-(defcustom copilot-chat-frontend 'org
-  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-makerauieuie."
-  :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
-  :group 'copilot-chat)
-
 (defcustom copilot-chat-list-added-buffers-only nil
   "If non-nil, only show buffers that have been added to the Copilot chat list."
   :type 'boolean
   :group 'copilot-chat)
-
 
 ;; Faces
 (defface copilot-chat-list-selected-buffer-face
@@ -67,7 +60,6 @@
   '((t :inherit default))
   "Face used for unselected buffers in copilot-chat buffer list."
   :group 'copilot-chat)
-
 
 ;; Variables
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
@@ -106,12 +98,6 @@
   "Copilot-chat prompt history.")
 (defvar copilot-chat--prompt-history-position nil
   "Current position in copilot-chat prompt history.")
-(defvar copilot-chat-frontend-list '((markdown . copilot-chat-markdown-init)
-                                     (org . copilot-chat-org-init)
-                                     (shell-maker . copilot-chat-shell-maker-init))
-    "Copilot-chat frontend list.  Must contain elements like this:
-\(type . init-function)")
-
 
 ;; Functions
 (define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
@@ -124,12 +110,6 @@
   (run-hooks 'copilot-chat-mode-hook))
 
 
-(defun copilot-chat--write-buffer-raw(data)
-    "Really write data to the buffer.
-Argument DATA data to be inserted in current buffer.
-This function must be overriden by frontend"
-    (insert data))
-
 (defun copilot-chat--write-buffer(data &optional buffer)
   "Write content to the Copilot Chat BUFFER.
 Argument DATA data to be inserted in buffer."
@@ -137,15 +117,19 @@ Argument DATA data to be inserted in buffer."
       (with-current-buffer buffer
         (insert data))
     (with-current-buffer (copilot-chat--get-buffer)
-	  (let ((inhibit-read-only t))
+	  (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
         (save-excursion
-          (copilot-chat--write-buffer-raw data))))))
+          (when write-fn
+            (funcall write-fn data)))))))
 
 (defun copilot-chat--format-data(content _type)
-    "Format the CONTENT according to the frontend.
+  "Format the CONTENT according to the frontend.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
-    content)
+  (let ((format-fn (copilot-chat-frontend-format-fn (copilot-chat--get-frontend))))
+    (if format-fn
+        (funcall format-fn content _type)
+      content)))
 
 (define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt"
   "Major mode for the Copilot Chat Prompt region."
@@ -168,9 +152,10 @@ Optional argument BUFFER is the buffer to write data in."
     (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)))
 
 (defun copilot-chat--pop-current-prompt()
-  "Get current prompt to send and clean it.
-This function must be overriden by frontend."
-    "")
+  "Get current prompt to send and clean it."
+  (let ((pop-prompt-fn (copilot-chat-frontend-pop-prompt-fn (copilot-chat--get-frontend))))
+    (when pop-prompt-fn
+      (funcall pop-prompt-fn))))
 
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
@@ -260,8 +245,10 @@ This function may be overriden by frontend."
   (let* ((prompt-suffix (copilot-chat--build-prompt-suffix))
          (final-prompt (if prompt-suffix
                            (concat prompt "\n" prompt-suffix)
-                         prompt)))
-    (copilot-chat--insert-prompt final-prompt)
+                         prompt))
+         (prompt-fn (copilot-chat-frontend-insert-prompt-fn (copilot-chat--get-frontend))))
+    (when prompt-fn
+      (funcall prompt-fn final-prompt))
     (copilot-chat-prompt-send)))
 
 (defun copilot-chat--build-prompt-suffix ()
@@ -277,8 +264,7 @@ This function may be overriden by frontend."
       copilot-chat-prompt-suffix))
 
 (defun copilot-chat--custom-prompt-selection()
-  "Send to Copilot a custom prompt followed by the current selected code.
-This function can be overriden by frontend."
+  "Send to Copilot a custom prompt followed by the current selected code."
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" code)))
@@ -361,9 +347,10 @@ It can be used to review the magit diff for my change, or other people's"
     (switch-to-buffer buffer)))
 
 (defun copilot-chat--get-buffer()
-  "Create copilot-chat buffers.
-Must be overriden by frontend."
-  nil)
+  "Create copilot-chat buffers."
+  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
+    (when get-buffer-fn
+      (funcall get-buffer-fn))))
 
 (defun copilot-chat--display ()
   "Internal function to display copilot chat buffer."
@@ -381,7 +368,7 @@ Must be overriden by frontend."
 (defun copilot-chat-hide ()
   "Hide copilot chat buffer."
   (interactive)
-  (let ((window (get-buffer-window (copilot-chat-get-buffer))))
+  (let ((window (get-buffer-window (copilot-chat--get-buffer))))
     (when window
       (delete-window window))))
 
@@ -544,21 +531,25 @@ If there are more than 40 files, refuse to add and show warning message."
       (when window
         (delete-window window))))
   (copilot-chat--clean)
-  (catch 'end
-    (dolist (f copilot-chat-frontend-list)
-      (when (eq (car f) copilot-chat-frontend)
-        (funcall (cdr f))
-        (throw 'end nil))))
-  (copilot-chat--create))
+  (let ((init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
+    (when init-fn
+      (funcall init-fn))
+    (copilot-chat--create)))
 
 (defun copilot-chat--clean()
-  "Cleaning function for frontends.")
+  "Cleaning function."
+  (let ((clean-fn (copilot-chat-frontend-clean-fn (copilot-chat--get-frontend))))
+    (when clean-fn
+      (funcall clean-fn))))
+
 
 (defun copilot-chat-send-to-buffer(buffer)
     "Send the code block at point to buffer.
-Replace selection if any.
-This function should be overridden by frontends."
-  (interactive))
+Replace selection if any."
+  (interactive)
+  (let ((send-fn (copilot-chat-frontend-send-to-buffer-fn (copilot-chat--get-frontend))))
+    (when send-fn
+      (funcall send-fn buffer))))
 
 (defun copilot-chat--get-diff ()
   "Get the diff of all staged files in the current repository and return it as a string."
@@ -641,8 +632,10 @@ INC is the number to use as increment for index in block ring."
   (setq this-command 'copilot-chat-yank-pop))
 
 (defun copilot-chat--yank()
-  "Insert the code block at the current index in the block ring.
-This function should be overridden by frontends.")
+  "Insert the code block at the current index in the block ring."
+  (let ((yank-fn (copilot-chat-frontend-yank-fn (copilot-chat--get-frontend))))
+    (when yank-fn
+      (funcall yank-fn))))
 
 ;;;###autoload
 (defun copilot-chat-clear-auth-cache()

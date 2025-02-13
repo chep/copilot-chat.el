@@ -70,17 +70,12 @@ Argument TYPE is the type of the data (prompt or answer)."
 	  (setq data (concat data content)))
     data))
 
-(defun copilot-chat--org-create-req (orig-fun &rest args)
-  "Advice to modify the PROMPT argument before executing the original function."
-  (let ((prompt (concat (nth 0 args) "\n\n(Remember: please use only emacs org-mode syntax))"))
-        (no-context (nth 1 args)))
-    (apply orig-fun (list prompt no-context))))
+(defun copilot-chat--org-create-req (prompt no-context)
+  "Modify the PROMPT argument before executing the original function."
+  (concat prompt "\n\n(Remember: please use only emacs org-mode syntax))"))
 
 (defun copilot-chat--org-clean()
-  "Clean the copilot chat org frontend."
-  (advice-remove 'copilot-chat--format-data #'copilot-chat--org-format-data)
-  (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean)
-  (advice-remove 'copilot-chat--create-req #'copilot-chat--org-create-req))
+  "Clean the copilot chat org frontend.")
 
 (defun copilot-chat--get-org-block-content-at-point ()
   "Get the content of the org block at point."
@@ -188,13 +183,14 @@ The input is created if not found."
   (let ((span (pm-innermost-span (point))))
     (if (and span
           (not (eq (car span) nil)))  ; nil span-type means host mode
-      (goto-char (car (pm-innermost-range (point))))
+      (goto-char (+ 2 (car (pm-innermost-range (point)))))
       (insert "\n\n")
       (let ((start (point))
              (inhibit-read-only t))
-        (insert copilot-chat--org-delimiter "\n")
-        (add-text-properties start(point)
-          '(read-only t front-sticky t rear-nonsticky (read-only)))))))
+        (insert copilot-chat--org-delimiter "\n ")
+        (add-text-properties start (point)
+          '(read-only t front-sticky t rear-nonsticky (read-only)))
+        (insert " ")))))
 
 (defun copilot-chat--org-get-buffer()
   "Create copilot-chat buffers."
@@ -209,10 +205,11 @@ The input is created if not found."
     "Insert PROMPT in the chat buffer."
   (with-current-buffer (copilot-chat--org-get-buffer)
     (copilot-chat--org-goto-input)
-    (delete-region (point) (point-max))
+    (unless (eobp)
+      (delete-region (point) (point-max)))
     (insert prompt)))
 
-(defun copilot-chat--org-pop-current-prompt()
+(defun copilot-chat--org-pop-prompt()
   "Get current prompt to send and clean it."
   (with-current-buffer (copilot-chat--org-get-buffer)
     (copilot-chat--org-goto-input)
@@ -220,20 +217,9 @@ The input is created if not found."
       (delete-region (point) (point-max))
       prompt)))
 
-(defun copilot-chat-org-init()
+(defun copilot-chat--org-init()
   "Initialize the copilot chat org frontend."
-  (setq copilot-chat-prompt copilot-chat-org-prompt)
-  (advice-add 'copilot-chat--format-data :override #'copilot-chat--org-format-data)
-  (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean)
-  (advice-add 'copilot-chat--create-req :around #'copilot-chat--org-create-req)
-
-  (advice-add 'copilot-chat-send-to-buffer :override #'copilot-chat-org-send-to-buffer)
-  (advice-add 'copilot-chat--yank :override #'copilot-chat--org-yank)
-  (advice-add 'copilot-chat--write-buffer-raw :override #'copilot-chat--org-write)
-  (advice-add 'copilot-chat--get-buffer :override #'copilot-chat--org-get-buffer)
-  (advice-add 'copilot-chat--insert-prompt :override #'copilot-chat--org-insert-prompt)
-  (advice-add 'copilot-chat--pop-current-prompt :override #'copilot-chat--org-pop-current-prompt))
-
+  (setq copilot-chat-prompt copilot-chat-org-prompt))
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here

@@ -39,6 +39,13 @@
   "GitHub Copilot chat."
   :group 'tools)
 
+(defcustom copilot-chat-frontend 'org
+  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-makerauieuie."
+  :type '(choice (const :tag "org-mode" org)
+                 (const :tag "markdown" markdown)
+                 (const :tag "shell-maker" shell-maker))
+  :group 'copilot-chat)
+
 (defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
   "The file where to find GitHub token."
   :type 'string
@@ -73,6 +80,19 @@ If nil, no suffix will be added."
   history
   buffers)
 
+(cl-defstruct copilot-chat-frontend
+  id
+  init-fn
+  clean-fn
+  format-fn
+  create-req-fn
+  send-to-buffer-fn
+  yank-fn
+  write-fn
+  get-buffer-fn
+  insert-prompt-fn
+  pop-prompt-fn)
+
 ;; variables
 (defvar copilot-chat--instance
   (make-copilot-chat
@@ -83,6 +103,45 @@ If nil, no suffix will be added."
    :machineid nil
    :history nil
    :buffers nil))
+
+(defvar copilot-chat--frontend-list
+  (list (make-copilot-chat-frontend
+         :id 'markdown
+         :init-fn nil
+         :clean-fn nil
+         :format-fn nil
+         :create-req-fn nil
+         :send-to-buffer-fn nil
+         :yank-fn nil
+         :write-fn nil
+         :get-buffer-fn nil
+         :insert-prompt-fn nil
+         :pop-prompt-fn nil)
+        (make-copilot-chat-frontend
+         :id 'org
+         :init-fn #'copilot-chat--org-init
+         :clean-fn #'copilot-chat--org-clean
+         :format-fn #'copilot-chat--org-format-data
+         :create-req-fn #'copilot-chat--org-create-req
+         :send-to-buffer-fn #'copilot-chat-org-send-to-buffer
+         :yank-fn #'copilot-chat--org-yank
+         :write-fn #'copilot-chat--org-write
+         :get-buffer-fn #'copilot-chat--org-get-buffer
+         :insert-prompt-fn #'copilot-chat--org-insert-prompt
+         :pop-prompt-fn #'copilot-chat--org-pop-prompt)
+        (make-copilot-chat-frontend
+         :id 'shell-maker
+         :init-fn nil
+         :clean-fn nil
+         :format-fn nil
+         :create-req-fn nil
+         :send-to-buffer-fn nil
+         :yank-fn nil
+         :write-fn nil
+         :get-buffer-fn nil
+         :insert-prompt-fn nil
+         :pop-prompt-fn nil))
+    "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)
 
@@ -117,8 +176,13 @@ If nil, no suffix will be added."
 (defun copilot-chat--create-req(prompt no-context)
   "Create a request for Copilot.
 Argument PROMPT Copilot prompt to send.
-Argument NOCONTEXT tells copilot-chat to not send history and buffers."
-  (let ((messages nil))
+Argument NOCONTEXT tells copilot-chat to not send history and buffers.
+The create req function is called first and will return new prompt."
+  (let ((create-req-fn (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
+        (messages nil))
+    (when create-req-fn
+      (setq prompt (funcall create-req-fn prompt no-context)))
+
     ;; user prompt
     (push (list (cons "content" prompt) (cons "role" "user")) messages)
 
@@ -145,6 +209,10 @@ Argument NOCONTEXT tells copilot-chat to not send history and buffers."
                    ("intent" . t)
                    ("temperature" . 0.1)))))
 
+(defun copilot-chat--get-frontend()
+  (cl-find copilot-chat-frontend copilot-chat--frontend-list
+           :key #'copilot-chat-frontend-id
+           :test #'eq))
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
