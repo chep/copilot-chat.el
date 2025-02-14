@@ -107,17 +107,17 @@ If nil, no suffix will be added."
 (defvar copilot-chat--frontend-list
   (list (make-copilot-chat-frontend
          :id 'markdown
-         :init-fn nil
-         :clean-fn nil
-         :format-fn nil
-         :format-code-fn nil
+         :init-fn #'copilot-chat--markdown-init
+         :clean-fn #'copilot-chat--markdown-clean
+         :format-fn #'copilot-chat--markdown-format-data
+         :format-code-fn #'copilot-chat--markdown-format-code
          :create-req-fn nil
-         :send-to-buffer-fn nil
+         :send-to-buffer-fn #'copilot-chat-markdown-send-to-buffer
          :yank-fn nil
-         :write-fn nil
-         :get-buffer-fn nil
-         :insert-prompt-fn nil
-         :pop-prompt-fn nil)
+         :write-fn #'copilot-chat--markdown-write
+         :get-buffer-fn #'copilot-chat--markdown-get-buffer
+         :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
+         :pop-prompt-fn #'copilot-chat--markdown-pop-prompt)
         (make-copilot-chat-frontend
          :id 'org
          :init-fn #'copilot-chat--org-init

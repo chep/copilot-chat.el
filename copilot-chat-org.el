@@ -46,7 +46,6 @@
     mode-name "Copilot Chat org prompt")
   (copilot-chat-prompt-mode))
 
-
 (define-hostmode poly-copilot-org-hostmode
   :mode 'org-mode)
 

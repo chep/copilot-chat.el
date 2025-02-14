@@ -14,7 +14,7 @@ v2.0.0 is +here+ in development.
 
 The master branch is now v2 development branch. To get a stable release, use the v1.3.0 tag. A branch for bug fix may be created if needed.
 
-In v2, only one buffer is used for chat, thanks to polymode. For the moment, org is the only frontend supported but markdown will follow. Anyway, you should use org since it is so powerful.
+In v2, only one buffer is used for chat, thanks to polymode. For the moment, org mode is more stable but markdown will follow. Anyway, you should use org since it is so powerful.
 
 For the moment, shell-maker frontend has been completely removed. It uses specific functions that won't be ported in the initial v2 release.
 
@@ -185,7 +185,8 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 
 *** Prompts
 Default prompts used by various commands:
-- ~copilot-chat-prompt~ - Base system prompt configuring Copilot's behavior.
+- ~copilot-chat-org-prompt~ - Base org system prompt configuring Copilot's behavior.
+- ~copilot-chat-markdown-prompt~ - Base markdown system prompt configuring Copilot's behavior.
 - ~copilot-chat-prompt-explain~ - Prompt for explain command.
 - ~copilot-chat-prompt-review~ - Prompt for code review command.
 - ~copilot-chat-prompt-doc~ - Prompt for documentation command.
