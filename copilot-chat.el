@@ -1,11 +1,11 @@
-;;; copilot-chat.el --- Copilot chat interface -*- indent-tabs-mode: nil; lexical-binding: t -*-
+;;; copilot-chat.el --- Copilot chat interface -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
-;; Version: 1.3.0
+;; Version: 2.0.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (chatgpt-shell "1.6.1") (magit "4.0.0") (transient "0.8.3") (org "9.4.6") (shell-maker "0.76.2"))
+;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (magit "4.0.0") (transient "0.8.3") (org "9.4.6") (polymode "0.2.2"))
 ;; Keywords: convenience, tools
 
 
@@ -37,179 +37,17 @@
 
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
-(require 'copilot-chat-shell-maker)
 (require 'copilot-chat-org)
 (require 'copilot-chat-common)
 (require 'copilot-chat-transient)
+(require 'copilot-chat-prompts)
 (require 'magit)
+(require 'cl-lib)
 
 ;; customs
-(defcustom copilot-chat-frontend 'markdown
-  "Frontend to use with `copilot-chat'.  Can be markdown, org or shell-makerauieuie."
-  :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
-  :group 'copilot-chat)
-
 (defcustom copilot-chat-list-added-buffers-only nil
   "If non-nil, only show buffers that have been added to the Copilot chat list."
   :type 'boolean
-  :group 'copilot-chat)
-
-(defcustom copilot-chat-commit-prompt
-  "Here is the result of running `git diff --cached`.
-Generate a commit message in Conventional Commits specification.
-Do not use any markers around the commit message.
-Don't add anything else to the response.
-
-The following describes Conventional Commits.
-
-# Conventional Commits 1.0.0
-
-## Summary
-
-The Conventional Commits specification is a lightweight convention on top of commit messages.
-It provides an easy set of rules for creating an explicit commit history;
-which makes it easier to write automated tools on top of.
-This convention dovetails with [SemVer](http://semver.org),
-by describing the features, fixes, and breaking changes made in commit messages.
-
-The commit message should be structured as follows:
-
----
-
-```
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer(s)]
-```
----
-
-<br />
-The commit contains the following structural elements, to communicate intent to the
-consumers of your library:
-
-1. **fix:** a commit of the _type_ `fix` patches a bug in your codebase (this correlates with [`PATCH`](http://semver.org/#summary) in Semantic Versioning).
-1. **feat:** a commit of the _type_ `feat` introduces a new feature to the codebase (this correlates with [`MINOR`](http://semver.org/#summary) in Semantic Versioning).
-1. **BREAKING CHANGE:** a commit that has a footer `BREAKING CHANGE:`, or appends a `!` after the type/scope, introduces a breaking API change (correlating with [`MAJOR`](http://semver.org/#summary) in Semantic Versioning).
-A BREAKING CHANGE can be part of commits of any _type_.
-1. _types_ other than `fix:` and `feat:` are allowed, for example [@commitlint/config-conventional](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional) (based on the [Angular convention](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines)) recommends `build:`, `chore:`,
-  `ci:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, and others.
-1. _footers_ other than `BREAKING CHANGE: <description>` may be provided and follow a convention similar to
-  [git trailer format](https://git-scm.com/docs/git-interpret-trailers).
-
-Additional types are not mandated by the Conventional Commits specification, and have no implicit effect in Semantic Versioning (unless they include a BREAKING CHANGE).
-<br /><br />
-A scope may be provided to a commit's type, to provide additional contextual information and is contained within parenthesis, e.g., `feat(parser): add ability to parse arrays`.
-
-## Examples
-
-### Commit message with description and breaking change footer
-```
-feat: allow provided config object to extend other configs
-
-BREAKING CHANGE: `extends` key in config file is now used for extending other config files
-```
-
-### Commit message with `!` to draw attention to breaking change
-```
-feat!: send an email to the customer when a product is shipped
-```
-
-### Commit message with scope and `!` to draw attention to breaking change
-```
-feat(api)!: send an email to the customer when a product is shipped
-```
-
-### Commit message with both `!` and BREAKING CHANGE footer
-```
-chore!: drop support for Node 6
-
-BREAKING CHANGE: use JavaScript features not available in Node 6.
-```
-
-### Commit message with no body
-```
-docs: correct spelling of CHANGELOG
-```
-
-### Commit message with scope
-```
-feat(lang): add Polish language
-```
-
-### Commit message with multi-paragraph body and multiple footers
-```
-fix: prevent racing of requests
-
-Introduce a request id and a reference to latest request. Dismiss
-incoming responses other than from latest request.
-
-Remove timeouts which were used to mitigate the racing issue but are
-obsolete now.
-
-Reviewed-by: Z
-Refs: #123
-```
-
-## Specification
-
-The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
-
-1. Commits MUST be prefixed with a type, which consists of a noun, `feat`, `fix`, etc., followed
-  by the OPTIONAL scope, OPTIONAL `!`, and REQUIRED terminal colon and space.
-1. The type `feat` MUST be used when a commit adds a new feature to your application or library.
-1. The type `fix` MUST be used when a commit represents a bug fix for your application.
-1. A scope MAY be provided after a type. A scope MUST consist of a noun describing a
-  section of the codebase surrounded by parenthesis, e.g., `fix(parser):`
-1. A description MUST immediately follow the colon and space after the type/scope prefix.
-The description is a short summary of the code changes, e.g., _fix: array parsing issue when multiple spaces were contained in string_.
-1. A longer commit body MAY be provided after the short description, providing additional contextual information about the code changes. The body MUST begin one blank line after the description.
-1. A commit body is free-form and MAY consist of any number of newline separated paragraphs.
-1. One or more footers MAY be provided one blank line after the body. Each footer MUST consist of
- a word token, followed by either a `:<space>` or `<space>#` separator, followed by a string value (this is inspired by the
-  [git trailer convention](https://git-scm.com/docs/git-interpret-trailers)).
-1. A footer's token MUST use `-` in place of whitespace characters, e.g., `Acked-by` (this helps differentiate
-  the footer section from a multi-paragraph body). An exception is made for `BREAKING CHANGE`, which MAY also be used as a token.
-1. A footer's value MAY contain spaces and newlines, and parsing MUST terminate when the next valid footer
-  token/separator pair is observed.
-1. Breaking changes MUST be indicated in the type/scope prefix of a commit, or as an entry in the
-  footer.
-1. If included as a footer, a breaking change MUST consist of the uppercase text BREAKING CHANGE, followed by a colon, space, and description, e.g.,
-_BREAKING CHANGE: environment variables now take precedence over config files_.
-1. If included in the type/scope prefix, breaking changes MUST be indicated by a
-  `!` immediately before the `:`. If `!` is used, `BREAKING CHANGE:` MAY be omitted from the footer section,
-  and the commit description SHALL be used to describe the breaking change.
-1. Types other than `feat` and `fix` MAY be used in your commit messages, e.g., _docs: update ref docs._
-1. The units of information that make up Conventional Commits MUST NOT be treated as case sensitive by implementors, with the exception of BREAKING CHANGE which MUST be uppercase.
-1. BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in a footer.
-
----
-
-The following describes type.
-
-# type
-
-Must be one of the following:
-
-* **build**: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
-* **ci**: Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs, GitHub Actions)
-* **docs**: Documentation only changes
-* **feat**: A new feature
-* **fix**: A bug fix
-* **perf**: A code change that improves performance
-* **refactor**: A code change that neither fixes a bug nor adds a feature
-* **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
-* **test**: Adding missing tests or correcting existing tests
-
----
-
-Here is the result of `git diff --cached`:
-"
-  "The prompt used to generate a commit message."
-  :type 'string
   :group 'copilot-chat)
 
 ;; Faces
@@ -222,15 +60,8 @@ Here is the result of `git diff --cached`:
   "Face used for unselected buffers in copilot-chat buffer list."
   :group 'copilot-chat)
 
-
 ;; Variables
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
-(defvar copilot-chat-mode-map
-  (let ((map (make-keymap)))
-    (define-key map (kbd "C-c C-q") 'bury-buffer)
-    (define-key map (kbd "SPC") 'copilot-chat-custom-prompt-mini-buffer)
-    map)
-  "Keymap for Copilot Chat major mode.")
 (defvar copilot-chat-prompt-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
@@ -240,10 +71,11 @@ Here is the result of `git diff --cached`:
                                     (bury-buffer)
                                     (delete-window)))
     (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
+    (define-key map (kbd "C-c C-t") 'copilot-chat-transient)
     (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
     (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
     map)
-  "Keymap for Copilot Chat Prompt major mode.")
+  "Keymap for Copilot Chat Prompt mode.")
 (defvar copilot-chat-list-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'copilot-chat-list-add-or-remove-buffer)
@@ -260,60 +92,38 @@ Here is the result of `git diff --cached`:
   "Copilot-chat prompt history.")
 (defvar copilot-chat--prompt-history-position nil
   "Current position in copilot-chat prompt history.")
-(defvar copilot-chat-frontend-list '((markdown . copilot-chat-markdown-init)
-                                     (org . copilot-chat-org-init)
-                                     (shell-maker . copilot-chat-shell-maker-init))
-    "Copilot-chat frontend list.  Must contain elements like this:
-\(type . init-function)")
-
 
 ;; Functions
-(define-derived-mode copilot-chat-mode markdown-view-mode "Copilot Chat"
-  "Major mode for the Copilot Chat buffer."
-  (read-only-mode 1)
-  (use-local-map copilot-chat-mode-map)
-  (setq major-mode 'copilot-chat-mode
-        mode-name "Copilot Chat"
-        buffer-read-only t)
-  (run-hooks 'copilot-chat-mode-hook))
-
-
-(defun copilot-chat--write-buffer-raw(data)
-    "Really write data to the buffer.
-Argument DATA data to be inserted in current buffer."
-	(goto-char (point-max))
-    (insert data))
-
-(defun copilot-chat--write-buffer(data &optional buffer)
-  "Write content to the Copilot Chat BUFFER.
-Argument DATA data to be inserted in buffer."
-  (with-current-buffer (if buffer
-                           buffer
-                         copilot-chat--buffer)
-	(let ((inhibit-read-only t))
-      (if copilot-chat-follow
-          (copilot-chat--write-buffer-raw data)
-        (save-excursion
-          (copilot-chat--write-buffer-raw data))))))
-
-(defun copilot-chat--format-data(content _type)
-    "Format the CONTENT according to the frontend.
-Argument CONTENT is the data to format.
-Argument TYPE is the type of data to format: `answer` or `prompt`."
-    content)
-
-
-(define-derived-mode copilot-chat-prompt-mode markdown-mode "Copilot Chat Prompt"
-  "Major mode for the Copilot Chat Prompt buffer."
+(define-minor-mode copilot-chat-prompt-mode
+  "Minor mode for the Copilot Chat Prompt region."
   (use-local-map copilot-chat-prompt-mode-map)
-  (setq major-mode 'copilot-chat-prompt-mode
-        mode-name "Copilot Chat Prompt")
   (run-hooks 'copilot-chat-prompt-mode-hook))
 
 (define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
   "Major mode for listing and managing buffers in Copilot chat."
   (setq buffer-read-only t)
   (copilot-chat-list-refresh))
+
+(defun copilot-chat--write-buffer(data &optional buffer)
+  "Write content to the Copilot Chat BUFFER.
+Argument DATA data to be inserted in buffer."
+  (if buffer
+      (with-current-buffer buffer
+        (insert data))
+    (with-current-buffer (copilot-chat--get-buffer)
+	  (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
+        (save-excursion
+          (when write-fn
+            (funcall write-fn data)))))))
+
+(defun copilot-chat--format-data(content _type)
+  "Format the CONTENT according to the frontend.
+Argument CONTENT is the data to format.
+Argument TYPE is the type of data to format: `answer` or `prompt`."
+  (let ((format-fn (copilot-chat-frontend-format-fn (copilot-chat--get-frontend))))
+    (if format-fn
+        (funcall format-fn content _type)
+      content)))
 
 (defun copilot-chat-prompt-cb (content &optional buffer)
     "Function called by backend when data is received.
@@ -323,19 +133,22 @@ Optional argument BUFFER is the buffer to write data in."
       (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
     (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)))
 
+(defun copilot-chat--pop-current-prompt()
+  "Get current prompt to send and clean it."
+  (let ((pop-prompt-fn (copilot-chat-frontend-pop-prompt-fn (copilot-chat--get-frontend))))
+    (when pop-prompt-fn
+      (funcall pop-prompt-fn))))
+
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
-  (select-window (display-buffer copilot-chat--buffer))
-  (with-current-buffer copilot-chat--prompt-buffer
-    (let ((prompt (buffer-substring-no-properties (point-min) (point-max))))
-      (erase-buffer)
-      (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt))
-      (push prompt copilot-chat--prompt-history)
-      (setq copilot-chat--prompt-history-position nil)
-      (copilot-chat--ask prompt 'copilot-chat-prompt-cb))))
+  (let ((prompt (copilot-chat--pop-current-prompt)))
+    (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt))
+    (push prompt copilot-chat--prompt-history)
+    (setq copilot-chat--prompt-history-position nil)
+    (copilot-chat--ask prompt 'copilot-chat-prompt-cb)))
 
 ;;;###autoload
 (defun copilot-chat-ask-and-insert()
@@ -354,7 +167,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--insert-and-send-prompt
      (concat (cdr (assoc prompt (copilot-chat--prompts)))
-             code))))
+             (copilot-chat--format-code code)))))
 
 ;;;###autoload
 (defun copilot-chat-explain()
@@ -404,42 +217,41 @@ Argument PROMPT is the prompt to send to Copilot."
     (copilot-chat-reset))
   (copilot-chat--ask-region 'test))
 
-(defun copilot-chat--insert-and-send-prompt (prompt)
-  "Helper function to prepare buffers and send PROMPT to Copilot.
-This function may be overriden by frontend."
-  (let* ((prompt-suffix (copilot-chat--build-prompt-suffix))
-         (final-prompt (if prompt-suffix
-                           (concat prompt "\n" prompt-suffix)
-                         prompt)))
-    (copilot-chat--prepare-buffers)
-    (with-current-buffer copilot-chat--prompt-buffer
-      (erase-buffer)
-      (insert final-prompt))
-    (copilot-chat-prompt-send)))
+(defun copilot-chat--insert-prompt (prompt)
+  "Insert PROMPT in the Copilot Chat prompt region."
+  (let ((prompt-fn (copilot-chat-frontend-insert-prompt-fn (copilot-chat--get-frontend))))
+    (when prompt-fn
+      (funcall prompt-fn prompt))))
 
-(defun copilot-chat--build-prompt-suffix ()
-    "Build a prompt suffix with the current buffer name."
-    (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
-        (let* ((major-mode-str (symbol-name major-mode))
-               (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str))
-               (dynamic-suffix (format "current programming language is: %s" lang))
-               (suffix (if copilot-chat-prompt-suffix
-                           (concat dynamic-suffix ", " copilot-chat-prompt-suffix)
-                         dynamic-suffix)))
-          suffix)
-      copilot-chat-prompt-suffix))
+(defun copilot-chat--insert-and-send-prompt (prompt)
+  "Helper function to prepare buffer and send PROMPT to Copilot."
+  (copilot-chat--insert-prompt prompt)
+  (copilot-chat-prompt-send))
+
+(defun copilot-chat--get-language ()
+  "Get the current language of the buffer."
+  (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
+      (let* ((major-mode-str (symbol-name major-mode))
+             (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str)))
+        lang)
+    nil))
+
+(defun copilot-chat--format-code(code)
+  "Format the CODE according to the frontend."
+  (let ((format-fn (copilot-chat-frontend-format-code-fn (copilot-chat--get-frontend))))
+    (if format-fn
+        (funcall format-fn code (copilot-chat--get-language))
+      code)))
 
 (defun copilot-chat--custom-prompt-selection()
-  "Send to Copilot a custom prompt followed by the current selected code.
-This function can be overriden by frontend."
-  (copilot-chat--prepare-buffers)
+  "Send to Copilot a custom prompt followed by the current selected code."
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
-         (formatted-prompt (concat prompt "\n" code)))
+         (formatted-prompt (concat prompt "\n" (copilot-chat--format-code code))))
     (copilot-chat--insert-and-send-prompt formatted-prompt)))
 
 ;;;###autoload
-(defun copilot-chat-explain-symbol-at-line()
+(defun copilot-chat-explain-symbol-at-line ()
   "Ask Copilot to explain symbol under point, given the code line as background info."
   (interactive)
   (unless (copilot-chat--ready-p)
@@ -449,7 +261,7 @@ This function can be overriden by frontend."
                 (line-beginning-position)
                 (line-end-position)))
          (prompt (format "Please explain what '%s' means in the context of this code line:\n%s"
-                         symbol line)))
+                         symbol (copilot-chat--format-code line))))
     (copilot-chat--insert-and-send-prompt prompt)))
 
 ;;;###autoload
@@ -486,7 +298,7 @@ It can be used to review the magit diff for my change, or other people's"
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
-  (switch-to-buffer-other-window copilot-chat--buffer))
+  (switch-to-buffer-other-window (copilot-chat--get-buffer)))
 
 ;;;###autoload
 (defun copilot-chat-custom-prompt-selection()
@@ -514,55 +326,19 @@ It can be used to review the magit diff for my change, or other people's"
       (copilot-chat-list-mode))
     (switch-to-buffer buffer)))
 
-(defun copilot-chat--prepare-buffers()
+(defun copilot-chat--get-buffer()
   "Create copilot-chat buffers."
-  (let ((chat-buffer (get-buffer-create copilot-chat--buffer))
-        (prompt-buffer (get-buffer-create copilot-chat--prompt-buffer)))
-    (with-current-buffer chat-buffer
-      (copilot-chat-mode))
-    (with-current-buffer prompt-buffer
-      (copilot-chat-prompt-mode))
-  (list chat-buffer prompt-buffer)))
+  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
+    (when get-buffer-fn
+      (funcall get-buffer-fn))))
 
 (defun copilot-chat--display ()
-  "Internal function to display copilot chat buffers.
-This can be overrided by frontend."
-  (let* ((buffers (copilot-chat--prepare-buffers))
-         (chat-buffer (car buffers))
-         (prompt-buffer (cadr buffers)))
-    (switch-to-buffer chat-buffer)
-    (let ((split-window-preferred-function nil)
-          (split-height-threshold nil)
-          (split-width-threshold nil))
-      (split-window-below (floor (* 0.8 (window-total-height)))))
-    (other-window 1)
-    (switch-to-buffer prompt-buffer)))
-
-(defun copilot-chat--hide-chat (chat-buffer)
-  "Internal function to hide the copilot chat window"
-  (let ((window (get-buffer-window chat-buffer)))
-        (when window
-          (delete-window window))))
-
-(defun copilot-chat--hide-prompt (prompt-buffer)
-  "Internal function to hide the copilot chat prompt window"
-  (let ((window (get-buffer-window prompt-buffer)))
-        (when window
-          (delete-window window))))
-
-(defun copilot-chat--hide ()
-  "Internal function to hide copilot chat buffers."
-  (let ((chat-buffer (get-buffer copilot-chat--buffer))
-        (prompt-buffer (get-buffer copilot-chat--prompt-buffer)))
-    (when chat-buffer
-      (copilot-chat--hide-chat chat-buffer))
-    (when prompt-buffer
-      (copilot-chat--hide-prompt prompt-buffer))))
-
+  "Internal function to display copilot chat buffer."
+  (switch-to-buffer (copilot-chat--get-buffer)))
 
 ;;;###autoload
 (defun copilot-chat-display ()
-  "Display copilot chat buffers."
+  "Display copilot chat buffer."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
@@ -570,9 +346,11 @@ This can be overrided by frontend."
 
 ;;;###autoload
 (defun copilot-chat-hide ()
-  "Hide copilot chat buffers."
+  "Hide copilot chat buffer."
   (interactive)
-  (copilot-chat--hide))
+  (let ((window (get-buffer-window (copilot-chat--get-buffer))))
+    (when window
+      (delete-window window))))
 
 (defun copilot-chat-add-current-buffer ()
   "Add current buffer in sent buffers list."
@@ -689,68 +467,65 @@ If there are more than 40 files, refuse to add and show warning message."
 (defun copilot-chat-prompt-history-previous()
   "Insert previous prompt in prompt buffer."
   (interactive)
-  (with-current-buffer copilot-chat--prompt-buffer
-    (let ((prompt (if (null copilot-chat--prompt-history)
-                      nil
-                    (if (null copilot-chat--prompt-history-position)
-                        (progn
-                          (setq copilot-chat--prompt-history-position 0)
-                          (car copilot-chat--prompt-history))
-                      (if (= copilot-chat--prompt-history-position (1- (length copilot-chat--prompt-history)))
-                          (car (last copilot-chat--prompt-history))
-                        (setq copilot-chat--prompt-history-position (1+ copilot-chat--prompt-history-position))
-                        (nth copilot-chat--prompt-history-position copilot-chat--prompt-history))))))
-      (when prompt
-        (erase-buffer)
-        (insert prompt)))))
+  (let ((prompt (if (null copilot-chat--prompt-history)
+                    nil
+                  (if (null copilot-chat--prompt-history-position)
+                      (progn
+                        (setq copilot-chat--prompt-history-position 0)
+                        (car copilot-chat--prompt-history))
+                    (if (= copilot-chat--prompt-history-position (1- (length copilot-chat--prompt-history)))
+                        (car (last copilot-chat--prompt-history))
+                      (setq copilot-chat--prompt-history-position (1+ copilot-chat--prompt-history-position))
+                      (nth copilot-chat--prompt-history-position copilot-chat--prompt-history))))))
+    (when prompt
+      (copilot-chat--insert-prompt prompt))))
 
 
 (defun copilot-chat-prompt-history-next()
   "Insert next prompt in prompt buffer."
   (interactive)
-  (with-current-buffer copilot-chat--prompt-buffer
-    (let ((prompt (if (null copilot-chat--prompt-history)
+  (let ((prompt (if (null copilot-chat--prompt-history)
                     nil
-                    (if (null copilot-chat--prompt-history-position)
+                  (if (null copilot-chat--prompt-history-position)
                       nil
-                      (if (= 0 copilot-chat--prompt-history-position)
+                    (if (= 0 copilot-chat--prompt-history-position)
                         ""
-                        (progn
-                          (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
-                          (nth copilot-chat--prompt-history-position copilot-chat--prompt-history)))))))
-      (when prompt
-        (erase-buffer)
-        (insert prompt)))))
+                      (progn
+                        (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
+                        (nth copilot-chat--prompt-history-position copilot-chat--prompt-history)))))))
+    (when prompt
+      (copilot-chat--insert-prompt prompt))))
 
 (defun copilot-chat-reset()
   "Reset copilot chat session."
   (interactive)
   (copilot-chat-list-clear-buffers)
-  (let ((cb (get-buffer copilot-chat--buffer))
-        (cpb (get-buffer copilot-chat--prompt-buffer)))
-    (when cb
-      (kill-buffer cb))
-    (when cpb
-      (let ((window (get-buffer-window cpb)))
-        (when window
-          (delete-window window)))
-      (kill-buffer cpb)))
+  (let* ((buf (copilot-chat--get-buffer))
+         (window (get-buffer-window buf)))
+    (when buf
+      (kill-buffer buf)
+      (when window
+        (delete-window window))))
   (copilot-chat--clean)
-  (catch 'end
-    (dolist (f copilot-chat-frontend-list)
-      (when (eq (car f) copilot-chat-frontend)
-        (funcall (cdr f))
-        (throw 'end nil))))
-  (copilot-chat--create))
+  (let ((init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
+    (when init-fn
+      (funcall init-fn))
+    (copilot-chat--create)))
 
 (defun copilot-chat--clean()
-  "Cleaning function for frontends.")
+  "Cleaning function."
+  (let ((clean-fn (copilot-chat-frontend-clean-fn (copilot-chat--get-frontend))))
+    (when clean-fn
+      (funcall clean-fn))))
+
 
 (defun copilot-chat-send-to-buffer(buffer)
     "Send the code block at point to buffer.
-Replace selection if any.
-This function should be overridden by frontends."
-  (interactive))
+Replace selection if any."
+  (interactive)
+  (let ((send-fn (copilot-chat-frontend-send-to-buffer-fn (copilot-chat--get-frontend))))
+    (when send-fn
+      (funcall send-fn buffer))))
 
 (defun copilot-chat--get-diff ()
   "Get the diff of all staged files in the current repository and return it as a string."
@@ -833,8 +608,10 @@ INC is the number to use as increment for index in block ring."
   (setq this-command 'copilot-chat-yank-pop))
 
 (defun copilot-chat--yank()
-  "Insert the code block at the current index in the block ring.
-This function should be overridden by frontends.")
+  "Insert the code block at the current index in the block ring."
+  (let ((yank-fn (copilot-chat-frontend-yank-fn (copilot-chat--get-frontend))))
+    (when yank-fn
+      (funcall yank-fn))))
 
 ;;;###autoload
 (defun copilot-chat-clear-auth-cache()

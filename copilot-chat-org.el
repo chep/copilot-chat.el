@@ -28,8 +28,40 @@
 ;;; Code:
 
 (require 'org)
+(require 'copilot-chat-common)
+(require 'polymode)
+
+;;; Constants
+(defconst copilot-chat--org-input-tag
+  "copilotChatInput"
+  "The tag used to identify copilot chat input.")
+(defconst copilot-chat--org-delimiter
+  (concat "* ╭──── Chat Input ────╮ :" copilot-chat--org-input-tag ":")
+  "The delimiter used to identify copilot chat input.")
+
+;;; Polymode
+(define-derived-mode copilot-chat-org-prompt-mode org-mode "Copilot Chat org Prompt"
+  "Major mode for the Copilot Chat Prompt region."
+  (setq major-mode 'copilot-chat-org-prompt-mode
+    mode-name "Copilot Chat org prompt")
+  (copilot-chat-prompt-mode))
+
+(define-hostmode poly-copilot-org-hostmode
+  :mode 'org-mode)
+
+(define-innermode poly-copilot-org-prompt-innermode
+  :mode 'copilot-chat-org-prompt-mode
+  :head-matcher (concat copilot-chat--org-delimiter "\n")
+  :tail-matcher "\\'"
+  :head-mode 'host
+  :tail-mode 'host)
+
+(define-polymode copilot-chat-org-poly-mode
+  :hostmode 'poly-copilot-org-hostmode
+  :innermodes '(poly-copilot-org-prompt-innermode))
 
 
+;;; Functions
 (defun copilot-chat--org-format-data(content type)
   "Format data for org frontend.
 Argument CONTENT is the data to format.
@@ -45,17 +77,22 @@ Argument TYPE is the type of the data (prompt or answer)."
 	  (setq data (concat data content)))
     data))
 
-(defun copilot-chat--org-create-req (orig-fun &rest args)
-  "Advice to modify the PROMPT argument before executing the original function."
-  (let ((prompt (concat (nth 0 args) "\n\n(Remember: please use only emacs org-mode syntax))"))
-        (no-context (nth 1 args)))
-    (apply orig-fun (list prompt no-context))))
+(defun copilot-chat--org-format-code(code language)
+  "Format code for org frontend.
+Argument CODE is the code to format.
+Argument LANGUAGE is the language of the code."
+  (if language
+    (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
+    code))
+
+(defun copilot-chat--org-create-req (prompt &optional no-context)
+  "Create a request with org-mode syntax reminder.
+PROMPT is the input text.
+NO-CONTEXT is an optional flag (unused in current implementation)."
+  (format "%s\n\n(Remember: please use only emacs org-mode syntax)" prompt))
 
 (defun copilot-chat--org-clean()
-  "Clean the copilot chat org frontend."
-  (advice-remove 'copilot-chat--format-data #'copilot-chat--org-format-data)
-  (advice-remove 'copilot-chat--clean #'copilot-chat--org-clean)
-  (advice-remove 'copilot-chat--create-req #'copilot-chat--org-create-req))
+  "Clean the copilot chat org frontend.")
 
 (defun copilot-chat--get-org-block-content-at-point ()
   "Get the content of the org block at point."
@@ -148,58 +185,57 @@ Replace selection if any."
     (insert content)
     (setq copilot-chat--last-yank-end (point))))
 
-(defun copilot-chat-org-init()
+(defun copilot-chat--org-write(data)
+  "Write data at the end of the chat part of the buffer."
+  (copilot-chat--org-goto-input)
+  (forward-line -3)
+  (end-of-line)
+  (insert data))
+
+
+(defun copilot-chat--org-goto-input()
+  "Go to the input part of the chat buffer.
+The input is created if not found."
+  (goto-char (point-max))
+  (let ((span (pm-innermost-span (point))))
+    (if (and span
+          (not (eq (car span) nil)))  ; nil span-type means host mode
+      (goto-char (+ 1 (car (pm-innermost-range (point)))))
+      (insert "\n\n")
+      (let ((start (point))
+             (inhibit-read-only t))
+        (insert copilot-chat--org-delimiter "\n\n")
+        (add-text-properties start (point)
+          '(read-only t front-sticky t rear-nonsticky (read-only)))))))
+
+(defun copilot-chat--org-get-buffer()
+  "Create copilot-chat buffers."
+  (unless (buffer-live-p copilot-chat--buffer)
+    (setq copilot-chat--buffer (get-buffer-create copilot-chat--buffer-name))
+    (with-current-buffer copilot-chat--buffer
+      (copilot-chat-org-poly-mode)
+      (copilot-chat--org-goto-input)))
+  copilot-chat--buffer)
+
+(defun copilot-chat--org-insert-prompt (prompt)
+    "Insert PROMPT in the chat buffer."
+  (with-current-buffer (copilot-chat--org-get-buffer)
+    (copilot-chat--org-goto-input)
+    (unless (eobp)
+      (delete-region (point) (point-max)))
+    (insert prompt)))
+
+(defun copilot-chat--org-pop-prompt()
+  "Get current prompt to send and clean it."
+  (with-current-buffer (copilot-chat--org-get-buffer)
+    (copilot-chat--org-goto-input)
+    (let ((prompt (buffer-substring (point) (point-max))))
+      (delete-region (point) (point-max))
+      prompt)))
+
+(defun copilot-chat--org-init()
   "Initialize the copilot chat org frontend."
-  (setq copilot-chat-prompt "You are a world-class coding tutor. Your code explanations perfectly balance high-level concepts and granular details. Your approach ensures that students not only understand how to write code, but also grasp the underlying principles that guide effective programming.
-When asked for your name, you must respond with \"GitHub Copilot\".
-Follow the user's requirements carefully & to the letter.
-Your expertise is strictly limited to software development topics.
-Follow Microsoft content policies.
-Avoid content that violates copyrights.
-For questions not related to software development, simply give a reminder that you are an AI programming assistant.
-Keep your answers short and impersonal.
-
-Use only Emacs org-mode formatting in your answers.
-When using heading to structure your answer, please start at level 3 (i.e with 3 stars or more)
-Make sure to include the programming language name at the start of the org-mode code blocks.
-This is an example of python code block in emacs org-mode syntax:
-#+BEGIN_SRC python
-def hello_world():
-	print('Hello, World!')
-#+END_SRC
-Avoid wrapping the whole response in the block code.
-
-Don't forget the most important rule when you are formatting your response: use emacs org-mode syntax only.
-
-The user works in an IDE called Emacs which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.
-The active document is the source code the user is looking at right now.
-You can only give one reply for each conversation turn.
-
-Additional Rules
-Think step by step:
-1. Examine the provided code selection and any other context like user question, related errors, project details, class definitions, etc.
-2. If you are unsure about the code, concepts, or the user's question, ask clarifying questions.
-3. If the user provided a specific question or error, answer it based on the selected code and additional provided context. Otherwise focus on explaining the selected code.
-4. Provide suggestions if you see opportunities to improve code readability, performance, etc.
-
-Focus on being clear, helpful, and thorough without assuming extensive prior knowledge.
-Use developer-friendly terms and analogies in your explanations.
-Identify 'gotchas' or less obvious parts of the code that might trip up someone new.
-Provide clear and relevant examples aligned with any provided context.
-")
-
-  (define-derived-mode copilot-chat-mode org-mode "Copilot Chat"
-	"Major mode for the Copilot Chat buffer."
-	(read-only-mode 1))
-
-  (define-derived-mode copilot-chat-prompt-mode org-mode "Copilot Chat Prompt")
-
-  (advice-add 'copilot-chat--format-data :override #'copilot-chat--org-format-data)
-  (advice-add 'copilot-chat--clean :after #'copilot-chat--org-clean)
-  (advice-add 'copilot-chat--create-req :around #'copilot-chat--org-create-req)
-
-  (advice-add 'copilot-chat-send-to-buffer :override #'copilot-chat-org-send-to-buffer)
-  (advice-add 'copilot-chat--yank :override #'copilot-chat--org-yank))
+  (setq copilot-chat-prompt copilot-chat-org-prompt))
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here

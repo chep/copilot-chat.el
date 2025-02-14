@@ -134,13 +134,10 @@ Argument CONTENT is copilot chat answer."
 
 (defun copilot-chat--shell-cb-prompt-wrapper (shell content)
   "Wrapper around copilot-chat--shell-cb-prompt.
-When copilot-chat-follow is nil, copilot-chat--shell-cb-prompt is called in `save-excursion` block.
 Argument SHELL is the shell-maker instance.
 Argument CONTENT is copilot chat answer."
-  (if copilot-chat-follow
-    (copilot-chat--shell-cb-prompt shell content)
-    (save-excursion
-      (copilot-chat--shell-cb-prompt shell content))))
+  (save-excursion
+    (copilot-chat--shell-cb-prompt shell content)))
 
 (defun copilot-chat--shell-cb (command shell)
   "Callback for Copilot Chat shell-maker.
