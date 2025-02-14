@@ -2,11 +2,41 @@
 #+AUTHOR: Cédric Chépied
 
 * Description
-This plugin allows you to chat with github copilot.
+This plugin allows you to chat with GitHub copilot.
 
 [[file:chat.gif]]
 
 Feel free to contribute, report issues or discuss new features.
+
+* News
+
+v2.0.0 is +here+ in development.
+
+The master branch is now v2 development branch. To get a stable release, use the v1.3.0 tag. A branch for bug fix may be created if needed.
+
+In v2, only one buffer is used for chat, thanks to polymode. For the moment, org is the only frontend supported but markdown will follow. Anyway, you should use org since it is so powerful.
+
+For the moment, shell-maker frontend has been completely removed. It uses specific functions that won't be ported in the initial v2 release.
+
+Bug reports and new ideas are very welcome.
+
+
+* Tips
+
+Many of you won't read this readme. And many of those who start to read won't read more than a few lines. So I'll write some tips here, at the beginning.
+
+** Yank
+When using the org frontend, you can yank code blocks provided by Copilot just as you would use the kill ring. Here's a simple configuration:
+
+#+begin_src emacs-lisp
+(use-package copilot-chat
+  …
+  :bind (:map global-map
+            ("C-c C-y" . copilot-chat-yank)
+            ("C-c M-y" . copilot-chat-yank-pop)
+            ("C-c C-M-y" . (lambda () (interactive) (copilot-chat-yank-pop -1))))
+  …)
+#+end_src
 
 * Installation
 ** Melpa
@@ -33,8 +63,8 @@ With =use-package= :
 Clone repository and eval files in emacs.
 
 * Configuration
-** Github
-You will need a github acccount with access to copilot API. When sending the first prompt, you will need to authenticate to github. Follow instructions and everything will be fine.
+** GitHub
+You will need a GitHub account with access to copilot API. When sending the first prompt, you will need to authenticate to GitHub. Follow instructions and everything will be fine.
 
 ** Backend
 ~copilot-chat-backend~ can be set to ~'curl~ (default) or ~'request~.
@@ -43,7 +73,7 @@ With curl, answers will be written token by token. Curl path can be set with `co
 With request library, the text is written when all data is read and this can be long.
 
 ** Frontend
-Two frontends are available. You can select your favorite one by setting the `copilot-chat-frontend` variable to ~'org~ (default) or ~'markdown~.
+Two frontends are available. You can select your favorite one by setting the ~copilot-chat-frontend~ variable to ~'org~ (default) or ~'markdown~.
 
 Try them and choose wisely.
 
@@ -65,8 +95,8 @@ Proxies have not been thoroughly tested yet, so there may be bugs. Many options 
 
 * Usage
 ** Basic
-Start chatting with ~(copilot-chat-display)~. Type your question in =*copilot-chat-prompt*= buffer, then press ~C-c C-c~ or ~C-c RET~.  
-You may need to authenticate to github. Follow instructions.
+Start chatting with ~(copilot-chat-display)~. Type your question in prompt, then press ~C-c C-c~ or ~C-c RET~.  
+You may need to authenticate to GitHub. Follow instructions.
 
 You can select buffers that will be added as context in your prompt. Use ~copilot-chat-add-current-buffer~ and ~copilot-chat-del-current-buffer~. You can also manage buffers by using ~(copilot-chat-list)~. In the list, selected buffer will be highlighted using ~copilot-chat-list-selected-buffer-face~ which inherit from ~font-lock-keyword-face~.
 
@@ -90,9 +120,9 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-ask-and-insert)~ ask for a custom prompt and write answer in current buffer at point.
 
 *** Answer manipulation
-- ~(copilot-chat-yank)~ yank the last code block at point. (Org frontend only)
-- ~(copilot-chat-yank-pop)~ Replace last yank with previous block, or use argument to choose the block. Acts like ~(yank-pop)~. (Org frontend only)
-- ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any. (Org and markdown frontends only)
+- ~(copilot-chat-yank)~ yank the last code block at point (Org frontend only).
+- ~(copilot-chat-yank-pop)~ Replace last yank with previous block, or use argument to choose the block. Acts like ~(yank-pop)~ (Org frontend only).
+- ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any.
 
 *** Buffers
 - ~(copilot-chat-add-current-buffer)~ add current buffer to copilot chat. Its content will be sent with every request.
@@ -126,8 +156,8 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-clear-auth-cache)~ clears the auth cache for Copilot Chat. You will have to login again.
 
 
-** Customizable Variables
-All variables can be customized using ~M-x customize-group RET copilot-chat RET~
+** Customizable variables
+All variables can be customized using ~M-x customize-group RET copilot-chat RET~.
 
 *** Backend
 - ~copilot-chat-backend~ - Backend to use for API calls. Can be ~'curl~ (default) or ~'request~.
@@ -143,26 +173,26 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 - ~copilot-chat-follow~ - If ~t~ (default), point follows answer in buffer.
 - ~copilot-chat-list-added-buffers-only~ - By default, buffer list displays all buffers and uses faces to highlight added buffer. If set to ~t~, only added buffer are displayed.
 
-*** Storage and Cache
+*** Storage and cache
 - ~copilot-chat-github-token-file~ - File path to store GitHub authentication token.
 - ~copilot-chat-token-cache~ - File path to store session token cache.
 
-*** Model Settings
+*** Model settings
 - ~copilot-chat-model~ - AI model to use. Available options:
-  - GPT-4o (default)
-  - Claude 3.5 Sonnet
-  - GPT-4o1-(preview)
+  - GPT-4o (default).
+  - Claude 3.5 Sonnet.
+  - GPT-4o1-(preview).
 
 *** Prompts
 Default prompts used by various commands:
-- ~copilot-chat-prompt~ - Base system prompt configuring Copilot's behavior
-- ~copilot-chat-prompt-explain~ - Prompt for explain command
-- ~copilot-chat-prompt-review~ - Prompt for code review command
-- ~copilot-chat-prompt-doc~ - Prompt for documentation command
-- ~copilot-chat-prompt-fix~ - Prompt for fix command
-- ~copilot-chat-prompt-optimize~ - Prompt for optimization command
-- ~copilot-chat-prompt-test~ - Prompt for test generation command
-- ~copilot-chat-commit-prompt~ - Prompt for generating commit messages
+- ~copilot-chat-prompt~ - Base system prompt configuring Copilot's behavior.
+- ~copilot-chat-prompt-explain~ - Prompt for explain command.
+- ~copilot-chat-prompt-review~ - Prompt for code review command.
+- ~copilot-chat-prompt-doc~ - Prompt for documentation command.
+- ~copilot-chat-prompt-fix~ - Prompt for fix command.
+- ~copilot-chat-prompt-optimize~ - Prompt for optimization command.
+- ~copilot-chat-prompt-test~ - Prompt for test generation command.
+- ~copilot-chat-commit-prompt~ - Prompt for generating commit messages.
 
 ** Faces
 You can customize the appearance of the buffer list by modifying these faces:
@@ -180,11 +210,11 @@ You can customize the appearance of the buffer list by modifying these faces:
 - ~C-c C-t~ open transient menu.
 
 *** Buffer list buffer
-- ~RET~ select or deselect buffer on point
-- ~space~ select or deselect buffer on point
-- ~C-c C-c~ clear buffer list
-- ~g~ refresh list
-- ~q~ bury buffer and delete window
+- ~RET~ select or deselect buffer on point.
+- ~space~ select or deselect buffer on point.
+- ~C-c C-c~ clear buffer list.
+- ~g~ refresh list.
+- ~q~ bury buffer and delete window.
 
 
 * Notes
@@ -192,4 +222,4 @@ This plugin is unofficial and based on Copilot Chat for neovim repository: https
 
 The prompt for git commit messages comes from [[https://github.com/ywkim/gpt-commit][gpt-commit]].
 
-For github copilot code completion in emacs, checkout [[https://github.com/copilot-emacs/copilot.el][copilot.el]]
+For GitHub copilot code completion in emacs, checkout [[https://github.com/copilot-emacs/copilot.el][copilot.el]]

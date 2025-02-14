@@ -1,11 +1,11 @@
-;;; copilot-chat.el --- Copilot chat interface -*- indent-tabs-mode: nil; lexical-binding: t -*-
+;;; copilot-chat.el --- Copilot chat interface -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
 ;; Version: 2.0.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (magit "4.0.0") (transient "0.8.3") (org "9.4.6"))
+;; Package-Requires: ((request "0.3.2") (markdown-mode "2.6") (emacs "27.1") (magit "4.0.0") (transient "0.8.3") (org "9.4.6") (polymode "0.2.2"))
 ;; Keywords: convenience, tools
 
 
