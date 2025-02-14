@@ -144,6 +144,8 @@ Optional argument BUFFER is the buffer to write data in."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
+  (unless (equal (pm-base-buffer) copilot-chat--buffer)
+    (select-window (display-buffer copilot-chat--buffer)))
   (let ((prompt (copilot-chat--pop-current-prompt)))
     (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt))
     (push prompt copilot-chat--prompt-history)
