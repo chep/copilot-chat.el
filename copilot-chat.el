@@ -72,6 +72,7 @@
                                     (bury-buffer)
                                     (delete-window)))
     (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
+    (define-key map (kbd "C-c C-t") 'copilot-chat-transient)
     (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
     (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
     map)
@@ -218,8 +219,10 @@ Argument PROMPT is the prompt to send to Copilot."
   (copilot-chat--ask-region 'test))
 
 (defun copilot-chat--insert-prompt (prompt)
-  "Insert PROMPT in the Copilot Chat prompt region.
-This function must be overriden by frontend.")
+  "Insert PROMPT in the Copilot Chat prompt region."
+  (let ((prompt-fn (copilot-chat-frontend-insert-prompt-fn (copilot-chat--get-frontend))))
+    (when prompt-fn
+      (funcall prompt-fn prompt))))
 
 (defun copilot-chat--insert-and-send-prompt (prompt)
   "Helper function to prepare buffers and send PROMPT to Copilot.
@@ -227,10 +230,8 @@ This function may be overriden by frontend."
   (let* ((prompt-suffix (copilot-chat--build-prompt-suffix))
          (final-prompt (if prompt-suffix
                            (concat prompt "\n" prompt-suffix)
-                         prompt))
-         (prompt-fn (copilot-chat-frontend-insert-prompt-fn (copilot-chat--get-frontend))))
-    (when prompt-fn
-      (funcall prompt-fn final-prompt))
+                         prompt)))
+    (copilot-chat--insert-prompt final-prompt)
     (copilot-chat-prompt-send)))
 
 (defun copilot-chat--build-prompt-suffix ()
@@ -469,38 +470,34 @@ If there are more than 40 files, refuse to add and show warning message."
 (defun copilot-chat-prompt-history-previous()
   "Insert previous prompt in prompt buffer."
   (interactive)
-  (with-current-buffer copilot-chat--prompt-buffer
-    (let ((prompt (if (null copilot-chat--prompt-history)
-                      nil
-                    (if (null copilot-chat--prompt-history-position)
-                        (progn
-                          (setq copilot-chat--prompt-history-position 0)
-                          (car copilot-chat--prompt-history))
-                      (if (= copilot-chat--prompt-history-position (1- (length copilot-chat--prompt-history)))
-                          (car (last copilot-chat--prompt-history))
-                        (setq copilot-chat--prompt-history-position (1+ copilot-chat--prompt-history-position))
-                        (nth copilot-chat--prompt-history-position copilot-chat--prompt-history))))))
-      (when prompt
-        (erase-buffer)
-        (insert prompt)))))
+  (let ((prompt (if (null copilot-chat--prompt-history)
+                    nil
+                  (if (null copilot-chat--prompt-history-position)
+                      (progn
+                        (setq copilot-chat--prompt-history-position 0)
+                        (car copilot-chat--prompt-history))
+                    (if (= copilot-chat--prompt-history-position (1- (length copilot-chat--prompt-history)))
+                        (car (last copilot-chat--prompt-history))
+                      (setq copilot-chat--prompt-history-position (1+ copilot-chat--prompt-history-position))
+                      (nth copilot-chat--prompt-history-position copilot-chat--prompt-history))))))
+    (when prompt
+      (copilot-chat--insert-prompt prompt))))
 
 
 (defun copilot-chat-prompt-history-next()
   "Insert next prompt in prompt buffer."
   (interactive)
-  (with-current-buffer copilot-chat--prompt-buffer
-    (let ((prompt (if (null copilot-chat--prompt-history)
+  (let ((prompt (if (null copilot-chat--prompt-history)
                     nil
-                    (if (null copilot-chat--prompt-history-position)
+                  (if (null copilot-chat--prompt-history-position)
                       nil
-                      (if (= 0 copilot-chat--prompt-history-position)
+                    (if (= 0 copilot-chat--prompt-history-position)
                         ""
-                        (progn
-                          (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
-                          (nth copilot-chat--prompt-history-position copilot-chat--prompt-history)))))))
-      (when prompt
-        (erase-buffer)
-        (insert prompt)))))
+                      (progn
+                        (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
+                        (nth copilot-chat--prompt-history-position copilot-chat--prompt-history)))))))
+    (when prompt
+      (copilot-chat--insert-prompt prompt))))
 
 (defun copilot-chat-reset()
   "Reset copilot chat session."
