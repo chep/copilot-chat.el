@@ -40,28 +40,22 @@
 (define-derived-mode copilot-chat-markdown-prompt-mode markdown-mode "Copilot Chat markdown Prompt"
   "Major mode for the Copilot Chat Prompt region."
   (setq major-mode 'copilot-chat-markdown-prompt-mode
-    mode-name "Copilot Chat markdown prompt"
-    buffer-read-only nil)
-  (read-only-mode -1)
+    mode-name "Copilot Chat markdown prompt")
   (copilot-chat-prompt-mode))
 
-
 (define-hostmode poly-copilot-markdown-hostmode
-  :mode 'markdown-view-mode)
+  :mode 'copilot-chat-markdown-prompt-mode)
 
-(define-innermode poly-copilot-markdown-prompt-innermode
-  :mode 'copilot-chat-markdown-prompt-mode
-  :head-matcher (concat copilot-chat--markdown-delimiter "\n")
-  :tail-matcher "\\'"
-  :head-mode 'host
-  :tail-mode 'host
-  :init-functions '(lambda (mode)
-                     (read-only-mode -1)
-                     (setq buffer-read-only nil)))
+(define-innermode poly-copilot-markdown-innermode
+  :mode 'markdown-view-mode
+  :head-matcher "\\`"  ; Match beginning of buffer
+  :tail-matcher (concat copilot-chat--markdown-delimiter "\n")
+  :head-mode 'inner
+  :tail-mode 'host)
 
 (define-polymode copilot-chat-markdown-poly-mode
   :hostmode 'poly-copilot-markdown-hostmode
-  :innermodes '(poly-copilot-markdown-prompt-innermode))
+  :innermodes '(poly-copilot-markdown-innermode))
 
 
 ;;; Functions
@@ -139,14 +133,16 @@ Replace selection if any."
   "Go to the input part of the chat buffer.
 The input is created if not found."
   (goto-char (point-max))
-  (let ((inhibit-read-only t))
-    (if (re-search-backward copilot-chat--markdown-delimiter nil t)
-      (forward-line 1)
-      (insert "\n\n")
-      (let ((start (point)))
-        (insert copilot-chat--markdown-delimiter "\n\n")))))
-        ;; (add-text-properties start (point)
-        ;;   '(read-only t front-sticky t rear-nonsticky (read-only)))))))
+  (if (re-search-backward copilot-chat--markdown-delimiter nil t)
+    (forward-line 1)
+    (insert "\n\n")
+    (let ((start (point))
+          (inhibit-read-only t))
+      (insert copilot-chat--markdown-delimiter "\n\n")
+      ;; Create overlay for read-only section
+      (let ((overlay (make-overlay start (1- (point)))))
+        (overlay-put overlay 'read-only t)
+        (overlay-put overlay 'evaporate t)))))
 
 (defun copilot-chat--markdown-get-buffer()
   "Create copilot-chat buffers."
