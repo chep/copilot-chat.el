@@ -167,7 +167,7 @@ Argument PROMPT is the prompt to send to Copilot."
     (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--insert-and-send-prompt
      (concat (cdr (assoc prompt (copilot-chat--prompts)))
-             code))))
+             (copilot-chat--format-code code)))))
 
 ;;;###autoload
 (defun copilot-chat-explain()
@@ -224,36 +224,34 @@ Argument PROMPT is the prompt to send to Copilot."
       (funcall prompt-fn prompt))))
 
 (defun copilot-chat--insert-and-send-prompt (prompt)
-  "Helper function to prepare buffers and send PROMPT to Copilot.
-This function may be overriden by frontend."
-  (let* ((prompt-suffix (copilot-chat--build-prompt-suffix))
-         (final-prompt (if prompt-suffix
-                           (concat prompt "\n" prompt-suffix)
-                         prompt)))
-    (copilot-chat--insert-prompt final-prompt)
-    (copilot-chat-prompt-send)))
+  "Helper function to prepare buffer and send PROMPT to Copilot."
+  (copilot-chat--insert-prompt prompt)
+  (copilot-chat-prompt-send))
 
-(defun copilot-chat--build-prompt-suffix ()
-    "Build a prompt suffix with the current buffer name."
-    (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
-        (let* ((major-mode-str (symbol-name major-mode))
-               (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str))
-               (dynamic-suffix (format "current programming language is: %s" lang))
-               (suffix (if copilot-chat-prompt-suffix
-                           (concat dynamic-suffix ", " copilot-chat-prompt-suffix)
-                         dynamic-suffix)))
-          suffix)
-      copilot-chat-prompt-suffix))
+(defun copilot-chat--get-language ()
+  "Get the current language of the buffer."
+  (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
+      (let* ((major-mode-str (symbol-name major-mode))
+             (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str)))
+        lang)
+    nil))
+
+(defun copilot-chat--format-code(code)
+  "Format the CODE according to the frontend."
+  (let ((format-fn (copilot-chat-frontend-format-code-fn (copilot-chat--get-frontend))))
+    (if format-fn
+        (funcall format-fn code (copilot-chat--get-language))
+      code)))
 
 (defun copilot-chat--custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code."
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
-         (formatted-prompt (concat prompt "\n" code)))
+         (formatted-prompt (concat prompt "\n" (copilot-chat--format-code code))))
     (copilot-chat--insert-and-send-prompt formatted-prompt)))
 
 ;;;###autoload
-(defun copilot-chat-explain-symbol-at-line()
+(defun copilot-chat-explain-symbol-at-line ()
   "Ask Copilot to explain symbol under point, given the code line as background info."
   (interactive)
   (unless (copilot-chat--ready-p)
@@ -263,7 +261,7 @@ This function may be overriden by frontend."
                 (line-beginning-position)
                 (line-end-position)))
          (prompt (format "Please explain what '%s' means in the context of this code line:\n%s"
-                         symbol line)))
+                         symbol (copilot-chat--format-code line))))
     (copilot-chat--insert-and-send-prompt prompt)))
 
 ;;;###autoload

@@ -84,6 +84,7 @@ If nil, no suffix will be added."
   init-fn
   clean-fn
   format-fn
+  format-code-fn
   create-req-fn
   send-to-buffer-fn
   yank-fn
@@ -109,6 +110,7 @@ If nil, no suffix will be added."
          :init-fn nil
          :clean-fn nil
          :format-fn nil
+         :format-code-fn nil
          :create-req-fn nil
          :send-to-buffer-fn nil
          :yank-fn nil
@@ -121,6 +123,7 @@ If nil, no suffix will be added."
          :init-fn #'copilot-chat--org-init
          :clean-fn #'copilot-chat--org-clean
          :format-fn #'copilot-chat--org-format-data
+         :format-code-fn #'copilot-chat--org-format-code
          :create-req-fn #'copilot-chat--org-create-req
          :send-to-buffer-fn #'copilot-chat-org-send-to-buffer
          :yank-fn #'copilot-chat--org-yank

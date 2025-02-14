@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'copilot-chat-common)
 (require 'polymode)
 
 ;;; Constants
@@ -77,9 +78,19 @@ Argument TYPE is the type of the data (prompt or answer)."
 	  (setq data (concat data content)))
     data))
 
-(defun copilot-chat--org-create-req (prompt no-context)
-  "Modify the PROMPT argument before executing the original function."
-  (concat prompt "\n\n(Remember: please use only emacs org-mode syntax))"))
+(defun copilot-chat--org-format-code(code language)
+  "Format code for org frontend.
+Argument CODE is the code to format.
+Argument LANGUAGE is the language of the code."
+  (if language
+    (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
+    code))
+
+(defun copilot-chat--org-create-req (prompt &optional no-context)
+  "Create a request with org-mode syntax reminder.
+PROMPT is the input text.
+NO-CONTEXT is an optional flag (unused in current implementation)."
+  (format "%s\n\n(Remember: please use only emacs org-mode syntax)" prompt))
 
 (defun copilot-chat--org-clean()
   "Clean the copilot chat org frontend.")
