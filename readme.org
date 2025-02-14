@@ -16,7 +16,7 @@ The master branch is now v2 development branch. To get a stable release, use the
 
 In v2, only one buffer is used for chat, thanks to polymode. For the moment, org mode is more stable but markdown will follow. Anyway, you should use org since it is so powerful.
 
-For the moment, shell-maker frontend has been completely removed. It uses specific functions that won't be ported in the initial v2 release.
+Shell-maker is back !
 
 Bug reports and new ideas are very welcome.
 
@@ -73,7 +73,7 @@ With curl, answers will be written token by token. Curl path can be set with `co
 With request library, the text is written when all data is read and this can be long.
 
 ** Frontend
-Two frontends are available. You can select your favorite one by setting the ~copilot-chat-frontend~ variable to ~'org~ (default) or ~'markdown~.
+Several frontends are available. You can select your favorite one by setting the ~copilot-chat-frontend~ variable to ~'org~ (default), ~'markdown~ or ~'shell-maker~.
 
 Try them and choose wisely.
 
@@ -120,9 +120,9 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-ask-and-insert)~ ask for a custom prompt and write answer in current buffer at point.
 
 *** Answer manipulation
-- ~(copilot-chat-yank)~ yank the last code block at point (Org frontend only).
-- ~(copilot-chat-yank-pop)~ Replace last yank with previous block, or use argument to choose the block. Acts like ~(yank-pop)~ (Org frontend only).
-- ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any.
+- ~(copilot-chat-yank)~ yank the last code block at point (org frontend only).
+- ~(copilot-chat-yank-pop)~ Replace last yank with previous block, or use argument to choose the block. Acts like ~(yank-pop)~ (org frontend only).
+- ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any (org and markdown frontends only).
 
 *** Buffers
 - ~(copilot-chat-add-current-buffer)~ add current buffer to copilot chat. Its content will be sent with every request.
@@ -170,8 +170,9 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 - ~copilot-chat-frontend~ - Frontend interface to use. Can be ~'org~ (default) or ~'markdown~.
 
 *** Display
-- ~copilot-chat-follow~ - If ~t~ (default), point follows answer in buffer.
 - ~copilot-chat-list-added-buffers-only~ - By default, buffer list displays all buffers and uses faces to highlight added buffer. If set to ~t~, only added buffer are displayed.
+- ~copilot-chat-shell-maker-follow~ - If ~t~ (default), point follows answer in shell-maker buffer.
+
 
 *** Storage and cache
 - ~copilot-chat-github-token-file~ - File path to store GitHub authentication token.

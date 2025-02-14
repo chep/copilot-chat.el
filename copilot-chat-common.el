@@ -42,7 +42,8 @@
 (defcustom copilot-chat-frontend 'org
   "Frontend to use with `copilot-chat'.  Can be org or markdown."
   :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown))
+                 (const :tag "markdown" markdown)
+                 (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
@@ -130,7 +131,20 @@ If nil, no suffix will be added."
          :write-fn #'copilot-chat--org-write
          :get-buffer-fn #'copilot-chat--org-get-buffer
          :insert-prompt-fn #'copilot-chat--org-insert-prompt
-         :pop-prompt-fn #'copilot-chat--org-pop-prompt))
+         :pop-prompt-fn #'copilot-chat--org-pop-prompt)
+        (make-copilot-chat-frontend
+         :id 'shell-maker
+         :init-fn #'copilot-chat-shell-maker-init
+         :clean-fn #'copilot-chat--shell-maker-clean
+         :format-fn nil
+         :format-code-fn #'copilot-chat--markdown-format-code
+         :create-req-fn nil
+         :send-to-buffer-fn nil
+         :yank-fn nil
+         :write-fn nil
+         :get-buffer-fn #'copilot-chat--shell-maker-get-buffer
+         :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
+         :pop-prompt-fn nil))
     "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)
