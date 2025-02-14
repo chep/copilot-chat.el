@@ -519,13 +519,13 @@ If there are more than 40 files, refuse to add and show warning message."
       (funcall clean-fn))))
 
 
-(defun copilot-chat-send-to-buffer(buffer)
+(defun copilot-chat-send-to-buffer()
     "Send the code block at point to buffer.
 Replace selection if any."
   (interactive)
   (let ((send-fn (copilot-chat-frontend-send-to-buffer-fn (copilot-chat--get-frontend))))
     (when send-fn
-      (funcall send-fn buffer))))
+      (funcall send-fn))))
 
 (defun copilot-chat--get-diff ()
   "Get the diff of all staged files in the current repository and return it as a string."

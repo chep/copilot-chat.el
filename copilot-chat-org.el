@@ -115,23 +115,21 @@ NO-CONTEXT is an optional flag (unused in current implementation)."
                 (eq major-mode mode)))
             (buffer-list)))
 
-(defun copilot-chat-org-send-to-buffer (buffer)
+(defun copilot-chat--org-send-to-buffer ()
   "Send the code block at point to buffer.
 Replace selection if any."
-  (interactive
-   (let* ((element (org-element-at-point))
+  (let* ((element (org-element-at-point))
           (mode (copilot-chat--get-language-mode element))
           (matching-buffer (when mode (copilot-chat--find-matching-buffer mode)))
-          (default-buffer (or matching-buffer (current-buffer))))
-     (list
-      (completing-read "Choose buffer: "
-                      (mapcar #'buffer-name (buffer-list))
-                      nil  ; PREDICATE
-                      t    ; REQUIRE-MATCH
-                      nil  ; INITIAL-INPUT
-                      'buffer-name-history
-                      (buffer-name default-buffer)))))
-  (let ((content (copilot-chat--get-org-block-content-at-point)))
+          (default-buffer (or matching-buffer (current-buffer)))
+          (buffer (completing-read "Choose buffer: "
+                    (mapcar #'buffer-name (buffer-list))
+                    nil  ; PREDICATE
+                    t    ; REQUIRE-MATCH
+                    nil  ; INITIAL-INPUT
+                    'buffer-name-history
+                    (buffer-name default-buffer)))
+          (content (copilot-chat--get-org-block-content-at-point)))
     (when content
       (with-current-buffer buffer
         (when (use-region-p)

@@ -103,19 +103,17 @@ Argument LANGUAGE is the language of the code."
           (list :content content
                 :language lang))))))
 
-(defun copilot-chat-markdown-send-to-buffer(buffer)
-    "Send the code block at point to buffer.
+(defun copilot-chat--markdown-send-to-buffer()
+  "Send the code block at point to buffer.
 Replace selection if any."
-    (interactive
-    (list
-    (completing-read "Choose buffer: "
-                    (mapcar #'buffer-name (buffer-list))
-                    nil  ; PREDICATE
-                    t    ; REQUIRE-MATCH
-                    nil  ; INITIAL-INPUT
-                    'buffer-name-history
-                    (buffer-name (current-buffer)))))
-  (let* ((content (copilot-chat--get-markdown-block-content-at-point)))
+  (let ((buffer (completing-read "Choose buffer: "
+                  (mapcar #'buffer-name (buffer-list))
+                  nil  ; PREDICATE
+                  t    ; REQUIRE-MATCH
+                  nil  ; INITIAL-INPUT
+                  'buffer-name-history
+                  (buffer-name (current-buffer))))
+         (content (copilot-chat--get-markdown-block-content-at-point)))
     (when content
       (with-current-buffer buffer
         (when (use-region-p)

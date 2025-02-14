@@ -112,7 +112,7 @@ If nil, no suffix will be added."
          :format-fn #'copilot-chat--markdown-format-data
          :format-code-fn #'copilot-chat--markdown-format-code
          :create-req-fn nil
-         :send-to-buffer-fn #'copilot-chat-markdown-send-to-buffer
+         :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
          :yank-fn nil
          :write-fn #'copilot-chat--markdown-write
          :get-buffer-fn #'copilot-chat--markdown-get-buffer
@@ -125,7 +125,7 @@ If nil, no suffix will be added."
          :format-fn #'copilot-chat--org-format-data
          :format-code-fn #'copilot-chat--org-format-code
          :create-req-fn #'copilot-chat--org-create-req
-         :send-to-buffer-fn #'copilot-chat-org-send-to-buffer
+         :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
          :yank-fn #'copilot-chat--org-yank
          :write-fn #'copilot-chat--org-write
          :get-buffer-fn #'copilot-chat--org-get-buffer
