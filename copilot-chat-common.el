@@ -92,7 +92,8 @@ If nil, no suffix will be added."
   write-fn
   get-buffer-fn
   insert-prompt-fn
-  pop-prompt-fn)
+  pop-prompt-fn
+  goto-input-fn)
 
 ;; variables
 (defvar copilot-chat--instance
@@ -118,7 +119,8 @@ If nil, no suffix will be added."
          :write-fn #'copilot-chat--markdown-write
          :get-buffer-fn #'copilot-chat--markdown-get-buffer
          :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
-         :pop-prompt-fn #'copilot-chat--markdown-pop-prompt)
+         :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
+         :goto-input-fn #'copilot-chat--markdown-goto-input)
         (make-copilot-chat-frontend
          :id 'org
          :init-fn #'copilot-chat--org-init
@@ -131,7 +133,8 @@ If nil, no suffix will be added."
          :write-fn #'copilot-chat--org-write
          :get-buffer-fn #'copilot-chat--org-get-buffer
          :insert-prompt-fn #'copilot-chat--org-insert-prompt
-         :pop-prompt-fn #'copilot-chat--org-pop-prompt)
+         :pop-prompt-fn #'copilot-chat--org-pop-prompt
+         :goto-input-fn #'copilot-chat--org-goto-input)
         (make-copilot-chat-frontend
          :id 'shell-maker
          :init-fn #'copilot-chat-shell-maker-init
@@ -144,7 +147,8 @@ If nil, no suffix will be added."
          :write-fn nil
          :get-buffer-fn #'copilot-chat--shell-maker-get-buffer
          :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
-         :pop-prompt-fn nil))
+         :pop-prompt-fn nil
+         :goto-input-fn nil))
     "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)

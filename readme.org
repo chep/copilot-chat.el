@@ -38,6 +38,9 @@ When using the org frontend, you can yank code blocks provided by Copilot just a
   …)
 #+end_src
 
+** Find input section
+In copilot-chat buffer, you can use (or bind to a key) the interactive ~copilot-chat-goto-input~ function to place point at the beginning of the prompt area.
+
 * Installation
 ** Melpa
 Copilot-chat is available on melpa :
@@ -113,6 +116,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-set-model)~ Select AI model to use.
 
 *** Prompt
+- ~copilot-chat-goto-input~ place point at the beginning of the prompt area.
 - ~(copilot-chat-custom-mini-buffer)~ ask for a prompt in minibuffer and send it to copilot.
 - ~(copilot-chat-custom-prompt-selection)~ ask for a prompt in minibuffer and pastes selection after it before sending it to copilot.
 - ~(copilot-chat-prompt-history-previous)~ insert previous prompt from history in prompt buffer.

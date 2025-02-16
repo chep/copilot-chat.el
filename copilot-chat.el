@@ -616,6 +616,14 @@ INC is the number to use as increment for index in block ring."
     (when yank-fn
       (funcall yank-fn))))
 
+(defun copilot-chat-goto-input()
+  "Go to the input area."
+  (interactive)
+  (when (equal (pm-base-buffer) (copilot-chat--get-buffer))
+    (let ((goto-fn (copilot-chat-frontend-goto-input-fn (copilot-chat--get-frontend))))
+      (when goto-fn
+        (funcall goto-fn)))))
+
 ;;;###autoload
 (defun copilot-chat-clear-auth-cache()
   "Clear the auth cache for Copilot Chat."
