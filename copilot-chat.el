@@ -503,13 +503,13 @@ If there are more than 40 files, refuse to add and show warning message."
   "Reset copilot chat session."
   (interactive)
   (copilot-chat-list-clear-buffers)
+  (copilot-chat--clean)
   (let* ((buf (copilot-chat--get-buffer))
          (window (get-buffer-window buf)))
     (when buf
       (kill-buffer buf)
       (when window
         (delete-window window))))
-  (copilot-chat--clean)
   (let ((init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
     (when init-fn
       (funcall init-fn))
