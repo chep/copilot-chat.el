@@ -89,14 +89,14 @@
 
 (defun copilot-chat--create ()
   "Create a new Copilot chat instance."
-  (setq copilot-chat--instance(make-copilot-chat
-                              :ready t
-                              :github-token (copilot-chat--get-cached-token)
-                              :token nil
-                              :sessionid (concat (copilot-chat--uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
-                              :machineid (copilot-chat--machine-id)
-                              :history nil
-                              :buffers nil)))
+  (setq copilot-chat--instance(copilot-chat--make
+                               :ready t
+                               :github-token (copilot-chat--get-cached-token)
+                               :token nil
+                               :sessionid (concat (copilot-chat--uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
+                               :machineid (copilot-chat--machine-id)
+                               :history nil
+                               :buffers nil)))
 
 (defun copilot-chat--login()
   "Login to GitHub Copilot API."
@@ -110,15 +110,14 @@
 
 
 (defun copilot-chat--renew-token()
-    "Renew the session token."
-(cond
+  "Renew the session token."
+  (cond
    ((eq copilot-chat-backend 'curl)
     (copilot-chat--curl-renew-token))
    ((eq copilot-chat-backend 'request)
     (copilot-chat--request-renew-token))
    (t
     (error "Unknown backend: %s" copilot-chat-backend))))
-
 
 (defun copilot-chat--auth()
   "Authenticate with GitHub Copilot API.
@@ -144,7 +143,7 @@ Then we need a session token."
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
- (let* ((history (copilot-chat-history copilot-chat--instance))
+  (let* ((history (copilot-chat-history copilot-chat--instance))
          (new-history (cons (list prompt "user") history)))
     (copilot-chat--auth)
     (cond
@@ -160,7 +159,7 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
 (defun copilot-chat--add-buffer (buffer)
   "Add a BUFFER to copilot buffers list.
 Argument buffer is the buffer to add."
-    (unless (memq buffer (copilot-chat-buffers copilot-chat--instance))
+  (unless (memq buffer (copilot-chat-buffers copilot-chat--instance))
     (let* ((buffers (copilot-chat-buffers copilot-chat--instance))
            (new-buffers (cons buffer buffers)))
       (setf (copilot-chat-buffers copilot-chat--instance) new-buffers))))

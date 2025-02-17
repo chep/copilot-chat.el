@@ -52,7 +52,7 @@
   :group 'copilot-chat)
 
 (defcustom copilot-chat-ignored-commit-files
-  '("pnpm-lock.yaml" "package-lock.json" "yarn.lock" "poetry.lock" 
+  '("pnpm-lock.yaml" "package-lock.json" "yarn.lock" "poetry.lock"
     "Cargo.lock" "go.sum" "composer.lock" "Gemfile.lock"
     "requirements.txt" "*.pyc" "*.pyo" "*.pyd"
     "*.so" "*.dylib" "*.dll" "*.exe"
@@ -82,9 +82,9 @@ Supports glob patterns like '*.lock' or 'node_modules/'."
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-c") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-q") (lambda()
-                                    (interactive)
-                                    (bury-buffer)
-                                    (delete-window)))
+                                      (interactive)
+                                      (bury-buffer)
+                                      (delete-window)))
     (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
     (define-key map (kbd "C-c C-t") 'copilot-chat-transient)
     (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
@@ -126,7 +126,7 @@ Argument DATA data to be inserted in buffer."
       (with-current-buffer buffer
         (insert data))
     (with-current-buffer (copilot-chat--get-buffer)
-	  (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
+      (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
         (save-excursion
           (when write-fn
             (funcall write-fn data)))))))
@@ -141,7 +141,7 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
       content)))
 
 (defun copilot-chat-prompt-cb (content &optional buffer)
-    "Function called by backend when data is received.
+  "Function called by backend when data is received.
 Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
@@ -179,9 +179,9 @@ Optional argument BUFFER is the buffer to write data in."
                                 (copilot-chat-prompt-cb content current-buf)))))
 
 (defun copilot-chat--ask-region(prompt)
-    "Send to Copilot a prompt followed by the current selected code.
+  "Send to Copilot a prompt followed by the current selected code.
 Argument PROMPT is the prompt to send to Copilot."
-    (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
+  (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--insert-and-send-prompt
      (concat (cdr (assoc prompt (copilot-chat--prompts)))
              (copilot-chat--format-code code)))))
@@ -534,7 +534,7 @@ If there are more than 40 files, refuse to add and show warning message."
 
 
 (defun copilot-chat-send-to-buffer()
-    "Send the code block at point to buffer.
+  "Send the code block at point to buffer.
 Replace selection if any."
   (interactive)
   (let ((send-fn (copilot-chat-frontend-send-to-buffer-fn (copilot-chat--get-frontend))))
@@ -551,7 +551,7 @@ The diff is generated using `magit-git-insert' and excludes files
 matching patterns in `copilot-chat-ignored-commit-files', such as
 lock files and build artifacts."
   (let ((default-directory (or (magit-toplevel)
-                              (user-error "Not inside a Git repository"))))
+                               (user-error "Not inside a Git repository"))))
     (with-temp-buffer
       ;; First get list of staged files
       (magit-git-insert "diff" "--cached" "--name-only")
@@ -560,10 +560,10 @@ lock files and build artifacts."
               (cl-remove-if
                (lambda (file)
                  (cl-some (lambda (pattern)
-                           (or (string-match-p (wildcard-to-regexp pattern) file)
-                               (and (string-suffix-p "/" pattern)
-                                    (string-prefix-p pattern file))))
-                         copilot-chat-ignored-commit-files))
+                            (or (string-match-p (wildcard-to-regexp pattern) file)
+                                (and (string-suffix-p "/" pattern)
+                                     (string-prefix-p pattern file))))
+                          copilot-chat-ignored-commit-files))
                staged-files)))
         (erase-buffer)
         ;; Then get diff only for non-ignored files
@@ -589,10 +589,10 @@ No message is printed if `copilot-chat-debug' is nil."
     (unless (stringp format-string)
       (signal 'wrong-type-argument (list 'stringp format-string)))
     (let ((formatted-msg (condition-case err
-                            (apply #'format format-string args)
-                          (error
-                           (message "Error formatting debug message: %S" err)
-                           (format "Error formatting message with args: %S" args)))))
+                             (apply #'format format-string args)
+                           (error
+                            (message "Error formatting debug message: %S" err)
+                            (format "Error formatting message with args: %S" args)))))
       (message "[copilot-chat:%s] %s" category formatted-msg))))
 
 ;;;###autoload
@@ -608,12 +608,12 @@ Requires the repository to have staged changes."
   (let* ((diff (copilot-chat--get-diff))
          (prompt (concat copilot-chat-commit-prompt diff))
          (current-buf (current-buffer)))
-      
+
     ;; Debug messages using structured format
     (copilot-chat--debug 'commit "Starting commit message generation")
-    (copilot-chat--debug 'commit "Diff size: %d bytes, Model: %s" 
-                        (length diff) copilot-chat-model)
-      
+    (copilot-chat--debug 'commit "Diff size: %d bytes, Model: %s"
+                         (length diff) copilot-chat-model)
+
     (cond
      ((string-empty-p diff)
       (copilot-chat--debug 'commit "No changes found in staging area")
@@ -621,17 +621,17 @@ Requires the repository to have staged changes."
      (t
       (message "Generating commit message... Please wait for the model response.")
       (copilot-chat--ask prompt
-                        (lambda (content)
-                          (with-current-buffer current-buf
-                            (if (string= content copilot-chat--magic)
-                                (progn
-                                  (insert "\n")
-                                  (copilot-chat--debug 'commit "Generation completed"))
-                              (progn
-                                (insert content)
-                                (copilot-chat--debug 'commit "Received chunk: %d chars" 
-                                                    (length content))))))
-                        t)))))
+                         (lambda (content)
+                           (with-current-buffer current-buf
+                             (if (string= content copilot-chat--magic)
+                                 (progn
+                                   (insert "\n")
+                                   (copilot-chat--debug 'commit "Generation completed"))
+                               (progn
+                                 (insert content)
+                                 (copilot-chat--debug 'commit "Received chunk: %d chars"
+                                                      (length content))))))
+                         t)))))
 
 
 (defun copilot-chat--get-model-choices ()
@@ -639,35 +639,35 @@ Requires the repository to have staged changes."
 If models haven't been fetched yet, fetch them from the API."
   (unless (copilot-chat-models copilot-chat--instance)
     (copilot-chat--request-models))
-  
+
   (let ((models (copilot-chat-models copilot-chat--instance)))
     (if models
         ;; Return list of (name . id) pairs from fetched models, sorted by ID
         (sort
          (mapcar (lambda (model)
-                  (let* ((capabilities (alist-get 'capabilities model))
-                         (limits (alist-get 'limits capabilities))
-                         (max-output (or (alist-get 'max_output_tokens limits)
-                                       (if (string-prefix-p "o1" (alist-get 'id model))
-                                           100000  ; Set o1 models to 100k output tokens
-                                         nil))))
-                    (cons (format "%s (%s)%s%s\n  Tokens: %s/%s, Context: %s"
-                                (alist-get 'name model)
-                                (alist-get 'vendor model)
-                                (if (eq (alist-get 'preview model) t) " [Preview]" "")
-                                (if (and (alist-get 'policy model)
-                                        (equal (alist-get 'state (alist-get 'policy model)) "unconfigured"))
-                                    " [Policy Required]" "")
-                                (alist-get 'max_prompt_tokens limits)
-                                max-output
-                                (alist-get 'max_context_window_tokens limits))
-                          (alist-get 'id model))))
-                models)
+                   (let* ((capabilities (alist-get 'capabilities model))
+                          (limits (alist-get 'limits capabilities))
+                          (max-output (or (alist-get 'max_output_tokens limits)
+                                          (if (string-prefix-p "o1" (alist-get 'id model))
+                                              100000  ; Set o1 models to 100k output tokens
+                                            nil))))
+                     (cons (format "%s (%s)%s%s  Tokens: %s/%s, Context: %s"
+                                   (alist-get 'name model)
+                                   (alist-get 'vendor model)
+                                   (if (eq (alist-get 'preview model) t) " [Preview]" "")
+                                   (if (and (alist-get 'policy model)
+                                            (equal (alist-get 'state (alist-get 'policy model)) "unconfigured"))
+                                       " [Policy Required]" "")
+                                   (alist-get 'max_prompt_tokens limits)
+                                   max-output
+                                   (alist-get 'max_context_window_tokens limits))
+                           (alist-get 'id model))))
+                 models)
          (lambda (a b) (string< (cdr a) (cdr b))))
       ;; Fallback to default choices if models not fetched yet
       (let* ((type (get 'copilot-chat-model 'custom-type))
              (choices (when (eq (car type) 'choice)
-                       (cdr type))))
+                        (cdr type))))
         (sort
          (delq nil
                (mapcar (lambda (choice)
@@ -686,13 +686,13 @@ Fetches available models from the API if not already fetched."
    (let* ((choices (copilot-chat--get-model-choices))
           ;; Create completion list with ID as prefix for unique identification
           (completion-choices (mapcar (lambda (choice)
-                                      (let ((name (car choice))
-                                            (id (cdr choice)))
-                                        (cons (format "[%s] %s" id name) id)))
-                                    choices))
+                                        (let ((name (car choice))
+                                              (id (cdr choice)))
+                                          (cons (format "[%s] %s" id name) id)))
+                                      choices))
           (choice (completing-read "Select Copilot Chat model: "
-                                 (mapcar 'car completion-choices)
-                                 nil t)))
+                                   (mapcar 'car completion-choices)
+                                   nil t)))
      ;; Extract model ID from the selected choice
      (let ((model-value (cdr (assoc choice completion-choices))))
        (when copilot-chat-debug
@@ -707,8 +707,8 @@ Fetches available models from the API if not already fetched."
   "Insert last code block given by copilot-chat."
   (interactive)
   (setq copilot-chat--yank-index 1
-		copilot-chat--last-yank-start nil
-		copilot-chat--last-yank-end nil)
+	copilot-chat--last-yank-start nil
+	copilot-chat--last-yank-end nil)
   (copilot-chat--yank))
 
 (defun copilot-chat-yank-pop(&optional inc)
@@ -752,71 +752,6 @@ INC is the number to use as increment for index in block ring."
     (delete-file github-token-file))
   (message "Auth cache cleared.")
   (copilot-chat--create))
-
-;;;###autoload
-(defun copilot-chat-list-models ()
-  "List available Copilot Chat models and their capabilities."
-  (interactive)
-  (let ((models (copilot-chat-models copilot-chat--instance)))
-    (if (not models)
-        (progn
-          (message "Fetching models...")
-          (copilot-chat--request-models))
-      (with-current-buffer (get-buffer-create "*Copilot Models*")
-        (erase-buffer)
-        (insert "Available Copilot Chat Models:\n\n")
-        (dolist (model models)
-          (insert (format "* %s (%s)%s%s\n"
-                         (plist-get model :name)
-                         (plist-get model :vendor)
-                         (if (plist-get model :preview) " [Preview]" "")
-                         (if (equal (plist-get model :policy-state) "unconfigured") " [Policy Required]" ""))
-                  (format "  - ID: %s\n" (plist-get model :id))
-                  (format "  - Version: %s\n" (plist-get model :version))
-                  (format "  - Family: %s\n" (plist-get model :family))
-                  (format "  - Tokenizer: %s\n" (plist-get model :tokenizer))
-                  (format "  - Max prompt tokens: %s\n" (plist-get model :max-prompt-tokens))
-                  (format "  - Max output tokens: %s\n" (plist-get model :max-output-tokens))
-                  (format "  - Max context tokens: %s\n\n" (plist-get model :max-context-tokens))))
-        (goto-char (point-min))
-        (help-mode)
-        (display-buffer (current-buffer))))))
-
-(defun copilot-chat--debug-request (method url headers data)
-  "Log HTTP request details when `copilot-chat-debug' is enabled.
-
-Arguments:
-  METHOD: The HTTP method (e.g., \"GET\", \"POST\")
-  URL: The request URL
-  HEADERS: The request headers as an alist
-  DATA: The request body (optional)
-
-The function logs the request details in a structured format, including:
-- HTTP method
-- URL
-- Headers
-- Request body (if present)
-
-No logging occurs if `copilot-chat-debug' is nil."
-  (when copilot-chat-debug
-    (unless (stringp method)
-      (signal 'wrong-type-argument (list 'stringp method)))
-    (unless (stringp url)
-      (signal 'wrong-type-argument (list 'stringp url)))
-    (unless (listp headers)
-      (signal 'wrong-type-argument (list 'listp headers)))
-    
-    (message "\nCopilot Chat Request:")
-    (message "Method: %s" method)
-    (message "URL: %s" url)
-    (message "Headers: %s" (prin1-to-string headers))
-    (when data
-      (condition-case err
-          (message "Data: %s" (if (stringp data)
-                                 data
-                               (prin1-to-string data)))
-        (error
-         (message "Error formatting request data: %S" err))))))
 
 (provide 'copilot-chat)
 

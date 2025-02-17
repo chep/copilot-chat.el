@@ -34,8 +34,8 @@
 (require 'copilot-chat-common)
 
 (cl-defun copilot-chat--request-token-cb (&key response
-                                          &key data
-                                          &allow-other-keys)
+                                               &key data
+                                               &allow-other-keys)
   "Manage token reception for github auth.
 Argument DATA is whatever PARSER function returns, or nil.
 Argument RESPONSE is request-response object."
@@ -50,8 +50,8 @@ Argument RESPONSE is request-response object."
       (insert token))))
 
 (cl-defun copilot-chat--request-code-cb (&key response
-                                         &key data
-                                         &allow-other-keys)
+                                              &key data
+                                              &allow-other-keys)
   "Manage user code reception for github buth.
 Argument RESPONSE is request-response object.
 Argument DATA is whatever PARSER function returns, or nil."
@@ -97,8 +97,8 @@ If your browser does not open automatically, browse to %s."
 
 
 (cl-defun copilot-chat--request-renew-token-cb(&key response
-                                               &key data
-                                               &allow-other-keys)
+                                                    &key data
+                                                    &allow-other-keys)
   "Renew token callback.
 Argument RESPONSE is request-response object.
 Argument DATA is whatever PARSER function returns, or nil."
@@ -150,28 +150,28 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
     :type "POST"
     :headers `(("openai-intent" . "conversation-panel")
                ("content-type" . "application/json")
-              ("user-agent" . "CopilotChat.nvim/2.0.0")
-              ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-              ("authorization" . ,(concat "Bearer "
-                          (alist-get 'token (copilot-chat-token copilot-chat--instance))))
-              ("x-request-id" . ,(copilot-chat--uuid))
-              ("vscode-sessionid" . ,(copilot-chat-sessionid copilot-chat--instance))
-              ("vscode-machineid" . ,(copilot-chat-machineid copilot-chat--instance))
-              ("copilot-integration-id" . "vscode-chat")
-              ("openai-organization" . "github-copilot")
-              ("editor-version" . "Neovim/0.10.0"))
-      :data (copilot-chat--create-req  prompt out-of-context)
-      :parser #'copilot-chat--request-ask-parser
-      :complete (cl-function
-                 (lambda (&key response
-                          &key data
-                          &allow-other-keys)
-                   (unless (= (request-response-status-code response) 200)
-                     (error "Authentication error"))
-                   (funcall callback data)
-                   (unless out-of-context
-                     (setf (copilot-chat-history copilot-chat--instance) (cons (list prompt "assistant") (copilot-chat-history copilot-chat--instance))))
-                   (funcall callback copilot-chat--magic)))))
+               ("user-agent" . "CopilotChat.nvim/2.0.0")
+               ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
+               ("authorization" . ,(concat "Bearer "
+                                           (alist-get 'token (copilot-chat-token copilot-chat--instance))))
+               ("x-request-id" . ,(copilot-chat--uuid))
+               ("vscode-sessionid" . ,(copilot-chat-sessionid copilot-chat--instance))
+               ("vscode-machineid" . ,(copilot-chat-machineid copilot-chat--instance))
+               ("copilot-integration-id" . "vscode-chat")
+               ("openai-organization" . "github-copilot")
+               ("editor-version" . "Neovim/0.10.0"))
+    :data (copilot-chat--create-req  prompt out-of-context)
+    :parser #'copilot-chat--request-ask-parser
+    :complete (cl-function
+               (lambda (&key response
+                             &key data
+                             &allow-other-keys)
+                 (unless (= (request-response-status-code response) 200)
+                   (error "Authentication error"))
+                 (funcall callback data)
+                 (unless out-of-context
+                   (setf (copilot-chat-history copilot-chat--instance) (cons (list prompt "assistant") (copilot-chat-history copilot-chat--instance))))
+                 (funcall callback copilot-chat--magic)))))
 
 (defun copilot-chat--get-headers ()
   "Get headers for Copilot API requests."
@@ -189,14 +189,14 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
     ("editor-version" . "Neovim/0.10.0")))
 
 (cl-defun copilot-chat--request-models-cb (&key response
-                                          &key data
-                                          &allow-other-keys)
+                                                &key data
+                                                &allow-other-keys)
   "Handle models response from Copilot API.
 Argument DATA is the parsed JSON response.
 Argument RESPONSE is request-response object."
   (unless (= (request-response-status-code response) 200)
     (error "Failed to fetch models: %s" (request-response-status-code response)))
-  
+
   (let* ((models-vector (alist-get 'data data))
          (models (append models-vector nil))  ; Convert vector to list
          (chat-models nil))
@@ -205,17 +205,21 @@ Argument RESPONSE is request-response object."
       (when (and (alist-get 'capabilities model)
                  (equal (alist-get 'type (alist-get 'capabilities model)) "chat"))
         (push model chat-models)))
-    
+
+    (when copilot-chat-debug
+      (message "Fetched %d models" (length chat-models))
+      (message "Models: %s" chat-models))
+
     ;; Store models in instance and return them
     (let ((sorted-models (nreverse chat-models)))
       (setf (copilot-chat-models copilot-chat--instance) sorted-models)
-      
+
       ;; Enable policies for models if needed
       (dolist (model sorted-models)
         (when (and (alist-get 'policy model)
                    (equal (alist-get 'state (alist-get 'policy model)) "unconfigured"))
           (copilot-chat--request-enable-model-policy (alist-get 'id model))))
-      
+
       ;; Return the models list for immediate use
       sorted-models)))
 
@@ -243,33 +247,6 @@ Argument RESPONSE is request-response object."
       :headers headers
       :parser 'json-read
       :complete #'copilot-chat--request-models-cb)))
-
-(defun copilot-chat--request-chat (prompt callback &optional stream)
-  "Send PROMPT to Copilot Chat API.
-CALLBACK is called with the response.
-If STREAM is non-nil, use streaming response."
-  (let* ((url (if (string-match-p "^o1-" copilot-chat-model)
-                  "https://api.githubcopilot.com/chat/completions"
-                "https://api.githubcopilot.com/chat/completions"))
-         (headers (copilot-chat--get-headers))
-         (data (json-encode
-                `((messages . ,(vector (list :role "user"
-                                           :content prompt)))
-                  (model . ,copilot-chat-model)
-                  (stream . ,(if stream t json-false))
-                  (temperature . 0.1)
-                  (top_p . 1)
-                  (n . 1)))))
-    (copilot-chat--debug-request "POST" url headers data)
-    (request url
-      :type "POST"
-      :headers headers
-      :data data
-      :parser 'json-read
-      :complete (lambda (&rest args)
-                  (when copilot-chat-debug
-                    (message "Response: %s" args))
-                  (apply callback args)))))
 
 (provide 'copilot-chat-request)
 ;;; copilot-chat-request.el ends here

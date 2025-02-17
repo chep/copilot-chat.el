@@ -42,8 +42,8 @@
 (defcustom copilot-chat-frontend 'org
   "Frontend to use with `copilot-chat'.  Can be org or markdown."
   :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
+          (const :tag "markdown" markdown)
+          (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
@@ -62,10 +62,10 @@
 The list of available models will be updated when fetched from the API.
 Use `copilot-chat-set-model' to interactively select a model."
   :type '(choice (const :tag "GPT-4o" "gpt-4o")
-                 (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
-                 (const :tag "Gemini 2.0 Flash" "gemini-2.0-flash-001")
-                 (const :tag "GPT-4o1-(preview)" "o1-preview")
-                 (const :tag "o3-mini" "o3-mini"))
+          (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
+          (const :tag "Gemini 2.0 Flash" "gemini-2.0-flash-001")
+          (const :tag "GPT-4o1-(preview)" "o1-preview")
+          (const :tag "o3-mini" "o3-mini"))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-prompt-suffix nil
@@ -164,7 +164,7 @@ If nil, no suffix will be added."
          :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
          :pop-prompt-fn nil
          :goto-input-fn nil))
-    "Copilot-chat frontends and functions list.")
+  "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)
 
