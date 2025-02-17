@@ -642,32 +642,40 @@ If models haven't been fetched yet, fetch them from the API."
   
   (let ((models (copilot-chat-models copilot-chat--instance)))
     (if models
-        ;; Return list of (name . id) pairs from fetched models
-        (mapcar (lambda (model)
+        ;; Return list of (name . id) pairs from fetched models, sorted by ID
+        (sort
+         (mapcar (lambda (model)
                   (let* ((capabilities (alist-get 'capabilities model))
-                         (limits (alist-get 'limits capabilities)))
-                    (cons (format "%s (%s) - %s%s\n  Tokens: %s/%s, Context: %s"
+                         (limits (alist-get 'limits capabilities))
+                         (max-output (or (alist-get 'max_output_tokens limits)
+                                       (if (string-prefix-p "o1" (alist-get 'id model))
+                                           100000  ; Set o1 models to 100k output tokens
+                                         nil))))
+                    (cons (format "%s (%s)%s%s\n  Tokens: %s/%s, Context: %s"
                                 (alist-get 'name model)
                                 (alist-get 'vendor model)
-                                (if (eq (alist-get 'preview model) t) "[Preview] " "")
+                                (if (eq (alist-get 'preview model) t) " [Preview]" "")
                                 (if (and (alist-get 'policy model)
                                         (equal (alist-get 'state (alist-get 'policy model)) "unconfigured"))
-                                    "[Policy Required] " "")
+                                    " [Policy Required]" "")
                                 (alist-get 'max_prompt_tokens limits)
-                                (alist-get 'max_output_tokens limits)
+                                max-output
                                 (alist-get 'max_context_window_tokens limits))
                           (alist-get 'id model))))
                 models)
+         (lambda (a b) (string< (cdr a) (cdr b))))
       ;; Fallback to default choices if models not fetched yet
       (let* ((type (get 'copilot-chat-model 'custom-type))
              (choices (when (eq (car type) 'choice)
                        (cdr type))))
-        (delq nil
-              (mapcar (lambda (choice)
-                        (when (eq (car choice) 'const)
-                          (cons (plist-get (cdr choice) :tag)
-                                (car (last choice)))))
-                      choices))))))
+        (sort
+         (delq nil
+               (mapcar (lambda (choice)
+                         (when (eq (car choice) 'const)
+                           (cons (plist-get (cdr choice) :tag)
+                                 (car (last choice)))))
+                       choices))
+         (lambda (a b) (string< (cdr a) (cdr b))))))))
 
 
 ;;;###autoload
@@ -676,10 +684,17 @@ If models haven't been fetched yet, fetch them from the API."
 Fetches available models from the API if not already fetched."
   (interactive
    (let* ((choices (copilot-chat--get-model-choices))
+          ;; Create completion list with ID as prefix for unique identification
+          (completion-choices (mapcar (lambda (choice)
+                                      (let ((name (car choice))
+                                            (id (cdr choice)))
+                                        (cons (format "[%s] %s" id name) id)))
+                                    choices))
           (choice (completing-read "Select Copilot Chat model: "
-                                 (mapcar 'car choices)
+                                 (mapcar 'car completion-choices)
                                  nil t)))
-     (let ((model-value (cdr (assoc choice choices))))
+     ;; Extract model ID from the selected choice
+     (let ((model-value (cdr (assoc choice completion-choices))))
        (when copilot-chat-debug
          (message "Setting model to: %s" model-value))
        (list model-value))))
