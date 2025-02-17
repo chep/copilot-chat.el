@@ -89,7 +89,7 @@
 
 (defun copilot-chat--create ()
   "Create a new Copilot chat instance."
-  (setq copilot-chat--instance(make-copilot-chat
+  (setq copilot-chat--instance(copilot-chat--make
                               :ready t
                               :github-token (copilot-chat--get-cached-token)
                               :token nil

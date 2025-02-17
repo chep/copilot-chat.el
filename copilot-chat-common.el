@@ -42,8 +42,8 @@
 (defcustom copilot-chat-frontend 'org
   "Frontend to use with `copilot-chat'.  Can be org or markdown."
   :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
+          (const :tag "markdown" markdown)
+          (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
@@ -58,10 +58,12 @@
 
 ;;  OpenAI models: https://platform.openai.com/docs/models
 (defcustom copilot-chat-model "gpt-4o"
-  "The model to use for Copilot chat."
+  "The model to use for Copilot chat.
+The list of available models will be updated when fetched from the API.
+Use `copilot-chat-set-model' to interactively select a model."
   :type '(choice (const :tag "GPT-4o" "gpt-4o")
-                 (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
-                 (const :tag "GPT-4o1-(preview)" "o1-preview"))
+          (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
+          (const :tag "GPT-4o1-(preview)" "o1-preview"))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-prompt-suffix nil
@@ -70,15 +72,24 @@ If nil, no suffix will be added."
   :type 'string
   :group 'copilot-chat)
 
+(defcustom copilot-chat-debug nil
+  "When non-nil, show debug information for API requests."
+  :type 'boolean
+  :group 'copilot-chat)
+
 ;; structs
-(cl-defstruct copilot-chat
-  ready
-  github-token
-  token
-  sessionid
-  machineid
-  history
-  buffers)
+(cl-defstruct (copilot-chat
+               (:constructor copilot-chat--make)
+               (:copier nil))
+  "Struct for Copilot chat state."
+  (ready nil :type boolean)
+  (github-token nil :type (or null string))
+  (token nil)
+  (sessionid nil :type (or null string))
+  (machineid nil :type (or null string))
+  (history nil :type list)
+  (buffers nil :type list)
+  (models nil :type list))
 
 (cl-defstruct copilot-chat-frontend
   id
@@ -97,14 +108,16 @@ If nil, no suffix will be added."
 
 ;; variables
 (defvar copilot-chat--instance
-  (make-copilot-chat
+  (copilot-chat--make
    :ready nil
    :github-token nil
    :token nil
    :sessionid nil
    :machineid nil
    :history nil
-   :buffers nil))
+   :buffers nil
+   :models nil)
+  "Global instance of Copilot chat.")
 
 (defvar copilot-chat--frontend-list
   (list (make-copilot-chat-frontend
@@ -149,7 +162,7 @@ If nil, no suffix will be added."
          :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
          :pop-prompt-fn nil
          :goto-input-fn nil))
-    "Copilot-chat frontends and functions list.")
+  "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)
 
