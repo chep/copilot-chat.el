@@ -56,11 +56,12 @@
   :type 'string
   :group 'copilot-chat)
 
-;;  OpenAI models: https://platform.openai.com/docs/models
+;; GitHub Copilot models: https://api.githubcopilot.com/models
 (defcustom copilot-chat-model "gpt-4o"
   "The model to use for Copilot chat."
   :type '(choice (const :tag "GPT-4o" "gpt-4o")
                  (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
+                 (const :tag "Gemini 2.0 Flash" "gemini-2.0-flash-001")
                  (const :tag "GPT-4o1-(preview)" "o1-preview")
                  (const :tag "o3-mini" "o3-mini"))
   :group 'copilot-chat)
