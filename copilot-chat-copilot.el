@@ -104,27 +104,39 @@
     (when cached-models
       (setf (copilot-chat-models copilot-chat--instance) cached-models)
       (message "Loaded models from cache. %d models available." (length cached-models))))
-  
+
   ;; Schedule background model fetching with slight delay
   (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
-  
+
   copilot-chat--instance)
 
 (defun copilot-chat--fetch-models-async ()
   "Fetch models asynchronously in the background."
   (when (copilot-chat--ready-p)
-    (if (not (copilot-chat-github-token copilot-chat--instance))
-        ;; Need to auth first, defer the fetch
-        (run-with-timer 5 nil #'copilot-chat--fetch-models-async)
-      ;; We have a token, attempt to auth and fetch models
-      (when copilot-chat-debug
-        (message "Starting background model fetch"))
-      (condition-case err
-          (progn
-            (copilot-chat--auth)
-            (copilot-chat--request-models t))
-        (error
-         (message "Failed to fetch models in background: %s" (error-message-string err)))))))
+    (let ((current-time (round (float-time)))
+          (last-fetch-time (copilot-chat-last-models-fetch-time copilot-chat--instance))
+          (cooldown-period copilot-chat-models-fetch-cooldown))
+
+      (if (< (- current-time last-fetch-time) cooldown-period)
+          (when copilot-chat-debug
+            (message "Skipping model fetch - in cooldown period (%d seconds left)"
+                     (- cooldown-period (- current-time last-fetch-time))))
+
+        (if (not (copilot-chat-github-token copilot-chat--instance))
+            (run-with-timer 5 nil #'copilot-chat--fetch-models-async)
+          (setf (copilot-chat-last-models-fetch-time copilot-chat--instance) current-time)
+
+          (when copilot-chat-debug
+            (message "Starting background model fetch"))
+
+          (condition-case err
+              (progn
+                (copilot-chat--auth)
+                (if (eq copilot-chat-backend 'request)
+                    (copilot-chat--request-models-async t)
+                  (copilot-chat--request-models t)))
+            (error
+             (message "Failed to fetch models in background: %s" (error-message-string err)))))))))
 
 (defun copilot-chat--login()
   "Login to GitHub Copilot API."

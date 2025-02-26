@@ -40,7 +40,7 @@
 (define-derived-mode copilot-chat-markdown-prompt-mode markdown-mode "Copilot Chat markdown Prompt"
   "Major mode for the Copilot Chat Prompt region."
   (setq major-mode 'copilot-chat-markdown-prompt-mode
-    mode-name "Copilot Chat markdown prompt")
+        mode-name "Copilot Chat markdown prompt")
   (copilot-chat-prompt-mode))
 
 (define-hostmode poly-copilot-markdown-hostmode
@@ -65,13 +65,13 @@ Argument CONTENT is the data to format.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((data ""))
     (if (eq type 'prompt)
-	  (progn
-	    (setq copilot-chat--first-word-answer t)
-	    (setq data (concat "\n# " (format-time-string "*[%T]* You\n") (format "%s\n" content))))
-	  (when copilot-chat--first-word-answer
-	    (setq copilot-chat--first-word-answer nil)
+        (progn
+          (setq copilot-chat--first-word-answer t)
+          (setq data (concat "\n# " (format-time-string "*[%T]* You\n") (format "%s\n" content))))
+      (when copilot-chat--first-word-answer
+        (setq copilot-chat--first-word-answer nil)
         (setq data (concat "\n## " (format-time-string "*[%T]* Copilot\n"))))
-	  (setq data (concat data content)))
+      (setq data (concat data content)))
     data))
 
 (defun copilot-chat--markdown-format-code(code language)
@@ -79,7 +79,7 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
 Argument CODE is the code to format.
 Argument LANGUAGE is the language of the code."
   (if language
-    (format "\n```%s\n%s\n```\n" language code)
+      (format "\n```%s\n%s\n```\n" language code)
     code))
 
 (defun copilot-chat--markdown-clean()
@@ -95,7 +95,7 @@ Argument LANGUAGE is the language of the code."
       (let* ((begin-block (previous-single-property-change (point) 'face))
              (end-block (next-single-property-change (point) 'face))
              (content (when (and begin-block end-block)
-                       (buffer-substring-no-properties begin-block end-block)))
+                        (buffer-substring-no-properties begin-block end-block)))
              ;; Try to get language from previous text properties
              (lang-props (text-properties-at (max (- begin-block 1) (point-min))))
              (lang (plist-get lang-props 'markdown-language)))
@@ -107,13 +107,13 @@ Argument LANGUAGE is the language of the code."
   "Send the code block at point to buffer.
 Replace selection if any."
   (let ((buffer (completing-read "Choose buffer: "
-                  (mapcar #'buffer-name (buffer-list))
-                  nil  ; PREDICATE
-                  t    ; REQUIRE-MATCH
-                  nil  ; INITIAL-INPUT
-                  'buffer-name-history
-                  (buffer-name (current-buffer))))
-         (content (copilot-chat--get-markdown-block-content-at-point)))
+                                 (mapcar #'buffer-name (buffer-list))
+                                 nil  ; PREDICATE
+                                 t    ; REQUIRE-MATCH
+                                 nil  ; INITIAL-INPUT
+                                 'buffer-name-history
+                                 (buffer-name (current-buffer))))
+        (content (copilot-chat--get-markdown-block-content-at-point)))
     (when content
       (with-current-buffer buffer
         (when (use-region-p)
@@ -132,7 +132,7 @@ Replace selection if any."
 The input is created if not found."
   (goto-char (point-max))
   (if (re-search-backward copilot-chat--markdown-delimiter nil t)
-    (forward-line 1)
+      (forward-line 1)
     (insert "\n\n")
     (let ((start (point))
           (inhibit-read-only t))
@@ -145,14 +145,14 @@ The input is created if not found."
 (defun copilot-chat--markdown-get-buffer()
   "Create copilot-chat buffers."
   (unless (buffer-live-p copilot-chat--buffer)
-    (setq copilot-chat--buffer (get-buffer-create copilot-chat--buffer-name))
+    (setq copilot-chat--buffer (get-buffer-create (copilot-chat--get-buffer-name)))
     (with-current-buffer copilot-chat--buffer
       (copilot-chat-markdown-poly-mode)
       (copilot-chat--markdown-goto-input)))
   copilot-chat--buffer)
 
 (defun copilot-chat--markdown-insert-prompt (prompt)
-    "Insert PROMPT in the chat buffer."
+  "Insert PROMPT in the chat buffer."
   (with-current-buffer (copilot-chat--markdown-get-buffer)
     (copilot-chat--markdown-goto-input)
     (unless (eobp)

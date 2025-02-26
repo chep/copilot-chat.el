@@ -145,8 +145,25 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
 Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
-      (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
-    (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)))
+      (progn
+        (when (boundp 'copilot-chat--spinner-timer)
+          (copilot-chat--spinner-stop))
+        (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer))
+    (progn
+      (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)
+      (when buffer
+        (with-current-buffer buffer
+          (let ((window (get-buffer-window buffer)))
+            (when window
+              (with-selected-window window
+                (goto-char (point-max))
+                (recenter -1))))))
+      (unless buffer
+        (let ((chat-window (get-buffer-window (copilot-chat--get-buffer))))
+          (when chat-window
+            (with-selected-window chat-window
+              (goto-char (point-max))
+              (recenter -1))))))))
 
 (defun copilot-chat--pop-current-prompt()
   "Get current prompt to send and clean it."
@@ -604,10 +621,23 @@ Requires the repository to have staged changes."
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
 
-  ;; get magit staged diff
+  ;; Get magit staged diff
   (let* ((diff (copilot-chat--get-diff))
          (prompt (concat copilot-chat-commit-prompt diff))
-         (current-buf (current-buffer)))
+         (current-buf (current-buffer))
+         (start-pos (point))
+         (placeholder-pos nil)
+         (streaming-in-progress nil)
+         (accumulated-content "")
+         (error-occurred nil)
+         ;; Store the git commit template comments
+         (template-comments
+          (save-excursion
+            (goto-char (point-min))
+            (let ((comments ""))
+              (while (re-search-forward "^#.*$" nil t)
+                (setq comments (concat comments (match-string 0) "\n")))
+              comments))))
 
     ;; Debug messages using structured format
     (copilot-chat--debug 'commit "Starting commit message generation")
@@ -618,20 +648,83 @@ Requires the repository to have staged changes."
      ((string-empty-p diff)
       (copilot-chat--debug 'commit "No changes found in staging area")
       (user-error "No staged changes found. Please stage some changes first"))
+
      (t
-      (message "Generating commit message... Please wait for the model response.")
-      (copilot-chat--ask prompt
-                         (lambda (content)
-                           (with-current-buffer current-buf
-                             (if (string= content copilot-chat--magic)
-                                 (progn
-                                   (insert "\n")
-                                   (copilot-chat--debug 'commit "Generation completed"))
-                               (progn
-                                 (insert content)
-                                 (copilot-chat--debug 'commit "Received chunk: %d chars"
-                                                      (length content))))))
-                         t)))))
+      (message "Generating commit message... Please wait.")
+
+      (insert "# [copilot-chat] Working on generating commit message, please wait... ")
+      (setq placeholder-pos (point))
+      (insert "\n\n")
+
+      (goto-char start-pos)
+
+      (when (fboundp 'copilot-chat--spinner-start)
+        (let ((copilot-chat--buffer current-buf))
+          (copilot-chat--spinner-start)))
+
+      (setq streaming-in-progress t)
+
+      (defun cleanup-stream ()
+        (setq streaming-in-progress nil)
+        (when (fboundp 'copilot-chat--spinner-stop)
+          (let ((copilot-chat--buffer current-buf))
+            (copilot-chat--spinner-stop)))
+        (with-current-buffer current-buf
+          (save-excursion
+            (goto-char start-pos)
+            (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
+              (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... ")))))))
+
+      ;; Ask Copilot with streaming response
+      (copilot-chat--ask
+       prompt
+       (lambda (content)
+         (with-current-buffer current-buf
+           (save-excursion
+             (if (string= content copilot-chat--magic)
+                 ;; End of streaming
+                 (progn
+                   (cleanup-stream)
+                   (when (not error-occurred)
+                     ;; Move point to end of inserted text for convenience
+                     (goto-char (+ start-pos (length accumulated-content)))
+                     ;; Restore the git commit template comments
+                     (save-excursion
+                       (goto-char (point-max))
+                       (delete-region (point-min) (point-max))
+                       (insert accumulated-content "\n\n" template-comments))
+                     (copilot-chat--debug 'commit "Generation completed successfully"))
+                   (message "Commit message generation completed."))
+
+               ;; Continue streaming
+               (progn
+                 ;; If this is the first response chunk, update the UI accordingly
+                 (when (string= accumulated-content "")
+                   (if (fboundp 'copilot-chat--spinner-set-status)
+                       (copilot-chat--spinner-set-status "Generating")
+                     (message "Generating commit message...")))
+
+                 ;; Handle error messages
+                 (when (string-prefix-p "Error:" content)
+                   (setq error-occurred t)
+                   (message "%s" content))
+
+                 ;; Append the new content to our accumulator
+                 (setq accumulated-content (concat accumulated-content content))
+
+                 ;; Remove placeholder text on first content chunk
+                 (goto-char start-pos)
+                 (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
+                   (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... "))))
+
+                 ;; Go to where we need to insert/update content
+                 (goto-char start-pos)
+                 (delete-region start-pos (+ start-pos (length accumulated-content)))
+                 (insert accumulated-content)
+
+                 (copilot-chat--debug 'commit "Received chunk: %d chars"
+                                      (length content)))))))
+       t)))))
 
 
 (defun copilot-chat--get-model-choices-with-wait ()
@@ -725,13 +818,12 @@ Fetches available models from the API if not already fetched."
   (customize-save-variable 'copilot-chat-model copilot-chat-model)
   (message "Copilot Chat model set to %s" copilot-chat-model))
 
-
 (defun copilot-chat-yank()
   "Insert last code block given by copilot-chat."
   (interactive)
   (setq copilot-chat--yank-index 1
-	copilot-chat--last-yank-start nil
-	copilot-chat--last-yank-end nil)
+        copilot-chat--last-yank-start nil
+        copilot-chat--last-yank-end nil)
   (copilot-chat--yank))
 
 (defun copilot-chat-yank-pop(&optional inc)

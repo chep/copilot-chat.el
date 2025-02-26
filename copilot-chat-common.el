@@ -32,7 +32,8 @@
 
 ;; constants
 (defconst copilot-chat--magic "#cc#done#!$")
-(defconst copilot-chat--buffer-name "*Copilot-chat*")
+(defconst copilot-chat--buffer-name "*Copilot Chat*"
+  "Name of the Copilot Chat buffer.")
 
 ;; customs
 (defgroup copilot-chat nil
@@ -254,6 +255,10 @@ The create req function is called first and will return new prompt."
   (cl-find copilot-chat-frontend copilot-chat--frontend-list
            :key #'copilot-chat-frontend-id
            :test #'eq))
+
+(defun copilot-chat--get-buffer-name ()
+  "Get the formatted buffer name including model info."
+  (format "*Copilot Chat [%s]*" copilot-chat-model))
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
