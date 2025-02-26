@@ -56,16 +56,28 @@
   :type 'string
   :group 'copilot-chat)
 
+;; Model cache settings
+(defcustom copilot-chat-models-cache-file "~/.cache/copilot-chat/models.json"
+  "File to cache fetched models."
+  :type 'string
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-models-cache-ttl 86400
+  "Time-to-live for cached models in seconds (default: 24 hours)."
+  :type 'integer
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-models-fetch-cooldown 300
+  "Minimum time between model fetch attempts in seconds (default: 5 minutes)."
+  :type 'integer
+  :group 'copilot-chat)
+
 ;; GitHub Copilot models: https://api.githubcopilot.com/models
 (defcustom copilot-chat-model "gpt-4o"
   "The model to use for Copilot chat.
 The list of available models will be updated when fetched from the API.
 Use `copilot-chat-set-model' to interactively select a model."
-  :type '(choice (const :tag "GPT-4o" "gpt-4o")
-          (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
-          (const :tag "Gemini 2.0 Flash" "gemini-2.0-flash-001")
-          (const :tag "GPT-4o1-(preview)" "o1-preview")
-          (const :tag "o3-mini" "o3-mini"))
+  :type 'string
   :group 'copilot-chat)
 
 (defcustom copilot-chat-prompt-suffix nil
@@ -91,7 +103,8 @@ If nil, no suffix will be added."
   (machineid nil :type (or null string))
   (history nil :type list)
   (buffers nil :type list)
-  (models nil :type list))
+  (models nil :type list)
+  (last-models-fetch-time 0 :type number))
 
 (cl-defstruct copilot-chat-frontend
   id
@@ -118,7 +131,8 @@ If nil, no suffix will be added."
    :machineid nil
    :history nil
    :buffers nil
-   :models nil)
+   :models nil
+   :last-models-fetch-time 0)
   "Global instance of Copilot chat.")
 
 (defvar copilot-chat--frontend-list
@@ -178,6 +192,10 @@ If nil, no suffix will be added."
   "End position of last yank")
 
 ;; Functions
+(defun copilot-chat--should-fetch-models-p ()
+  "Return t if models should be fetched."
+  t)
+
 (defun copilot-chat--uuid ()
   "Generate a UUID."
   (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"

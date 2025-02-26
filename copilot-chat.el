@@ -634,48 +634,65 @@ Requires the repository to have staged changes."
                          t)))))
 
 
-(defun copilot-chat--get-model-choices ()
-  "Get the list of available models for Copilot Chat.
-If models haven't been fetched yet, fetch them from the API."
-  (unless (copilot-chat-models copilot-chat--instance)
-    (copilot-chat--request-models))
-
+(defun copilot-chat--get-model-choices-with-wait ()
+  "Get the list of available models for Copilot Chat, waiting for fetch if needed.
+If models haven't been fetched yet and no cache exists, wait for the fetch to complete."
   (let ((models (copilot-chat-models copilot-chat--instance)))
     (if models
         ;; Return list of (name . id) pairs from fetched models, sorted by ID
         (sort
          (mapcar (lambda (model)
-                   (let* ((capabilities (alist-get 'capabilities model))
+                   (let* ((id (alist-get 'id model))
+                          (name (alist-get 'name model))
+                          ;; Remove "(Preview)" from name if it already contains it
+                          (clean-name (replace-regexp-in-string " (Preview)$" "" name))
+                          (vendor (alist-get 'vendor model))
+                          (capabilities (alist-get 'capabilities model))
                           (limits (alist-get 'limits capabilities))
-                          (max-output (or (alist-get 'max_output_tokens limits)
-                                          (if (string-prefix-p "o1" (alist-get 'id model))
-                                              100000  ; Set o1 models to 100k output tokens
-                                            nil))))
-                     (cons (format "%s (%s)%s%s  Tokens: %s/%s, Context: %s"
-                                   (alist-get 'name model)
-                                   (alist-get 'vendor model)
-                                   (if (eq (alist-get 'preview model) t) " [Preview]" "")
-                                   (if (and (alist-get 'policy model)
-                                            (equal (alist-get 'state (alist-get 'policy model)) "unconfigured"))
-                                       " [Policy Required]" "")
-                                   (alist-get 'max_prompt_tokens limits)
-                                   max-output
-                                   (alist-get 'max_context_window_tokens limits))
-                           (alist-get 'id model))))
+                          (preview-p (eq t (alist-get 'preview model)))
+                          (prompt-tokens (alist-get 'max_prompt_tokens limits))
+                          (output-tokens (or (alist-get 'max_output_tokens limits)
+                                             (when (string-prefix-p "o1" id) 100000)))
+                          (context-tokens (alist-get 'max_context_window_tokens limits)))
+
+                     ;; Format the display string with the new requirements
+                     (cons
+                      (format "[%s] %s%s (Tokens in/out: %s/%s)" ;
+                              vendor
+                              clean-name
+                              (if preview-p " (Preview)" "")
+                              (if prompt-tokens
+                                  (format "%dk" (round (/ prompt-tokens 1000)))
+                                "?")
+                              (if output-tokens
+                                  (format "%dk" (round (/ output-tokens 1000)))
+                                "?"))
+                      id)))
                  models)
          (lambda (a b) (string< (cdr a) (cdr b))))
-      ;; Fallback to default choices if models not fetched yet
-      (let* ((type (get 'copilot-chat-model 'custom-type))
-             (choices (when (eq (car type) 'choice)
-                        (cdr type))))
-        (sort
-         (delq nil
-               (mapcar (lambda (choice)
-                         (when (eq (car choice) 'const)
-                           (cons (plist-get (cdr choice) :tag)
-                                 (car (last choice)))))
-                       choices))
-         (lambda (a b) (string< (cdr a) (cdr b))))))))
+      ;; No models available - fetch and wait
+      (progn
+        ;; If not initialized, initialize copilot-chat
+        (unless (copilot-chat--ready-p)
+          (copilot-chat-reset))
+
+        ;; Try loading from cache first
+        (let ((cached-models (copilot-chat--load-models-from-cache)))
+          (if cached-models
+              (progn
+                (setf (copilot-chat-models copilot-chat--instance) cached-models)
+                (copilot-chat--get-model-choices-with-wait))
+            ;; No cache - need to fetch
+            (message "No models available. Fetching from API...")
+            (copilot-chat--auth)
+            (let ((inhibit-quit t)  ; Prevent C-g during fetch
+                  (fetch-done nil))
+              (copilot-chat--request-models t)
+              ;; Wait for models to be fetched (with timeout)
+              (with-timeout (10 (error "Timeout waiting for models to be fetched"))
+                (while (not (copilot-chat-models copilot-chat--instance))
+                  (sit-for 0.1)))
+              (copilot-chat--get-model-choices-with-wait))))))))
 
 
 ;;;###autoload
@@ -683,7 +700,7 @@ If models haven't been fetched yet, fetch them from the API."
   "Set the Copilot Chat model to MODEL.
 Fetches available models from the API if not already fetched."
   (interactive
-   (let* ((choices (copilot-chat--get-model-choices))
+   (let* ((choices (copilot-chat--get-model-choices-with-wait))
           ;; Create completion list with ID as prefix for unique identification
           (completion-choices (mapcar (lambda (choice)
                                         (let ((name (car choice))
@@ -698,6 +715,12 @@ Fetches available models from the API if not already fetched."
        (when copilot-chat-debug
          (message "Setting model to: %s" model-value))
        (list model-value))))
+
+  ;; Check if we need to initialize Copilot chat first
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+
+  ;; Set the model value
   (setq copilot-chat-model model)
   (customize-save-variable 'copilot-chat-model copilot-chat-model)
   (message "Copilot Chat model set to %s" copilot-chat-model))
@@ -752,6 +775,33 @@ INC is the number to use as increment for index in block ring."
     (delete-file github-token-file))
   (message "Auth cache cleared.")
   (copilot-chat--create))
+
+;;;###autoload
+(defun copilot-chat-reset-models()
+  "Reset model cache and fetch models again.
+This is useful when GitHub adds new models or updates model capabilities.
+Clears model cache from memory and disk, then triggers background fetch."
+  (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+
+  ;; Clear models from instance
+  (setf (copilot-chat-models copilot-chat--instance) nil)
+  (setf (copilot-chat-last-models-fetch-time copilot-chat--instance) 0)
+
+  ;; Remove cached models file if it exists
+  (let ((models-cache-file (expand-file-name copilot-chat-models-cache-file)))
+    (when (file-exists-p models-cache-file)
+      (delete-file models-cache-file)
+      (when copilot-chat-debug
+        (message "Removed models cache file: %s" models-cache-file))))
+
+  ;; Trigger a background fetch
+  (message "Models cache cleared. Fetching updated models...")
+  (copilot-chat--fetch-models-async)
+
+  ;; Return nil for programmatic usage
+  nil)
 
 (provide 'copilot-chat)
 

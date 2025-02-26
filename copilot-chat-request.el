@@ -213,6 +213,9 @@ Argument RESPONSE is request-response object."
     ;; Store models in instance and return them
     (let ((sorted-models (nreverse chat-models)))
       (setf (copilot-chat-models copilot-chat--instance) sorted-models)
+      
+      ;; Cache models to disk
+      (copilot-chat--save-models-to-cache sorted-models)
 
       ;; Enable policies for models if needed
       (dolist (model sorted-models)
@@ -236,17 +239,57 @@ Argument RESPONSE is request-response object."
       :data data
       :parser 'json-read)))
 
-(defun copilot-chat--request-models ()
-  "Fetch available models from Copilot API."
+(defun copilot-chat--request-models (&optional quiet)
+  "Fetch available models from Copilot API.
+Optional argument QUIET suppresses user messages when non-nil."
   (let ((url "https://api.githubcopilot.com/models")
         (headers (copilot-chat--get-headers)))
     (when copilot-chat-debug
       (message "Fetching models from %s" url))
+    (unless quiet
+      (message "Fetching available Copilot models..."))
     (request url
       :type "GET"
       :headers headers
       :parser 'json-read
+      :sync t  ; Use synchronous request when called directly
       :complete #'copilot-chat--request-models-cb)))
+
+;; Model cache functions
+(defun copilot-chat--save-models-to-cache (models)
+  "Save MODELS to disk cache."
+  (when models
+    (let ((cache-data `((timestamp . ,(round (float-time)))
+                        (models . ,models))))
+      (with-temp-file copilot-chat-models-cache-file
+        (insert (json-encode cache-data)))
+      (when copilot-chat-debug
+        (message "Saved %d models to cache %s" (length models) copilot-chat-models-cache-file)))))
+
+(defun copilot-chat--load-models-from-cache ()
+  "Load models from disk cache if available and not expired."
+  (when (file-exists-p copilot-chat-models-cache-file)
+    (with-temp-buffer
+      (insert-file-contents copilot-chat-models-cache-file)
+      (condition-case nil
+          (let* ((cache-data (json-read-from-string (buffer-string)))
+                 (timestamp (alist-get 'timestamp cache-data))
+                 (current-time (round (float-time)))
+                 (age (- current-time timestamp)))
+            (if (< age copilot-chat-models-cache-ttl)
+                (let ((models (alist-get 'models cache-data)))
+                  (when copilot-chat-debug
+                    (message "Loaded %d models from cache (age: %d seconds)" 
+                             (length models) age))
+                  models)
+              (when copilot-chat-debug
+                (message "Cache expired (age: %d seconds, ttl: %d seconds)" 
+                         age copilot-chat-models-cache-ttl))
+              nil))
+        (error
+         (when copilot-chat-debug
+           (message "Error loading models from cache"))
+         nil)))))
 
 (provide 'copilot-chat-request)
 ;;; copilot-chat-request.el ends here
