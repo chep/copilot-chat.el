@@ -65,7 +65,7 @@
     ("f" "Add files under current directory" copilot-chat-add-files-under-dir)
     ("l" "Display buffer list" copilot-chat-list)
     ("c" "Clear buffers" copilot-chat-list-clear-buffers)
-	("q" "Quit" transient-quit-one)]])
+    ("q" "Quit" transient-quit-one)]])
 
 ;;;###autoload (autoload 'copilot-chat-transient-code "copilot-chat" nil t)
 (transient-define-prefix copilot-chat-transient-code ()
@@ -81,6 +81,6 @@
     ("F" "Explain function" copilot-chat-explain-defun)
     ("c" "Custom prompt function" copilot-chat-custom-prompt-function)
     ("R" "Review whole buffer" copilot-chat-review-whole-buffer)
-	("q" "Quit" transient-quit-one)]])
+    ("q" "Quit" transient-quit-one)]])
 
 (provide 'copilot-chat-transient)

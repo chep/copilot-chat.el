@@ -51,6 +51,20 @@
   :type 'boolean
   :group 'copilot-chat)
 
+(defcustom copilot-chat-ignored-commit-files
+  '("pnpm-lock.yaml" "package-lock.json" "yarn.lock" "poetry.lock"
+    "Cargo.lock" "go.sum" "composer.lock" "Gemfile.lock"
+    "requirements.txt" "*.pyc" "*.pyo" "*.pyd"
+    "*.so" "*.dylib" "*.dll" "*.exe"
+    "*.jar" "*.war" "*.ear"
+    "node_modules/" "vendor/" "dist/" "build/")
+  "List of file patterns to ignore when generating commit messages.
+These are typically large generated files like lock files or build artifacts
+that don't need to be included in commit message generation.
+Supports glob patterns like '*.lock' or 'node_modules/'."
+  :type '(repeat string)
+  :group 'copilot-chat)
+
 ;; Faces
 (defface copilot-chat-list-selected-buffer-face
   '((t :inherit font-lock-keyword-face))
@@ -68,9 +82,9 @@
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-c") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-q") (lambda()
-                                    (interactive)
-                                    (bury-buffer)
-                                    (delete-window)))
+                                      (interactive)
+                                      (bury-buffer)
+                                      (delete-window)))
     (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
     (define-key map (kbd "C-c C-t") 'copilot-chat-transient)
     (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
@@ -112,7 +126,7 @@ Argument DATA data to be inserted in buffer."
       (with-current-buffer buffer
         (insert data))
     (with-current-buffer (copilot-chat--get-buffer)
-	  (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
+      (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
         (save-excursion
           (when write-fn
             (funcall write-fn data)))))))
@@ -127,12 +141,29 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
       content)))
 
 (defun copilot-chat-prompt-cb (content &optional buffer)
-    "Function called by backend when data is received.
+  "Function called by backend when data is received.
 Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
-      (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer)
-    (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)))
+      (progn
+        (when (boundp 'copilot-chat--spinner-timer)
+          (copilot-chat--spinner-stop))
+        (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer))
+    (progn
+      (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)
+      (when buffer
+        (with-current-buffer buffer
+          (let ((window (get-buffer-window buffer)))
+            (when window
+              (with-selected-window window
+                (goto-char (point-max))
+                (recenter -1))))))
+      (unless buffer
+        (let ((chat-window (get-buffer-window (copilot-chat--get-buffer))))
+          (when chat-window
+            (with-selected-window chat-window
+              (goto-char (point-max))
+              (recenter -1))))))))
 
 (defun copilot-chat--pop-current-prompt()
   "Get current prompt to send and clean it."
@@ -165,9 +196,9 @@ Optional argument BUFFER is the buffer to write data in."
                                 (copilot-chat-prompt-cb content current-buf)))))
 
 (defun copilot-chat--ask-region(prompt)
-    "Send to Copilot a prompt followed by the current selected code.
+  "Send to Copilot a prompt followed by the current selected code.
 Argument PROMPT is the prompt to send to Copilot."
-    (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
+  (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--insert-and-send-prompt
      (concat (cdr (assoc prompt (copilot-chat--prompts)))
              (copilot-chat--format-code code)))))
@@ -520,7 +551,7 @@ If there are more than 40 files, refuse to add and show warning message."
 
 
 (defun copilot-chat-send-to-buffer()
-    "Send the code block at point to buffer.
+  "Send the code block at point to buffer.
 Replace selection if any."
   (interactive)
   (let ((send-fn (copilot-chat-frontend-send-to-buffer-fn (copilot-chat--get-frontend))))
@@ -528,70 +559,271 @@ Replace selection if any."
       (funcall send-fn))))
 
 (defun copilot-chat--get-diff ()
-  "Get the diff of all staged files in the current repository and return it as a string."
-  (interactive)
-  (let ((default-directory (magit-toplevel)))
-    (if default-directory
-        (with-temp-buffer
-          (magit-git-insert "diff" "--cached")
-            (buffer-string))
-      (message "Not inside a Git repository"))))
+  "Get the diff of staged changes in the current git repository.
+Returns a string containing the diff, excluding files specified in
+`copilot-chat-ignored-commit-files'.  Returns nil if not in a git
+repository or if there are no staged changes.
 
+The diff is generated using `magit-git-insert' and excludes files
+matching patterns in `copilot-chat-ignored-commit-files', such as
+lock files and build artifacts."
+  (let ((default-directory (or (magit-toplevel)
+                               (user-error "Not inside a Git repository"))))
+    (with-temp-buffer
+      ;; First get list of staged files
+      (magit-git-insert "diff" "--cached" "--name-only")
+      (let* ((staged-files (split-string (buffer-string) "\n" t))
+             (files-to-include
+              (cl-remove-if
+               (lambda (file)
+                 (cl-some (lambda (pattern)
+                            (or (string-match-p (wildcard-to-regexp pattern) file)
+                                (and (string-suffix-p "/" pattern)
+                                     (string-prefix-p pattern file))))
+                          copilot-chat-ignored-commit-files))
+               staged-files)))
+        (erase-buffer)
+        ;; Then get diff only for non-ignored files
+        (when files-to-include
+          (apply #'magit-git-insert
+                 (append '("diff" "--cached")
+                         files-to-include)))
+        (buffer-string)))))
+
+
+(defun copilot-chat--debug (category format-string &rest args)
+  "Print debug message when `copilot-chat-debug' is enabled.
+
+CATEGORY is a symbol indicating the message category (e.g., 'commit, 'model, 'auth).
+FORMAT-STRING is the format string passed to `message'.
+ARGS are the arguments to be formatted according to FORMAT-STRING.
+
+The message is prefixed with '[copilot-chat:CATEGORY]' for easy identification.
+No message is printed if `copilot-chat-debug' is nil."
+  (when copilot-chat-debug
+    (unless (symbolp category)
+      (signal 'wrong-type-argument (list 'symbolp category)))
+    (unless (stringp format-string)
+      (signal 'wrong-type-argument (list 'stringp format-string)))
+    (let ((formatted-msg (condition-case err
+                             (apply #'format format-string args)
+                           (error
+                            (message "Error formatting debug message: %S" err)
+                            (format "Error formatting message with args: %S" args)))))
+      (message "[copilot-chat:%s] %s" category formatted-msg))))
 
 ;;;###autoload
 (defun copilot-chat-insert-commit-message()
-  "Insert in the current buffer a copilot generated commit message."
-    (interactive)
-    (unless (copilot-chat--ready-p)
-      (copilot-chat-reset))
+  "Generate and insert a commit message using Copilot.
+Uses the current staged changes in git to generate an appropriate commit message.
+Requires the repository to have staged changes."
+  (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
 
-    ;; get magit staged diff
-    (let* ((diff (copilot-chat--get-diff))
-           (prompt (concat copilot-chat-commit-prompt diff))
-           (current-buf (current-buffer)))
-      (copilot-chat--ask prompt
-                         (lambda (content)
-                           (with-current-buffer current-buf
-                             (if (string= content copilot-chat--magic)
-                                 (insert "\n")
-                                (insert content))))
-                         t)))
+  ;; Get magit staged diff
+  (let* ((diff (copilot-chat--get-diff))
+         (prompt (concat copilot-chat-commit-prompt diff))
+         (current-buf (current-buffer))
+         (start-pos (point))
+         (placeholder-pos nil)
+         (streaming-in-progress nil)
+         (accumulated-content "")
+         (error-occurred nil)
+         ;; Store the git commit template comments
+         (template-comments
+          (save-excursion
+            (goto-char (point-min))
+            (let ((comments ""))
+              (while (re-search-forward "^#.*$" nil t)
+                (setq comments (concat comments (match-string 0) "\n")))
+              comments))))
+
+    ;; Debug messages using structured format
+    (copilot-chat--debug 'commit "Starting commit message generation")
+    (copilot-chat--debug 'commit "Diff size: %d bytes, Model: %s"
+                         (length diff) copilot-chat-model)
+
+    (cond
+     ((string-empty-p diff)
+      (copilot-chat--debug 'commit "No changes found in staging area")
+      (user-error "No staged changes found. Please stage some changes first"))
+
+     (t
+      (message "Generating commit message... Please wait.")
+
+      (insert "# [copilot-chat] Working on generating commit message, please wait... ")
+      (setq placeholder-pos (point))
+      (insert "\n\n")
+
+      (goto-char start-pos)
+
+      (when (fboundp 'copilot-chat--spinner-start)
+        (let ((copilot-chat--buffer current-buf))
+          (copilot-chat--spinner-start)))
+
+      (setq streaming-in-progress t)
+
+      (defun cleanup-stream ()
+        (setq streaming-in-progress nil)
+        (when (fboundp 'copilot-chat--spinner-stop)
+          (let ((copilot-chat--buffer current-buf))
+            (copilot-chat--spinner-stop)))
+        (with-current-buffer current-buf
+          (save-excursion
+            (goto-char start-pos)
+            (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
+              (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... ")))))))
+
+      ;; Ask Copilot with streaming response
+      (copilot-chat--ask
+       prompt
+       (lambda (content)
+         (with-current-buffer current-buf
+           (save-excursion
+             (if (string= content copilot-chat--magic)
+                 ;; End of streaming
+                 (progn
+                   (cleanup-stream)
+                   (when (not error-occurred)
+                     ;; Move point to end of inserted text for convenience
+                     (goto-char (+ start-pos (length accumulated-content)))
+                     ;; Restore the git commit template comments
+                     (save-excursion
+                       (goto-char (point-max))
+                       (delete-region (point-min) (point-max))
+                       (insert accumulated-content "\n\n" template-comments))
+                     (copilot-chat--debug 'commit "Generation completed successfully"))
+                   (message "Commit message generation completed."))
+
+               ;; Continue streaming
+               (progn
+                 ;; If this is the first response chunk, update the UI accordingly
+                 (when (string= accumulated-content "")
+                   (if (fboundp 'copilot-chat--spinner-set-status)
+                       (copilot-chat--spinner-set-status "Generating")
+                     (message "Generating commit message...")))
+
+                 ;; Handle error messages
+                 (when (string-prefix-p "Error:" content)
+                   (setq error-occurred t)
+                   (message "%s" content))
+
+                 ;; Append the new content to our accumulator
+                 (setq accumulated-content (concat accumulated-content content))
+
+                 ;; Remove placeholder text on first content chunk
+                 (goto-char start-pos)
+                 (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
+                   (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... "))))
+
+                 ;; Go to where we need to insert/update content
+                 (goto-char start-pos)
+                 (delete-region start-pos (+ start-pos (length accumulated-content)))
+                 (insert accumulated-content)
+
+                 (copilot-chat--debug 'commit "Received chunk: %d chars"
+                                      (length content)))))))
+       t)))))
 
 
-(defun copilot-chat--get-model-choices ()
-  "Get the list of available models for Copilot Chat."
-  (let* ((type (get 'copilot-chat-model 'custom-type))
-         (choices (when (eq (car type) 'choice)
-                   (cdr type))))
-    (let ((mapped-choices
-           (mapcar (lambda (choice)
-                     (when (eq (car choice) 'const)
-                       (cons (plist-get (cdr choice) :tag)
-                             (car (last choice))))) ;; Get the string value
-                   choices)))
-      mapped-choices)))
+(defun copilot-chat--get-model-choices-with-wait ()
+  "Get the list of available models for Copilot Chat, waiting for fetch if needed.
+If models haven't been fetched yet and no cache exists, wait for the fetch to complete."
+  (let ((models (copilot-chat-models copilot-chat--instance)))
+    (if models
+        ;; Return list of (name . id) pairs from fetched models, sorted by ID
+        (sort
+         (mapcar (lambda (model)
+                   (let* ((id (alist-get 'id model))
+                          (name (alist-get 'name model))
+                          ;; Remove "(Preview)" from name if it already contains it
+                          (clean-name (replace-regexp-in-string " (Preview)$" "" name))
+                          (vendor (alist-get 'vendor model))
+                          (capabilities (alist-get 'capabilities model))
+                          (limits (alist-get 'limits capabilities))
+                          (preview-p (eq t (alist-get 'preview model)))
+                          (prompt-tokens (alist-get 'max_prompt_tokens limits))
+                          (output-tokens (or (alist-get 'max_output_tokens limits)
+                                             (when (string-prefix-p "o1" id) 100000)))
+                          (context-tokens (alist-get 'max_context_window_tokens limits)))
+
+                     ;; Format the display string with the new requirements
+                     (cons
+                      (format "[%s] %s%s (Tokens in/out: %s/%s)" ;
+                              vendor
+                              clean-name
+                              (if preview-p " (Preview)" "")
+                              (if prompt-tokens
+                                  (format "%dk" (round (/ prompt-tokens 1000)))
+                                "?")
+                              (if output-tokens
+                                  (format "%dk" (round (/ output-tokens 1000)))
+                                "?"))
+                      id)))
+                 models)
+         (lambda (a b) (string< (cdr a) (cdr b))))
+      ;; No models available - fetch and wait
+      (progn
+        ;; If not initialized, initialize copilot-chat
+        (unless (copilot-chat--ready-p)
+          (copilot-chat-reset))
+
+        ;; Try loading from cache first
+        (let ((cached-models (copilot-chat--load-models-from-cache)))
+          (if cached-models
+              (progn
+                (setf (copilot-chat-models copilot-chat--instance) cached-models)
+                (copilot-chat--get-model-choices-with-wait))
+            ;; No cache - need to fetch
+            (message "No models available. Fetching from API...")
+            (copilot-chat--auth)
+            (let ((inhibit-quit t)  ; Prevent C-g during fetch
+                  (fetch-done nil))
+              (copilot-chat--request-models t)
+              ;; Wait for models to be fetched (with timeout)
+              (with-timeout (10 (error "Timeout waiting for models to be fetched"))
+                (while (not (copilot-chat-models copilot-chat--instance))
+                  (sit-for 0.1)))
+              (copilot-chat--get-model-choices-with-wait))))))))
 
 
 ;;;###autoload
 (defun copilot-chat-set-model (model)
-  "Set the Copilot Chat model to MODEL."
+  "Set the Copilot Chat model to MODEL.
+Fetches available models from the API if not already fetched."
   (interactive
-   (let* ((choices (copilot-chat--get-model-choices))
-          (choice (completing-read "Select Copilot Chat model: " (mapcar 'car choices))))
-     (let ((model-value (cdr (assoc choice choices))))
-       (message "Setting model to: %s" model-value)
+   (let* ((choices (copilot-chat--get-model-choices-with-wait))
+          ;; Create completion list with ID as prefix for unique identification
+          (completion-choices (mapcar (lambda (choice)
+                                        (let ((name (car choice))
+                                              (id (cdr choice)))
+                                          (cons (format "[%s] %s" id name) id)))
+                                      choices))
+          (choice (completing-read "Select Copilot Chat model: "
+                                   (mapcar 'car completion-choices)
+                                   nil t)))
+     ;; Extract model ID from the selected choice
+     (let ((model-value (cdr (assoc choice completion-choices))))
+       (when copilot-chat-debug
+         (message "Setting model to: %s" model-value))
        (list model-value))))
+
+  ;; Check if we need to initialize Copilot chat first
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+
+  ;; Set the model value
   (setq copilot-chat-model model)
   (customize-save-variable 'copilot-chat-model copilot-chat-model)
   (message "Copilot Chat model set to %s" copilot-chat-model))
-
 
 (defun copilot-chat-yank()
   "Insert last code block given by copilot-chat."
   (interactive)
   (setq copilot-chat--yank-index 1
-		copilot-chat--last-yank-start nil
-		copilot-chat--last-yank-end nil)
+        copilot-chat--last-yank-start nil
+        copilot-chat--last-yank-end nil)
   (copilot-chat--yank))
 
 (defun copilot-chat-yank-pop(&optional inc)
@@ -635,6 +867,33 @@ INC is the number to use as increment for index in block ring."
     (delete-file github-token-file))
   (message "Auth cache cleared.")
   (copilot-chat--create))
+
+;;;###autoload
+(defun copilot-chat-reset-models()
+  "Reset model cache and fetch models again.
+This is useful when GitHub adds new models or updates model capabilities.
+Clears model cache from memory and disk, then triggers background fetch."
+  (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
+
+  ;; Clear models from instance
+  (setf (copilot-chat-models copilot-chat--instance) nil)
+  (setf (copilot-chat-last-models-fetch-time copilot-chat--instance) 0)
+
+  ;; Remove cached models file if it exists
+  (let ((models-cache-file (expand-file-name copilot-chat-models-cache-file)))
+    (when (file-exists-p models-cache-file)
+      (delete-file models-cache-file)
+      (when copilot-chat-debug
+        (message "Removed models cache file: %s" models-cache-file))))
+
+  ;; Trigger a background fetch
+  (message "Models cache cleared. Fetching updated models...")
+  (copilot-chat--fetch-models-async)
+
+  ;; Return nil for programmatic usage
+  nil)
 
 (provide 'copilot-chat)
 

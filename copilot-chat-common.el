@@ -32,7 +32,8 @@
 
 ;; constants
 (defconst copilot-chat--magic "#cc#done#!$")
-(defconst copilot-chat--buffer-name "*Copilot-chat*")
+(defconst copilot-chat--buffer-name "*Copilot Chat*"
+  "Name of the Copilot Chat buffer.")
 
 ;; customs
 (defgroup copilot-chat nil
@@ -42,8 +43,8 @@
 (defcustom copilot-chat-frontend 'org
   "Frontend to use with `copilot-chat'.  Can be org or markdown."
   :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
+          (const :tag "markdown" markdown)
+          (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
@@ -56,15 +57,28 @@
   :type 'string
   :group 'copilot-chat)
 
+;; Model cache settings
+(defcustom copilot-chat-models-cache-file "~/.cache/copilot-chat/models.json"
+  "File to cache fetched models."
+  :type 'string
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-models-cache-ttl 86400
+  "Time-to-live for cached models in seconds (default: 24 hours)."
+  :type 'integer
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-models-fetch-cooldown 300
+  "Minimum time between model fetch attempts in seconds (default: 5 minutes)."
+  :type 'integer
+  :group 'copilot-chat)
+
 ;; GitHub Copilot models: https://api.githubcopilot.com/models
 (defcustom copilot-chat-model "gpt-4o"
-  "The model to use for Copilot chat."
-  :type '(choice (const :tag "GPT-4o" "gpt-4o")
-                 (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
-                 (const :tag "Claude 3.7 Sonnet" "claude-3.7-sonnet")
-                 (const :tag "Gemini 2.0 Flash" "gemini-2.0-flash-001")
-                 (const :tag "o1" "o1")
-                 (const :tag "o3-mini" "o3-mini"))
+  "The model to use for Copilot chat.
+The list of available models will be updated when fetched from the API.
+Use `copilot-chat-set-model' to interactively select a model."
+  :type 'string
   :group 'copilot-chat)
 
 (defcustom copilot-chat-prompt-suffix nil
@@ -73,15 +87,25 @@ If nil, no suffix will be added."
   :type 'string
   :group 'copilot-chat)
 
+(defcustom copilot-chat-debug nil
+  "When non-nil, show debug information for API requests."
+  :type 'boolean
+  :group 'copilot-chat)
+
 ;; structs
-(cl-defstruct copilot-chat
-  ready
-  github-token
-  token
-  sessionid
-  machineid
-  history
-  buffers)
+(cl-defstruct (copilot-chat
+               (:constructor copilot-chat--make)
+               (:copier nil))
+  "Struct for Copilot chat state."
+  (ready nil :type boolean)
+  (github-token nil :type (or null string))
+  (token nil)
+  (sessionid nil :type (or null string))
+  (machineid nil :type (or null string))
+  (history nil :type list)
+  (buffers nil :type list)
+  (models nil :type list)
+  (last-models-fetch-time 0 :type number))
 
 (cl-defstruct copilot-chat-frontend
   id
@@ -100,14 +124,17 @@ If nil, no suffix will be added."
 
 ;; variables
 (defvar copilot-chat--instance
-  (make-copilot-chat
+  (copilot-chat--make
    :ready nil
    :github-token nil
    :token nil
    :sessionid nil
    :machineid nil
    :history nil
-   :buffers nil))
+   :buffers nil
+   :models nil
+   :last-models-fetch-time 0)
+  "Global instance of Copilot chat.")
 
 (defvar copilot-chat--frontend-list
   (list (make-copilot-chat-frontend
@@ -166,6 +193,10 @@ If nil, no suffix will be added."
   "End position of last yank")
 
 ;; Functions
+(defun copilot-chat--should-fetch-models-p ()
+  "Return t if models should be fetched."
+  t)
+
 (defun copilot-chat--uuid ()
   "Generate a UUID."
   (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"
@@ -233,6 +264,10 @@ The create req function is called first and will return new prompt."
   (cl-find copilot-chat-frontend copilot-chat--frontend-list
            :key #'copilot-chat-frontend-id
            :test #'eq))
+
+(defun copilot-chat--get-buffer-name ()
+  "Get the formatted buffer name including model info."
+  (format "*Copilot Chat [%s]*" copilot-chat-model))
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here

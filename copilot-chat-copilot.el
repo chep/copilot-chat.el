@@ -89,14 +89,54 @@
 
 (defun copilot-chat--create ()
   "Create a new Copilot chat instance."
-  (setq copilot-chat--instance(make-copilot-chat
-                              :ready t
-                              :github-token (copilot-chat--get-cached-token)
-                              :token nil
-                              :sessionid (concat (copilot-chat--uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
-                              :machineid (copilot-chat--machine-id)
-                              :history nil
-                              :buffers nil)))
+  (setq copilot-chat--instance (copilot-chat--make
+                                :ready t
+                                :github-token (copilot-chat--get-cached-token)
+                                :token nil
+                                :sessionid (concat (copilot-chat--uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
+                                :machineid (copilot-chat--machine-id)
+                                :history nil
+                                :buffers nil
+                                :last-models-fetch-time 0))
+
+  ;; Load models from cache if available
+  (let ((cached-models (copilot-chat--load-models-from-cache)))
+    (when cached-models
+      (setf (copilot-chat-models copilot-chat--instance) cached-models)
+      (message "Loaded models from cache. %d models available." (length cached-models))))
+
+  ;; Schedule background model fetching with slight delay
+  (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
+
+  copilot-chat--instance)
+
+(defun copilot-chat--fetch-models-async ()
+  "Fetch models asynchronously in the background."
+  (when (copilot-chat--ready-p)
+    (let ((current-time (round (float-time)))
+          (last-fetch-time (copilot-chat-last-models-fetch-time copilot-chat--instance))
+          (cooldown-period copilot-chat-models-fetch-cooldown))
+
+      (if (< (- current-time last-fetch-time) cooldown-period)
+          (when copilot-chat-debug
+            (message "Skipping model fetch - in cooldown period (%d seconds left)"
+                     (- cooldown-period (- current-time last-fetch-time))))
+
+        (if (not (copilot-chat-github-token copilot-chat--instance))
+            (run-with-timer 5 nil #'copilot-chat--fetch-models-async)
+          (setf (copilot-chat-last-models-fetch-time copilot-chat--instance) current-time)
+
+          (when copilot-chat-debug
+            (message "Starting background model fetch"))
+
+          (condition-case err
+              (progn
+                (copilot-chat--auth)
+                (if (eq copilot-chat-backend 'request)
+                    (copilot-chat--request-models-async t)
+                  (copilot-chat--request-models t)))
+            (error
+             (message "Failed to fetch models in background: %s" (error-message-string err)))))))))
 
 (defun copilot-chat--login()
   "Login to GitHub Copilot API."
@@ -110,15 +150,14 @@
 
 
 (defun copilot-chat--renew-token()
-    "Renew the session token."
-(cond
+  "Renew the session token."
+  (cond
    ((eq copilot-chat-backend 'curl)
     (copilot-chat--curl-renew-token))
    ((eq copilot-chat-backend 'request)
     (copilot-chat--request-renew-token))
    (t
     (error "Unknown backend: %s" copilot-chat-backend))))
-
 
 (defun copilot-chat--auth()
   "Authenticate with GitHub Copilot API.
@@ -144,7 +183,7 @@ Then we need a session token."
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
- (let* ((history (copilot-chat-history copilot-chat--instance))
+  (let* ((history (copilot-chat-history copilot-chat--instance))
          (new-history (cons (list prompt "user") history)))
     (copilot-chat--auth)
     (cond
@@ -160,7 +199,7 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
 (defun copilot-chat--add-buffer (buffer)
   "Add a BUFFER to copilot buffers list.
 Argument buffer is the buffer to add."
-    (unless (memq buffer (copilot-chat-buffers copilot-chat--instance))
+  (unless (memq buffer (copilot-chat-buffers copilot-chat--instance))
     (let* ((buffers (copilot-chat-buffers copilot-chat--instance))
            (new-buffers (cons buffer buffers)))
       (setf (copilot-chat-buffers copilot-chat--instance) new-buffers))))
