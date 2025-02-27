@@ -355,6 +355,26 @@ Argument CALLBACK is the function to call with analysed data."
            (t
             (warn "Unhandled message from copilot: %S" extracted)))))))))
 
+(defun copilot-chat--curl-analyze-nonstream-response (_proc string callback no-history)
+  "Analyse curl response non stream version.
+o1 differs from the other models in the format of the reply.
+Argument PROC is curl process.
+Argument STRING is the data returned by curl.
+Argument CALLBACK is the function to call with analysed data."
+  (condition-case err
+      (let* ((extracted (json-parse-string string :object-type 'alist))
+             (choices (alist-get 'choices extracted))
+             (message (and (> (length choices) 0) (alist-get 'message (aref choices 0))))
+             (token (and message (alist-get 'content message))))
+        (when (and token (not (eq token :null)))
+          (funcall callback token)
+          (setq copilot-chat--curl-answer (concat copilot-chat--curl-answer token))))
+    ;; o1 often returns `rate limit exceeded` because of its severe rate limitation, so the message in case of an error should be easy to understand.
+    (error (funcall callback (format "GitHub Copilot error: %S\nResponse is %S" err (string-trim string)))))
+  (funcall callback copilot-chat--magic)
+  (unless no-history
+    (setf (copilot-chat-history copilot-chat--instance) (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance))))
+  (setq copilot-chat--curl-answer nil))
 
 (defun copilot-chat--curl-ask(prompt callback out-of-context)
   "Ask a question to Copilot using curl backend.
@@ -369,16 +389,18 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
     (insert (copilot-chat--create-req prompt out-of-context)))
   (copilot-chat--curl-make-process
    "https://api.githubcopilot.com/chat/completions"
-    'post
-    (concat "@" copilot-chat--curl-file)
-    (lambda (proc string)
-      (copilot-chat--curl-analyze-response proc string callback out-of-context))
-    "-H" "openai-intent: conversation-panel"
-  	"-H" (concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat--instance)))
-  	"-H" (concat "x-request-id: " (copilot-chat--uuid))
-  	"-H" (concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat--instance))
-  	"-H" (concat "vscode-machineid: " (copilot-chat-machineid copilot-chat--instance))
-  	"-H" "copilot-integration-id: vscode-chat"))
+   'post
+   (concat "@" copilot-chat--curl-file)
+   (lambda (proc string)
+     (if (copilot-chat--model-is-o1)
+         (copilot-chat--curl-analyze-nonstream-response proc string callback out-of-context)
+       (copilot-chat--curl-analyze-response proc string callback out-of-context)))
+   "-H" "openai-intent: conversation-panel"
+   "-H" (concat "authorization: Bearer " (alist-get 'token (copilot-chat-token copilot-chat--instance)))
+   "-H" (concat "x-request-id: " (copilot-chat--uuid))
+   "-H" (concat "vscode-sessionid: " (copilot-chat-sessionid copilot-chat--instance))
+   "-H" (concat "vscode-machineid: " (copilot-chat-machineid copilot-chat--instance))
+   "-H" "copilot-integration-id: vscode-chat"))
 
 
 (provide 'copilot-chat-curl)

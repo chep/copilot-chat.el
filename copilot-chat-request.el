@@ -141,6 +141,19 @@ Argument DATA is whatever PARSER function returns, or nil."
           (setq content (concat content token)))))
     content))
 
+(defun copilot-chat--request-ask-non-stream-parser ()
+  "Parser for copilot chat answer.
+Non-streaming version."
+  (let ((content ""))
+    (let* ((json-string (buffer-substring-no-properties (point-min) (point-max)))
+           (json-obj (and json-string (json-parse-string json-string :object-type 'alist)))
+           (choices (and json-obj (alist-get 'choices json-obj)))
+           (message (and (> (length choices) 0) (alist-get 'message (aref choices 0))))
+           (token (and message (alist-get 'content message))))
+      (when (and token (not (eq token :null)))
+        (setq content (concat content token))))
+    content))
+
 (defun copilot-chat--request-ask (prompt callback out-of-context)
   "Ask a question to Copilot using request backend.
 Argument PROMPT is the prompt to send to copilot.
@@ -161,7 +174,10 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
               ("openai-organization" . "github-copilot")
               ("editor-version" . "Neovim/0.10.0"))
       :data (copilot-chat--create-req  prompt out-of-context)
-      :parser #'copilot-chat--request-ask-parser
+      :parser
+      (if (copilot-chat--model-is-o1)
+          #'copilot-chat--request-ask-non-stream-parser
+        #'copilot-chat--request-ask-parser)
       :complete (cl-function
                  (lambda (&key response
                           &key data

@@ -63,7 +63,7 @@
                  (const :tag "Claude 3.5 Sonnet" "claude-3.5-sonnet")
                  (const :tag "Claude 3.7 Sonnet" "claude-3.7-sonnet")
                  (const :tag "Gemini 2.0 Flash" "gemini-2.0-flash-001")
-                 (const :tag "GPT-4o1-(preview)" "o1-preview")
+                 (const :tag "o1" "o1")
                  (const :tag "o3-mini" "o3-mini"))
   :group 'copilot-chat)
 
@@ -152,7 +152,7 @@ If nil, no suffix will be added."
          :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
          :pop-prompt-fn nil
          :goto-input-fn nil))
-    "Copilot-chat frontends and functions list.")
+  "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)
 
@@ -184,6 +184,10 @@ If nil, no suffix will be added."
       (setq hex (concat hex (string (aref hex-chars (random 16))))))
     hex))
 
+(defun copilot-chat--model-is-o1 ()
+  "Check if the model is o1."
+  (string-prefix-p "o1" copilot-chat-model))
+
 (defun copilot-chat--create-req(prompt no-context)
   "Create a request for Copilot.
 Argument PROMPT Copilot prompt to send.
@@ -212,13 +216,18 @@ The create req function is called first and will return new prompt."
     ;; system
     (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
 
-    (json-encode `(("messages" . ,(vconcat messages))
-                   ("top_p" . 1)
-                   ("model" . ,copilot-chat-model)
-                   ("stream" . t)
-                   ("n" . 1)
-                   ("intent" . t)
-                   ("temperature" . 0.1)))))
+
+    (json-encode (if (copilot-chat--model-is-o1)
+                     `(("messages" . ,(vconcat messages))
+                       ("model" . ,copilot-chat-model)
+                       ("stream" . :json-false))
+                   `(("messages" . ,(vconcat messages))
+                     ("top_p" . 1)
+                     ("model" . ,copilot-chat-model)
+                     ("stream" . t)
+                     ("n" . 1)
+                     ("intent" . t)
+                     ("temperature" . 0.1))))))
 
 (defun copilot-chat--get-frontend()
   (cl-find copilot-chat-frontend copilot-chat--frontend-list
