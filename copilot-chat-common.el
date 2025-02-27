@@ -215,6 +215,10 @@ If nil, no suffix will be added."
       (setq hex (concat hex (string (aref hex-chars (random 16))))))
     hex))
 
+(defun copilot-chat--model-is-o1 ()
+  "Check if the model is o1."
+  (string-prefix-p "o1" copilot-chat-model))
+
 (defun copilot-chat--create-req(prompt no-context)
   "Create a request for Copilot.
 Argument PROMPT Copilot prompt to send.
@@ -243,13 +247,18 @@ The create req function is called first and will return new prompt."
     ;; system
     (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
 
-    (json-encode `(("messages" . ,(vconcat messages))
-                   ("top_p" . 1)
-                   ("model" . ,copilot-chat-model)
-                   ("stream" . t)
-                   ("n" . 1)
-                   ("intent" . t)
-                   ("temperature" . 0.1)))))
+
+    (json-encode (if (copilot-chat--model-is-o1)
+                     `(("messages" . ,(vconcat messages))
+                       ("model" . ,copilot-chat-model)
+                       ("stream" . :json-false))
+                   `(("messages" . ,(vconcat messages))
+                     ("top_p" . 1)
+                     ("model" . ,copilot-chat-model)
+                     ("stream" . t)
+                     ("n" . 1)
+                     ("intent" . t)
+                     ("temperature" . 0.1))))))
 
 (defun copilot-chat--get-frontend()
   (cl-find copilot-chat-frontend copilot-chat--frontend-list
