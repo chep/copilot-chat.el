@@ -438,7 +438,7 @@ Argument CALLBACK is the function to call with analysed data."
 
 (defun copilot-chat--spinner-update ()
   "Update the spinner animation in the Copilot Chat buffer."
-  (let ((buffer (copilot-chat--get-buffer)))
+  (let ((buffer (copilot-chat--get-spinner-buffer)))
     (when (and buffer (buffer-live-p buffer))
       (let ((frame (nth copilot-chat--spinner-index copilot-chat-spinner-frames))
             (status-text (if copilot-chat--spinner-status
@@ -469,7 +469,7 @@ Argument CALLBACK is the function to call with analysed data."
     (setq copilot-chat--spinner-timer nil))
 
   ;; Remove spinner overlay
-  (let ((buffer (copilot-chat--get-buffer)))
+  (let ((buffer (copilot-chat--get-spinner-buffer)))
     (when (and buffer (buffer-live-p buffer))
       (with-current-buffer buffer
         (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)))))

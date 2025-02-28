@@ -151,6 +151,13 @@ The input is created if not found."
       (copilot-chat--markdown-goto-input)))
   copilot-chat--buffer)
 
+
+(defun copilot-chat--markdown-get-spinner-buffer ()
+  "Get markdown spinner buffer."
+  (let ((buffer (copilot-chat--markdown-get-buffer)))
+    (with-current-buffer buffer
+      (pm-get-buffer-of-mode 'markdown-view-mode))))
+
 (defun copilot-chat--markdown-insert-prompt (prompt)
   "Insert PROMPT in the chat buffer."
   (with-current-buffer (copilot-chat--markdown-get-buffer)
