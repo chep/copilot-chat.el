@@ -119,16 +119,19 @@ Supports glob patterns like '*.lock' or 'node_modules/'."
   (setq buffer-read-only t)
   (copilot-chat-list-refresh))
 
-(defun copilot-chat--write-buffer(data &optional buffer)
+(defun copilot-chat--write-buffer(data save &optional buffer)
   "Write content to the Copilot Chat BUFFER.
-Argument DATA data to be inserted in buffer."
+Argument DATA data to be inserted in buffer.
+If SAVE is t and BUFFER is nil, save-excursion is called before moving point"
   (if buffer
       (with-current-buffer buffer
         (insert data))
     (with-current-buffer (copilot-chat--get-buffer)
       (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
-        (save-excursion
-          (when write-fn
+        (when write-fn
+          (if save
+            (save-excursion
+              (funcall write-fn data))
             (funcall write-fn data)))))))
 
 (defun copilot-chat--format-data(content _type)
@@ -145,25 +148,11 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
 Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
-      (progn
-        (when (boundp 'copilot-chat--spinner-timer)
-          (copilot-chat--spinner-stop))
-        (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) buffer))
     (progn
-      (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) buffer)
-      (when buffer
-        (with-current-buffer buffer
-          (let ((window (get-buffer-window buffer)))
-            (when window
-              (with-selected-window window
-                (goto-char (point-max))
-                (recenter -1))))))
-      (unless buffer
-        (let ((chat-window (get-buffer-window (copilot-chat--get-buffer))))
-          (when chat-window
-            (with-selected-window chat-window
-              (goto-char (point-max))
-              (recenter -1))))))))
+      (when (boundp 'copilot-chat--spinner-timer)
+        (copilot-chat--spinner-stop))
+      (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) t buffer))
+    (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) t buffer)))
 
 (defun copilot-chat--pop-current-prompt()
   "Get current prompt to send and clean it."
@@ -174,12 +163,9 @@ Optional argument BUFFER is the buffer to write data in."
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (unless (equal (pm-base-buffer) copilot-chat--buffer)
-    (select-window (display-buffer copilot-chat--buffer)))
+  (copilot-chat-display)
   (let ((prompt (copilot-chat--pop-current-prompt)))
-    (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt))
+    (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt) nil)
     (push prompt copilot-chat--prompt-history)
     (setq copilot-chat--prompt-history-position nil)
     (copilot-chat--ask prompt 'copilot-chat-prompt-cb)))
@@ -279,6 +265,8 @@ Argument PROMPT is the prompt to send to Copilot."
 
 (defun copilot-chat--custom-prompt-selection()
   "Send to Copilot a custom prompt followed by the current selected code."
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
          (code (buffer-substring-no-properties (region-beginning) (region-end)))
          (formatted-prompt (concat prompt "\n" (copilot-chat--format-code code))))
@@ -346,10 +334,11 @@ It can be used to review the magit diff for my change, or other people's"
 (defun copilot-chat-custom-prompt-mini-buffer ()
   "Read a string with Helm completion, showing historical inputs."
   (interactive)
+  (unless (copilot-chat--ready-p)
+    (copilot-chat-reset))
   (let* ((prompt "Question for copilot-chat: ")
          (input (read-string prompt nil 'copilot-chat--prompt-history)))
-    (copilot-chat--insert-and-send-prompt input)
-    ))
+    (copilot-chat--insert-and-send-prompt input)))
 
 ;;;###autoload
 (defun copilot-chat-list ()
@@ -360,25 +349,22 @@ It can be used to review the magit diff for my change, or other people's"
       (copilot-chat-list-mode))
     (switch-to-buffer buffer)))
 
-(defun copilot-chat--get-buffer()
-  "Create copilot-chat buffers."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
-    (when get-buffer-fn
-      (funcall get-buffer-fn))))
-
 (defun copilot-chat--display ()
   "Internal function to display copilot chat buffer."
   (let ((base-buffer (copilot-chat--get-buffer))
         (window-found nil))
 
-    ;; Check if any window is already displaying the base buffer or an indirect buffer
-    (dolist (window (window-list))
-      (let ((buf (window-buffer window)))
-        (when (or (eq buf base-buffer)
-                (eq (with-current-buffer buf (pm-base-buffer)) base-buffer))
-          (select-window window)
-          (setq window-found t)
-          (cl-return))))
+    ;; Check if any window is already displaying the base buffer or an indirect
+    ;; buffer
+    (cl-block window-search
+      (dolist (window (window-list))
+        (let ((buf (window-buffer window)))
+          (when (or (eq buf base-buffer)
+                  (eq (with-current-buffer buf (pm-base-buffer)) base-buffer))
+            (select-window window)
+            (switch-to-buffer base-buffer)
+            (setq window-found t)
+            (cl-return-from window-search)))))
 
     (unless window-found
       (pop-to-buffer base-buffer))))
@@ -860,14 +846,6 @@ INC is the number to use as increment for index in block ring."
   (let ((yank-fn (copilot-chat-frontend-yank-fn (copilot-chat--get-frontend))))
     (when yank-fn
       (funcall yank-fn))))
-
-(defun copilot-chat-goto-input()
-  "Go to the input area."
-  (interactive)
-  (when (equal (pm-base-buffer) (copilot-chat--get-buffer))
-    (let ((goto-fn (copilot-chat-frontend-goto-input-fn (copilot-chat--get-frontend))))
-      (when goto-fn
-        (funcall goto-fn)))))
 
 ;;;###autoload
 (defun copilot-chat-clear-auth-cache()

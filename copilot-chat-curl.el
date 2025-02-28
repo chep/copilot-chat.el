@@ -438,8 +438,8 @@ Argument CALLBACK is the function to call with analysed data."
 
 (defun copilot-chat--spinner-update ()
   "Update the spinner animation in the Copilot Chat buffer."
-  (when (and copilot-chat--buffer (buffer-live-p copilot-chat--buffer))
-    (with-current-buffer copilot-chat--buffer
+  (let ((buffer (copilot-chat--get-buffer)))
+    (when (and buffer (buffer-live-p buffer))
       (let ((frame (nth copilot-chat--spinner-index copilot-chat-spinner-frames))
             (status-text (if copilot-chat--spinner-status
                              (concat copilot-chat--spinner-status " ")
@@ -448,13 +448,14 @@ Argument CALLBACK is the function to call with analysed data."
         (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)
 
         ;; Create new spinner overlay at the end of buffer
-        (save-excursion
-          (goto-char (point-max))
-          (let ((ov (make-overlay (point) (point))))
-            (overlay-put ov 'copilot-chat-spinner t)
-            (overlay-put ov 'after-string
-                         (propertize (concat status-text frame)
-                                     'face 'copilot-chat-spinner-face)))))
+        (with-current-buffer buffer
+          (save-excursion
+            (goto-char (point-max))
+            (let ((ov (make-overlay (point) (point))))
+              (overlay-put ov 'copilot-chat-spinner t)
+              (overlay-put ov 'after-string
+                           (propertize (concat status-text frame)
+                                       'face 'copilot-chat-spinner-face))))))
 
       ;; Update spinner index
       (setq copilot-chat--spinner-index
@@ -468,9 +469,10 @@ Argument CALLBACK is the function to call with analysed data."
     (setq copilot-chat--spinner-timer nil))
 
   ;; Remove spinner overlay
-  (when (and copilot-chat--buffer (buffer-live-p copilot-chat--buffer))
-    (with-current-buffer copilot-chat--buffer
-      (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t))))
+  (let ((buffer (copilot-chat--get-buffer)))
+    (when (and buffer (buffer-live-p buffer))
+      (with-current-buffer buffer
+        (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)))))
 
 (defun copilot-chat--spinner-set-status (status)
   "Set the status message to display with the spinner.

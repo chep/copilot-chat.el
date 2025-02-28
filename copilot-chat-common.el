@@ -269,5 +269,11 @@ The create req function is called first and will return new prompt."
   "Get the formatted buffer name including model info."
   (format "*Copilot Chat [%s]*" copilot-chat-model))
 
+(defun copilot-chat--get-buffer()
+  "Create copilot-chat buffers."
+  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
+    (when get-buffer-fn
+      (funcall get-buffer-fn))))
+
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
