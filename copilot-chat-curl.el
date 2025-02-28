@@ -389,12 +389,16 @@ Argument NO-HISTORY is a boolean to indicate if the response should be added to 
            (t
             (warn "Unhandled message from copilot: %S" extracted)))))))))
 
-(defun copilot-chat--curl-analyze-nonstream-response (_proc string callback no-history)
+(defun copilot-chat--curl-analyze-nonstream-response (proc string callback no-history)
   "Analyse curl response non stream version.
 o1 differs from the other models in the format of the reply.
 Argument PROC is curl process.
 Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data."
+  (when copilot-chat--curl-current-data
+    (setq string (concat copilot-chat--curl-current-data string))
+    (setq copilot-chat--curl-current-data nil))
+
   (condition-case err
       (let* ((extracted (json-parse-string string :object-type 'alist))
              (choices (alist-get 'choices extracted))
@@ -402,13 +406,23 @@ Argument CALLBACK is the function to call with analysed data."
              (token (and message (alist-get 'content message))))
         (when (and token (not (eq token :null)))
           (funcall callback token)
-          (setq copilot-chat--curl-answer (concat copilot-chat--curl-answer token))))
-    ;; o1 often returns `rate limit exceeded` because of its severe rate limitation, so the message in case of an error should be easy to understand.
-    (error (funcall callback (format "GitHub Copilot error: %S\nResponse is %S" err (string-trim string)))))
-  (funcall callback copilot-chat--magic)
-  (unless no-history
-    (setf (copilot-chat-history copilot-chat--instance) (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance))))
-  (setq copilot-chat--curl-answer nil))
+          (funcall callback copilot-chat--magic)
+          (setq copilot-chat--curl-answer (concat copilot-chat--curl-answer token))
+          (unless no-history
+            (setf
+             (copilot-chat-history copilot-chat--instance)
+             (cons (list copilot-chat--curl-answer "assistant") (copilot-chat-history copilot-chat--instance))))
+          (setq copilot-chat--curl-answer nil)
+          (setq copilot-chat--curl-current-data nil)))
+    ;; o1 often returns `rate limit exceeded` because of its severe rate limitation,
+    ;; so the message in case of an error should be easy to understand.
+    (error
+     ;; When JSON parsing fails, but the process has not terminated and may be in the middle of a sentence, do not make an error, set the string and wait for the next call.
+     ;; I'm not sure if asynchronous control is working properly.
+     (progn
+       (setq copilot-chat--curl-current-data nil)
+       (unless (process-live-p proc)
+         (funcall callback (format "GitHub Copilot error: %S\nResponse is %S" err (string-trim string))))))))
 
 (defun copilot-chat--spinner-start ()
   "Start the spinner animation in the Copilot Chat buffer."
