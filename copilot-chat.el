@@ -151,8 +151,14 @@ Optional argument BUFFER is the buffer to write data in."
     (progn
       (when (boundp 'copilot-chat--spinner-timer)
         (copilot-chat--spinner-stop))
-      (copilot-chat--write-buffer (copilot-chat--format-data "\n\n" 'answer) t buffer))
-    (copilot-chat--write-buffer (copilot-chat--format-data content 'answer) t buffer)))
+      (copilot-chat--write-buffer
+        (copilot-chat--format-data "\n\n" 'answer)
+        (not copilot-chat-follow)
+        buffer))
+    (copilot-chat--write-buffer
+      (copilot-chat--format-data content 'answer)
+      (not copilot-chat-follow)
+      buffer)))
 
 (defun copilot-chat--pop-current-prompt()
   "Get current prompt to send and clean it."

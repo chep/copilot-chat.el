@@ -74,7 +74,7 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
       (setq data (concat data content)))
     data))
 
-(defun copilot-chat--markdown-format-code(code language)
+(defun copilot-chat--markdown-format-code (code language)
   "Format code for markdown frontend.
 Argument CODE is the code to format.
 Argument LANGUAGE is the language of the code."
@@ -120,14 +120,14 @@ Replace selection if any."
           (delete-region (region-beginning) (region-end)))
         (insert (plist-get content :content))))))
 
-(defun copilot-chat--markdown-write(data)
+(defun copilot-chat--markdown-write (data)
   "Write data at the end of the chat part of the buffer."
   (copilot-chat--markdown-goto-input)
   (forward-line -3)
   (end-of-line)
   (insert data))
 
-(defun copilot-chat--markdown-goto-input()
+(defun copilot-chat--markdown-goto-input ()
   "Go to the input part of the chat buffer.
 The input is created if not found."
   (goto-char (point-max))
@@ -142,7 +142,7 @@ The input is created if not found."
         (overlay-put overlay 'read-only t)
         (overlay-put overlay 'evaporate t)))))
 
-(defun copilot-chat--markdown-get-buffer()
+(defun copilot-chat--markdown-get-buffer ()
   "Create copilot-chat buffers."
   (unless (buffer-live-p copilot-chat--buffer)
     (setq copilot-chat--buffer (get-buffer-create (copilot-chat--get-buffer-name)))
@@ -159,7 +159,7 @@ The input is created if not found."
       (delete-region (point) (point-max)))
     (insert prompt)))
 
-(defun copilot-chat--markdown-pop-prompt()
+(defun copilot-chat--markdown-pop-prompt ()
   "Get current prompt to send and clean it."
   (with-current-buffer (copilot-chat--markdown-get-buffer)
     (copilot-chat--markdown-goto-input)
@@ -167,7 +167,7 @@ The input is created if not found."
       (delete-region (point) (point-max))
       prompt)))
 
-(defun copilot-chat--markdown-init()
+(defun copilot-chat--markdown-init ()
   "Initialize the copilot chat markdown frontend."
   (setq copilot-chat-prompt copilot-chat-markdown-prompt))
 

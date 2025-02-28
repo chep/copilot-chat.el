@@ -47,6 +47,11 @@
           (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
+(defcustom copilot-chat-follow nil
+  "Follow the chat buffer."
+  :type 'boolean
+  :group 'copilot-chat)
+
 (defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
   "The file where to find GitHub token."
   :type 'string
