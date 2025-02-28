@@ -47,6 +47,11 @@
           (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
+(defcustom copilot-chat-follow nil
+  "Follow the chat buffer."
+  :type 'boolean
+  :group 'copilot-chat)
+
 (defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
   "The file where to find GitHub token."
   :type 'string
@@ -120,7 +125,7 @@ If nil, no suffix will be added."
   get-buffer-fn
   insert-prompt-fn
   pop-prompt-fn
-  goto-input-fn)
+  get-spinner-buffer-fn)
 
 ;; variables
 (defvar copilot-chat--instance
@@ -150,7 +155,7 @@ If nil, no suffix will be added."
          :get-buffer-fn #'copilot-chat--markdown-get-buffer
          :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
          :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
-         :goto-input-fn #'copilot-chat--markdown-goto-input)
+         :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
         (make-copilot-chat-frontend
          :id 'org
          :init-fn #'copilot-chat--org-init
@@ -164,7 +169,7 @@ If nil, no suffix will be added."
          :get-buffer-fn #'copilot-chat--org-get-buffer
          :insert-prompt-fn #'copilot-chat--org-insert-prompt
          :pop-prompt-fn #'copilot-chat--org-pop-prompt
-         :goto-input-fn #'copilot-chat--org-goto-input)
+         :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
         (make-copilot-chat-frontend
          :id 'shell-maker
          :init-fn #'copilot-chat-shell-maker-init
@@ -178,7 +183,7 @@ If nil, no suffix will be added."
          :get-buffer-fn #'copilot-chat--shell-maker-get-buffer
          :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
          :pop-prompt-fn nil
-         :goto-input-fn nil))
+         :get-spinner-buffer-fn #'copilot-chat--shell-maker-get-buffer))
   "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)
@@ -268,6 +273,18 @@ The create req function is called first and will return new prompt."
 (defun copilot-chat--get-buffer-name ()
   "Get the formatted buffer name including model info."
   (format "*Copilot Chat [%s]*" copilot-chat-model))
+
+(defun copilot-chat--get-buffer()
+  "Create copilot-chat buffers."
+  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
+    (when get-buffer-fn
+      (funcall get-buffer-fn))))
+
+(defun copilot-chat--get-spinner-buffer()
+  "Create copilot-chat buffers."
+  (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn (copilot-chat--get-frontend))))
+    (when get-buffer-fn
+      (funcall get-buffer-fn))))
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here

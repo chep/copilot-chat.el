@@ -31,12 +31,6 @@
 (require 'shell-maker)
 (require 'copilot-chat-copilot)
 
-;; Customs
-(defcustom copilot-chat-shell-maker-follow t
-  "Follow the chat buffer."
-  :type 'boolean
-  :group 'copilot-chat)
-
 ;; Variables
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
@@ -123,7 +117,7 @@ Argument CONTENT is copilot chat answer."
   "Wrapper around copilot-chat--shell-cb-prompt.
 Argument SHELL is the shell-maker instance.
 Argument CONTENT is copilot chat answer."
-  (if copilot-chat-shell-maker-follow
+  (if copilot-chat-follow
       (copilot-chat--shell-cb-prompt shell content)
     (save-excursion
       (copilot-chat--shell-cb-prompt shell content))))
