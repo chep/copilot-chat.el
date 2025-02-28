@@ -368,7 +368,20 @@ It can be used to review the magit diff for my change, or other people's"
 
 (defun copilot-chat--display ()
   "Internal function to display copilot chat buffer."
-  (switch-to-buffer (copilot-chat--get-buffer)))
+  (let ((base-buffer (copilot-chat--get-buffer))
+        (window-found nil))
+
+    ;; Check if any window is already displaying the base buffer or an indirect buffer
+    (dolist (window (window-list))
+      (let ((buf (window-buffer window)))
+        (when (or (eq buf base-buffer)
+                (eq (with-current-buffer buf (pm-base-buffer)) base-buffer))
+          (select-window window)
+          (setq window-found t)
+          (cl-return))))
+
+    (unless window-found
+      (pop-to-buffer base-buffer))))
 
 ;;;###autoload
 (defun copilot-chat-display ()
@@ -382,9 +395,12 @@ It can be used to review the magit diff for my change, or other people's"
 (defun copilot-chat-hide ()
   "Hide copilot chat buffer."
   (interactive)
-  (let ((window (get-buffer-window (copilot-chat--get-buffer))))
-    (when window
-      (delete-window window))))
+  (let ((base-buffer (copilot-chat--get-buffer)))
+    (dolist (window (window-list))
+      (let ((buf (window-buffer window)))
+        (when (or (eq buf base-buffer)
+                (eq (with-current-buffer buf (pm-base-buffer)) base-buffer))
+          (delete-window window))))))
 
 (defun copilot-chat-add-current-buffer ()
   "Add current buffer in sent buffers list."
