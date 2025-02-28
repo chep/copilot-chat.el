@@ -175,7 +175,7 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 
 *** Display
 - ~copilot-chat-list-added-buffers-only~ - By default, buffer list displays all buffers and uses faces to highlight added buffer. If set to ~t~, only added buffer are displayed.
-- ~copilot-chat-shell-maker-follow~ - If ~t~ (default), point follows answer in shell-maker buffer.
+- ~copilot-chat-follow~ - If ~t~ (default is ~nil~), point follows answer in chat buffer.
 
 
 *** Storage and cache
