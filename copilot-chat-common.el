@@ -125,6 +125,7 @@ If nil, no suffix will be added."
   get-buffer-fn
   insert-prompt-fn
   pop-prompt-fn
+  goto-input-fn
   get-spinner-buffer-fn)
 
 ;; variables
@@ -155,6 +156,7 @@ If nil, no suffix will be added."
          :get-buffer-fn #'copilot-chat--markdown-get-buffer
          :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
          :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
+         :goto-input-fn #'copilot-chat--markdown-goto-input
          :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
         (make-copilot-chat-frontend
          :id 'org
@@ -169,6 +171,7 @@ If nil, no suffix will be added."
          :get-buffer-fn #'copilot-chat--org-get-buffer
          :insert-prompt-fn #'copilot-chat--org-insert-prompt
          :pop-prompt-fn #'copilot-chat--org-pop-prompt
+         :goto-input-fn #'copilot-chat--org-goto-input
          :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
         (make-copilot-chat-frontend
          :id 'shell-maker
@@ -183,6 +186,7 @@ If nil, no suffix will be added."
          :get-buffer-fn #'copilot-chat--shell-maker-get-buffer
          :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
          :pop-prompt-fn nil
+         :goto-input-fn #'nil
          :get-spinner-buffer-fn #'copilot-chat--shell-maker-get-buffer))
   "Copilot-chat frontends and functions list.")
 

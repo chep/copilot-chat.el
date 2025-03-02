@@ -598,6 +598,13 @@ lock files and build artifacts."
                          files-to-include)))
         (buffer-string)))))
 
+(defun copilot-chat-goto-input()
+  "Go to the input area."
+  (interactive)
+  (when (equal (pm-base-buffer) (copilot-chat--get-buffer))
+    (let ((goto-fn (copilot-chat-frontend-goto-input-fn (copilot-chat--get-frontend))))
+      (when goto-fn
+        (funcall goto-fn)))))
 
 (defun copilot-chat--debug (category format-string &rest args)
   "Print debug message when `copilot-chat-debug' is enabled.
