@@ -177,16 +177,13 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 - ~copilot-chat-list-added-buffers-only~ - By default, buffer list displays all buffers and uses faces to highlight added buffer. If set to ~t~, only added buffer are displayed.
 - ~copilot-chat-follow~ - If ~t~ (default is ~nil~), point follows answer in chat buffer.
 
-
 *** Storage and cache
 - ~copilot-chat-github-token-file~ - File path to store GitHub authentication token.
 - ~copilot-chat-token-cache~ - File path to store session token cache.
 
 *** Model settings
-- ~copilot-chat-model~ - AI model to use. Available options:
-  - GPT-4o (default).
-  - Claude 3.5 Sonnet.
-  - GPT-4o1-(preview).
+- ~copilot-chat-model~ - AI model to use. It is better to use ~(copilot-chat-set-model)~ to set it.
+- ~copilot-chat-model-ignore-picker~ - If ~nil~ (default) add a filter to ~(copilot-chat-set-model)~ which will only show models with ~model_picker_enabled~ attribute.
 
 *** Prompts
 Default prompts used by various commands:
