@@ -96,7 +96,7 @@ Argument CONTENT is copilot chat answer."
     (goto-char (point-max))
     (when copilot-chat--first-word-answer
       (setq copilot-chat--first-word-answer nil)
-      (let ((str (format-time-string "# [%T] Copilot:\n"))
+      (let ((str (concat (format-time-string "# [%T] ") (format "Copilot(%s):\n" copilot-chat-model)))
             (inhibit-read-only t))
         (with-current-buffer copilot-chat--shell-maker-temp-buffer
           (insert str))
