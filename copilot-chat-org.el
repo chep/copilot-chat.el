@@ -73,7 +73,9 @@ Argument TYPE is the type of the data (prompt or answer)."
           (setq data (concat "\n* " (format-time-string "*[%T]* You                 :you:\n") (format "%s\n" content))))
       (when copilot-chat--first-word-answer
         (setq copilot-chat--first-word-answer nil)
-        (setq data (concat "\n** " (format-time-string "*[%T]* Copilot                 :copilot:\n"))))
+        (setq data (concat "\n** "
+                     (format-time-string "*[%T]* ")
+                     (format "Copilot(%s)                 :copilot:\n" copilot-chat-model))))
       (setq data (concat data content)))
     data))
 
