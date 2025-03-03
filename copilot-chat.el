@@ -741,11 +741,17 @@ Requires the repository to have staged changes."
                                       (length content)))))))
        t)))))
 
+(defun copilot-chat--model-picker-enabled (model)
+  "Check the `model_picker_enabled` attribute of the MODEL.
+For example, GPT-3.5 has no more significance for most people nowadays than GPT-4o."
+  (eq t (alist-get 'model_picker_enabled model)))
 
 (defun copilot-chat--get-model-choices-with-wait ()
   "Get the list of available models for Copilot Chat, waiting for fetch if needed.
 If models haven't been fetched yet and no cache exists, wait for the fetch to complete."
-  (let ((models (copilot-chat-models copilot-chat--instance)))
+  (let ((models (if copilot-chat-model-ignore-picker
+                  (copilot-chat-models copilot-chat--instance)
+                  (seq-filter #'copilot-chat--model-picker-enabled (copilot-chat-models copilot-chat--instance)))))
     (if models
         ;; Return list of (name . id) pairs from fetched models, sorted by ID
         (sort

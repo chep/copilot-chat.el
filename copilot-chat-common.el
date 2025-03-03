@@ -86,6 +86,16 @@ Use `copilot-chat-set-model' to interactively select a model."
   :type 'string
   :group 'copilot-chat)
 
+(defcustom copilot-chat-model-ignore-picker nil
+  "Include models with the `model_picker_enabled' attribute set to `false'.
+For most people, a model with this attribute not `true` is useless,
+as it is a degraded version or has almost no difference.
+Therefore, to reduce noise,
+models whose `model_picker_enabled` attribute
+is not `true` are not included in the model selection by default."
+  :type 'boolean
+  :group 'copilot-chat)
+
 (defcustom copilot-chat-prompt-suffix nil
   "Suffix to be added to the end of the prompt before sending to Copilot Chat. For Example: Reply in Chinese (or any other language)
 If nil, no suffix will be added."
