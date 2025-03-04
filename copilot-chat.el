@@ -593,9 +593,7 @@ lock files and build artifacts."
         (erase-buffer)
         ;; Then get diff only for non-ignored files
         (when files-to-include
-          (apply #'magit-git-insert
-                 (append '("diff" "--cached")
-                         files-to-include)))
+          (magit-git-insert (append '("diff" "--cached" "--") files-to-include))
         (buffer-string)))))
 
 (defun copilot-chat-goto-input()
