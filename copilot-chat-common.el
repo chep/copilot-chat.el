@@ -96,12 +96,6 @@ is not `true` are not included in the model selection by default."
   :type 'boolean
   :group 'copilot-chat)
 
-(defcustom copilot-chat-prompt-suffix nil
-  "Suffix to be added to the end of the prompt before sending to Copilot Chat. For Example: Reply in Chinese (or any other language)
-If nil, no suffix will be added."
-  :type 'string
-  :group 'copilot-chat)
-
 (defcustom copilot-chat-debug nil
   "When non-nil, show debug information for API requests."
   :type 'boolean
