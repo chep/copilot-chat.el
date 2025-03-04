@@ -753,37 +753,61 @@ If models haven't been fetched yet and no cache exists, wait for the fetch to co
                   (copilot-chat-models copilot-chat--instance)
                   (seq-filter #'copilot-chat--model-picker-enabled (copilot-chat-models copilot-chat--instance)))))
     (if models
-        ;; Return list of (name . id) pairs from fetched models, sorted by ID
-        (sort
-         (mapcar (lambda (model)
-                   (let* ((id (alist-get 'id model))
-                          (name (alist-get 'name model))
-                          ;; Remove "(Preview)" from name if it already contains it
-                          (clean-name (replace-regexp-in-string " (Preview)$" "" name))
-                          (vendor (alist-get 'vendor model))
-                          (capabilities (alist-get 'capabilities model))
-                          (limits (alist-get 'limits capabilities))
-                          (preview-p (eq t (alist-get 'preview model)))
-                          (prompt-tokens (alist-get 'max_prompt_tokens limits))
-                          (output-tokens (or (alist-get 'max_output_tokens limits)
-                                             (when (string-prefix-p "o1" id) 100000)))
-                          (context-tokens (alist-get 'max_context_window_tokens limits)))
-
-                     ;; Format the display string with the new requirements
+        (let* ((model-info-list
+                (mapcar (lambda (model)
+                          (let* ((id (alist-get 'id model))
+                                 (name (alist-get 'name model))
+                                 (clean-name (replace-regexp-in-string " (Preview)$" "" name))
+                                 (vendor (alist-get 'vendor model))
+                                 (capabilities (alist-get 'capabilities model))
+                                 (limits (alist-get 'limits capabilities))
+                                 (preview-p (eq t (alist-get 'preview model)))
+                                 (preview-text (if preview-p " (Preview)" ""))
+                                 (prompt-tokens (alist-get 'max_prompt_tokens limits))
+                                 (output-tokens (or (alist-get 'max_output_tokens limits)
+                                                    (when (string-prefix-p "o1" id) 100000)))
+                                 (prompt-text (if prompt-tokens
+                                                (format "%dk" (round (/ prompt-tokens 1000)))
+                                              "?"))
+                                 (output-text (if output-tokens
+                                                (format "%dk" (round (/ output-tokens 1000)))
+                                              "?")))
+                            (list :id id
+                                  :vendor vendor
+                                  :clean-name clean-name
+                                  :preview-text preview-text
+                                  :prompt-text prompt-text
+                                  :output-text output-text)))
+                        models))
+               (max-vendor-width
+                (apply #'max (mapcar (lambda (info) (length (plist-get info :vendor))) model-info-list)))
+               (max-name-width
+                (apply #'max (mapcar (lambda (info) (length (plist-get info :clean-name))) model-info-list)))
+               (max-preview-width
+                (apply #'max (mapcar (lambda (info) (length (plist-get info :preview-text))) model-info-list)))
+               (max-prompt-width
+                (apply #'max (mapcar (lambda (info) (length (plist-get info :prompt-text))) model-info-list)))
+               (max-output-width
+                (apply #'max (mapcar (lambda (info) (length (plist-get info :output-text))) model-info-list)))
+               (format-str (format "[%%-%ds] %%-%ds%%-%ds (Tokens in/out: %%%ds/%%%ds)"
+                                   max-vendor-width
+                                   max-name-width
+                                   max-preview-width
+                                   max-prompt-width
+                             max-output-width)))
+          ;; Return list of (name . id) pairs from fetched models, sorted by ID
+          (sort
+           (mapcar (lambda (info)
                      (cons
-                      (format "[%s] %s%s (Tokens in/out: %s/%s)" ;
-                              vendor
-                              clean-name
-                              (if preview-p " (Preview)" "")
-                              (if prompt-tokens
-                                  (format "%dk" (round (/ prompt-tokens 1000)))
-                                "?")
-                              (if output-tokens
-                                  (format "%dk" (round (/ output-tokens 1000)))
-                                "?"))
-                      id)))
-                 models)
-         (lambda (a b) (string< (cdr a) (cdr b))))
+                      (format format-str
+                              (plist-get info :vendor)
+                              (plist-get info :clean-name)
+                              (plist-get info :preview-text)
+                              (plist-get info :prompt-text)
+                              (plist-get info :output-text))
+                      (plist-get info :id)))
+                   model-info-list)
+           (lambda (a b) (string< (cdr a) (cdr b)))))
       ;; No models available - fetch and wait
       (progn
         ;; If not initialized, initialize copilot-chat
@@ -814,21 +838,22 @@ If models haven't been fetched yet and no cache exists, wait for the fetch to co
   "Set the Copilot Chat model to MODEL.
 Fetches available models from the API if not already fetched."
   (interactive
-   (let* ((choices (copilot-chat--get-model-choices-with-wait))
-          ;; Create completion list with ID as prefix for unique identification
-          (completion-choices (mapcar (lambda (choice)
-                                        (let ((name (car choice))
-                                              (id (cdr choice)))
-                                          (cons (format "[%s] %s" id name) id)))
-                                      choices))
-          (choice (completing-read "Select Copilot Chat model: "
-                                   (mapcar 'car completion-choices)
-                                   nil t)))
-     ;; Extract model ID from the selected choice
-     (let ((model-value (cdr (assoc choice completion-choices))))
-       (when copilot-chat-debug
-         (message "Setting model to: %s" model-value))
-       (list model-value))))
+    (let* ((choices (copilot-chat--get-model-choices-with-wait))
+            (max-id-width (apply #'max (mapcar (lambda (choics) (length (cdr choics))) choices)))
+            ;; Create completion list with ID as prefix for unique identification
+            (completion-choices (mapcar (lambda (choice)
+                                          (let ((name (car choice))
+                                                 (id (cdr choice)))
+                                            (cons (format (format "[%%-%ds] %%s" max-id-width) id name) id)))
+                                  choices))
+            (choice (completing-read "Select Copilot Chat model: "
+                      (mapcar 'car completion-choices)
+                      nil t)))
+      ;; Extract model ID from the selected choice
+      (let ((model-value (cdr (assoc choice completion-choices))))
+        (when copilot-chat-debug
+          (message "Setting model to: %s" model-value))
+        (list model-value))))
 
   ;; Check if we need to initialize Copilot chat first
   (unless (copilot-chat--ready-p)
