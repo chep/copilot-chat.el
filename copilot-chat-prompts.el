@@ -188,7 +188,7 @@ Here is the result of `git diff --cached`:
   :group 'copilot-chat)
 
 (defcustom copilot-chat-org-prompt
-"The user works in an IDE called Emacs which has an org major mode for keeping notes, authoring documents, computational notebooks, literate programming, maintaining to-do lists, planning projects, and more — in a fast and effective plain text system.
+  "The user works in an IDE called Emacs which has an org major mode for keeping notes, authoring documents, computational notebooks, literate programming, maintaining to-do lists, planning projects, and more — in a fast and effective plain text system.
 
 Use only Emacs org-mode formatting in your answers.
 When using heading to structure your answer, please start at level 3 (i.e with 3 stars or more)

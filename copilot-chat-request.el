@@ -162,7 +162,7 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
   ;; Start spinner if available
   (when (fboundp 'copilot-chat--spinner-start)
     (copilot-chat--spinner-start))
-  
+
   ;; Initialize answer accumulator
   (let ((full-response ""))
     (request "https://api.githubcopilot.com/chat/completions"
@@ -191,22 +191,22 @@ Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context
                    ;; Stop spinner when complete
                    (when (fboundp 'copilot-chat--spinner-stop)
                      (copilot-chat--spinner-stop))
-                   
+
                    (unless (= (request-response-status-code response) 200)
                      (let ((error-msg (format "Error: %s" (request-response-status-code response))))
                        (funcall callback error-msg)
                        (funcall callback copilot-chat--magic)
                        (error error-msg)))
-                   
+
                    ;; Update full response and call callback with final magic token
                    (setq full-response (concat full-response data))
                    (funcall callback data)
                    (unless out-of-context
-                     (setf (copilot-chat-history copilot-chat--instance) 
-                           (cons (list prompt "assistant") 
+                     (setf (copilot-chat-history copilot-chat--instance)
+                           (cons (list prompt "assistant")
                                  (copilot-chat-history copilot-chat--instance))))
                    (funcall callback copilot-chat--magic)))
-      :status-code '((400 . (lambda (&rest _) 
+      :status-code '((400 . (lambda (&rest _)
                               (when (fboundp 'copilot-chat--spinner-stop)
                                 (copilot-chat--spinner-stop))
                               (let ((error-msg "Bad request. Please check your input."))
@@ -278,7 +278,7 @@ Argument RESPONSE is request-response object."
     ;; Store models in instance and return them
     (let ((sorted-models (nreverse chat-models)))
       (setf (copilot-chat-models copilot-chat--instance) sorted-models)
-      
+
       ;; Cache models to disk
       (copilot-chat--save-models-to-cache sorted-models)
 
@@ -345,15 +345,15 @@ Optional argument QUIET suppresses user messages when non-nil."
                       (when (and (alist-get 'capabilities model)
                                  (equal (alist-get 'type (alist-get 'capabilities model)) "chat"))
                         (push model chat-models)))
-                    
+
                     (when copilot-chat-debug
                       (message "Successfully fetched %d models asynchronously" (length chat-models)))
-                    
+
                     ;; Store models in instance and cache them
                     (let ((sorted-models (nreverse chat-models)))
                       (setf (copilot-chat-models copilot-chat--instance) sorted-models)
                       (copilot-chat--save-models-to-cache sorted-models)
-                      
+
                       ;; Enable policies for models if needed
                       (dolist (model sorted-models)
                         (when (and (alist-get 'policy model)
@@ -388,11 +388,11 @@ Optional argument QUIET suppresses user messages when non-nil."
             (if (< age copilot-chat-models-cache-ttl)
                 (let ((models (alist-get 'models cache-data)))
                   (when copilot-chat-debug
-                    (message "Loaded %d models from cache (age: %d seconds)" 
+                    (message "Loaded %d models from cache (age: %d seconds)"
                              (length models) age))
                   models)
               (when copilot-chat-debug
-                (message "Cache expired (age: %d seconds, ttl: %d seconds)" 
+                (message "Cache expired (age: %d seconds, ttl: %d seconds)"
                          age copilot-chat-models-cache-ttl))
               nil))
         (error

@@ -35,8 +35,8 @@
 (defvar copilot-chat--shell-cb-fn nil)
 (defvar copilot-chat--shell-config
   (make-shell-maker-config
-   :name "Copilot-Chat"
-   :execute-command 'copilot-chat--shell-cb))
+    :name "Copilot-Chat"
+    :execute-command 'copilot-chat--shell-cb))
 (defvar copilot-chat--shell-maker-answer-point 0
   "Start of the current answer.")
 
@@ -56,7 +56,7 @@
   (unless (buffer-live-p copilot-chat--buffer)
     (setq copilot-chat--buffer (copilot-chat--shell)))
   (let ((tempb (get-buffer-create copilot-chat--shell-maker-temp-buffer))
-        (inhibit-read-only t))
+         (inhibit-read-only t))
     (with-current-buffer tempb
       (markdown-view-mode))
     copilot-chat--buffer))
@@ -69,7 +69,7 @@
       (goto-char (point-min))
       (while (not (eobp))
         (let ((next-change (or (next-property-change (point) nil (point-max)) (point-max)))
-              (face (get-text-property (point) 'face)))
+               (face (get-text-property (point) 'face)))
           (when face
             (font-lock-append-text-property (point) next-change 'font-lock-face face))
           (goto-char next-change))))))
@@ -97,15 +97,15 @@ Argument CONTENT is copilot chat answer."
     (when copilot-chat--first-word-answer
       (setq copilot-chat--first-word-answer nil)
       (let ((str (concat (format-time-string "# [%T] ") (format "Copilot(%s):\n" copilot-chat-model)))
-            (inhibit-read-only t))
+             (inhibit-read-only t))
         (with-current-buffer copilot-chat--shell-maker-temp-buffer
           (insert str))
         (funcall (map-elt shell :write-output) str)))
     (if (string= content copilot-chat--magic)
-        (progn
-          (funcall (map-elt shell :finish-output) t); the end
-          (copilot-chat--shell-maker-copy-faces)
-          (setq copilot-chat--first-word-answer t))
+      (progn
+        (funcall (map-elt shell :finish-output) t); the end
+        (copilot-chat--shell-maker-copy-faces)
+        (setq copilot-chat--first-word-answer t))
       (progn
         (with-current-buffer copilot-chat--shell-maker-temp-buffer
           (goto-char (point-max))
@@ -118,7 +118,7 @@ Argument CONTENT is copilot chat answer."
 Argument SHELL is the shell-maker instance.
 Argument CONTENT is copilot chat answer."
   (if copilot-chat-follow
-      (copilot-chat--shell-cb-prompt shell content)
+    (copilot-chat--shell-cb-prompt shell content)
     (save-excursion
       (copilot-chat--shell-cb-prompt shell content))))
 
@@ -128,9 +128,9 @@ Argument COMMAND is the command to send to Copilot.
 Argument CALLBACK is the callback function to call.
 Argument ERROR-CALLBACK is the error callback function to call."
   (setq
-   copilot-chat--shell-cb-fn
-   (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
-   copilot-chat--shell-maker-answer-point (point))
+    copilot-chat--shell-cb-fn
+    (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
+    copilot-chat--shell-maker-answer-point (point))
   (let ((inhibit-read-only t))
     (with-current-buffer copilot-chat--shell-maker-temp-buffer
       (erase-buffer)))
@@ -139,9 +139,9 @@ Argument ERROR-CALLBACK is the error callback function to call."
 (defun copilot-chat--shell ()
   "Start a Copilot Chat shell."
   (shell-maker-start
-   copilot-chat--shell-config
-   t nil t
-   (copilot-chat--get-buffer-name)))
+    copilot-chat--shell-config
+    t nil t
+    (copilot-chat--get-buffer-name)))
 
 (defun copilot-chat--shell-maker-insert-prompt(prompt)
   "Insert PROMPT in the chat buffer."
