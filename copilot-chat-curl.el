@@ -420,8 +420,9 @@ Argument CALLBACK is the function to call with analysed data."
      ;; When JSON parsing fails, but the process has not terminated and may be in the middle of a sentence, do not make an error, set the string and wait for the next call.
      ;; I'm not sure if asynchronous control is working properly.
      (progn
-       (setq copilot-chat--curl-current-data nil)
+       (setq copilot-chat--curl-current-data string)
        (unless (process-live-p proc)
+         (setq copilot-chat--curl-current-data nil)
          (funcall callback (format "GitHub Copilot error: %S\nResponse is %S" err (string-trim string))))))))
 
 (defun copilot-chat--spinner-start ()
