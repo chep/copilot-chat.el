@@ -29,7 +29,9 @@
 
 
 (require 'shell-maker)
+
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-prompts)
 
 ;; Variables
 (defvar copilot-chat--shell-cb-fn nil)
