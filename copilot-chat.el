@@ -134,13 +134,13 @@ If SAVE is t and BUFFER is nil, `save-excursion' is called before moving point"
               (funcall write-fn data))
             (funcall write-fn data)))))))
 
-(defun copilot-chat--format-data(content _type)
+(defun copilot-chat--format-data (content type)
   "Format the CONTENT according to the frontend.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((format-fn (copilot-chat-frontend-format-fn (copilot-chat--get-frontend))))
     (if format-fn
-      (funcall format-fn content _type)
+      (funcall format-fn content type)
       content)))
 
 (defun copilot-chat-prompt-cb (content &optional buffer)
