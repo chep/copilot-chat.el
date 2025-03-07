@@ -61,7 +61,7 @@
   "List of file patterns to ignore when generating commit messages.
 These are typically large generated files like lock files or build artifacts
 that don't need to be included in commit message generation.
-Supports glob patterns like '*.lock' or 'node_modules/'."
+Supports glob patterns like `*.lock' or `node_modules/'."
   :type '(repeat string)
   :group 'copilot-chat)
 
@@ -122,7 +122,7 @@ Supports glob patterns like '*.lock' or 'node_modules/'."
 (defun copilot-chat--write-buffer(data save &optional buffer)
   "Write content to the Copilot Chat BUFFER.
 Argument DATA data to be inserted in buffer.
-If SAVE is t and BUFFER is nil, save-excursion is called before moving point"
+If SAVE is t and BUFFER is nil, `save-excursion' is called before moving point"
   (if buffer
     (with-current-buffer buffer
       (insert data))
@@ -236,8 +236,8 @@ Argument PROMPT is the prompt to send to Copilot."
   (copilot-chat--ask-region 'optimize))
 
 ;;;###autoload
-(defun copilot-chat-test()
-  "Ask Copilot to generate tests for the current selected code."
+(defun copilot-chat-test ()
+  "Ask Copilot to generate test for the current selected code."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
@@ -280,7 +280,8 @@ Argument PROMPT is the prompt to send to Copilot."
 
 ;;;###autoload
 (defun copilot-chat-explain-symbol-at-line ()
-  "Ask Copilot to explain symbol under point, given the code line as background info."
+  "Ask Copilot to explain symbol under point.
+Given the code line as background info."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
@@ -322,7 +323,8 @@ It can be used to review the magit diff for my change, or other people's"
 
 ;;;###autoload
 (defun copilot-chat-switch-to-buffer ()
-  "Switch to Copilot Chat buffer, side by side with the current code editing buffer."
+  "Switch to Copilot Chat buffer.
+Side by side with the current code editing buffer."
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
@@ -567,7 +569,7 @@ Replace selection if any."
       (funcall send-fn))))
 
 (defun copilot-chat--get-diff ()
-  "Get the diff of staged changes in the current git repository.
+  "Get the diff of staged change in the current git repository.
 Returns a string containing the diff, excluding files specified in
 `copilot-chat-ignored-commit-files'.  Returns nil if not in a git
 repository or if there are no staged changes.
@@ -607,7 +609,8 @@ lock files and build artifacts."
 (defun copilot-chat--debug (category format-string &rest args)
   "Print debug message when `copilot-chat-debug' is enabled.
 
-CATEGORY is a symbol indicating the message category (e.g., 'commit, 'model, 'auth).
+CATEGORY is a symbol indicating the message category.
+For example, `'commit', `'model', `'auth'.
 FORMAT-STRING is the format string passed to `message'.
 ARGS are the arguments to be formatted according to FORMAT-STRING.
 
@@ -628,7 +631,8 @@ No message is printed if `copilot-chat-debug' is nil."
 ;;;###autoload
 (defun copilot-chat-insert-commit-message()
   "Generate and insert a commit message using Copilot.
-Uses the current staged changes in git to generate an appropriate commit message.
+Uses the current staged changes in git
+to generate an appropriate commit message.
 Requires the repository to have staged changes."
   (interactive)
   (unless (copilot-chat--ready-p)
@@ -660,7 +664,7 @@ Requires the repository to have staged changes."
     (cond
       ((string-empty-p diff)
         (copilot-chat--debug 'commit "No changes found in staging area")
-        (user-error "No staged changes found. Please stage some changes first"))
+        (user-error "No staged changes found.  Please stage some changes first"))
 
       (t
         (message "Generating commit message... Please wait.")
@@ -738,12 +742,15 @@ Requires the repository to have staged changes."
 
 (defun copilot-chat--model-picker-enabled (model)
   "Check the `model_picker_enabled` attribute of the MODEL.
-For example, GPT-3.5 has no more significance for most people nowadays than GPT-4o."
+For example, GPT-3.5 has no more significance
+for most people nowadays than GPT-4o."
   (eq t (alist-get 'model_picker_enabled model)))
 
 (defun copilot-chat--get-model-choices-with-wait ()
-  "Get the list of available models for Copilot Chat, waiting for fetch if needed.
-If models haven't been fetched yet and no cache exists, wait for the fetch to complete."
+  "Get the list of available models for Copilot Chat.
+waiting for fetch if needed.
+If models haven't been fetched yet and no cache exists,
+wait for the fetch to complete."
   (let ((models (if copilot-chat-model-ignore-picker
                   (copilot-chat-models copilot-chat--instance)
                   (seq-filter #'copilot-chat--model-picker-enabled (copilot-chat-models copilot-chat--instance)))))
