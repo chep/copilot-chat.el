@@ -89,7 +89,7 @@ Argument LANGUAGE is the language of the code."
     (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
     code))
 
-(defun copilot-chat--org-create-req (prompt)
+(defun copilot-chat--org-create-req (prompt &optional no-context)
   "Create a request with `org-mode' syntax reminder.
 PROMPT is the input text.
 NO-CONTEXT is an optional flag (unused in current implementation)."
