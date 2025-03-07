@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: purcell/setup-emacs@master
+      - uses: purcell/setup-emacs@v6.0
         with:
           version: 30.1
-      - uses: leotaku/elisp-check@master
+      - uses: leotaku/elisp-check@v1.4.0
         with:
           file: "*.el"
