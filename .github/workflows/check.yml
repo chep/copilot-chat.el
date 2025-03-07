@@ -11,5 +11,3 @@ jobs:
         with:
           version: 30.1
       - uses: leotaku/elisp-check@v1.4.0
-        with:
-          file: "*.el"
