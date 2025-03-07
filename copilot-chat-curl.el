@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-curl.el --- copilot chat curl backend -*- indent-tabs-mode: nil; lexical-binding: t -*-
+;;; copilot-chat --- copilot-chat-curl.el --- copilot chat curl backend -*- indent-tabs-mode: nil; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 

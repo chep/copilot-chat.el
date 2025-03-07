@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-prompts.el --- copilot chat prompts -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
+;;; copilot-chat --- copilot-chat-prompts.el --- copilot chat prompts -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
