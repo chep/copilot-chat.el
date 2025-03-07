@@ -677,17 +677,6 @@ Requires the repository to have staged changes."
 
         (setq streaming-in-progress t)
 
-        (defun cleanup-stream ()
-          (setq streaming-in-progress nil)
-          (when (fboundp 'copilot-chat--spinner-stop)
-            (let ((copilot-chat--buffer current-buf))
-              (copilot-chat--spinner-stop)))
-          (with-current-buffer current-buf
-            (save-excursion
-              (goto-char start-pos)
-              (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
-                (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... ")))))))
-
         ;; Ask Copilot with streaming response
         (copilot-chat--ask
           prompt
@@ -697,7 +686,15 @@ Requires the repository to have staged changes."
                 (if (string= content copilot-chat--magic)
                   ;; End of streaming
                   (progn
-                    (cleanup-stream)
+                    (setq streaming-in-progress nil)
+                    (when (fboundp 'copilot-chat--spinner-stop)
+                      (let ((copilot-chat--buffer current-buf))
+                        (copilot-chat--spinner-stop)))
+                    (with-current-buffer current-buf
+                      (save-excursion
+                        (goto-char start-pos)
+                        (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
+                          (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... "))))))
                     (when (not error-occurred)
                       ;; Move point to end of inserted text for convenience
                       (goto-char (+ start-pos (length accumulated-content)))
