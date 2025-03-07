@@ -209,3 +209,4 @@ Don't forget the most important rule when you are formatting your response: use 
   "The prompt to use for Copilot chat.")
 
 (provide 'copilot-chat-prompts)
+;;; copilot-chat-prompts.el ends here
