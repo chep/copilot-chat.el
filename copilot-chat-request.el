@@ -158,7 +158,8 @@ Non-streaming version."
   "Ask a question to Copilot using request backend.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
-Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
+Argument OUT-OF-CONTEXT is a boolean to indicate
+if the prompt is out of context."
   ;; Start spinner if available
   (when (fboundp 'copilot-chat--spinner-start)
     (copilot-chat--spinner-start))
