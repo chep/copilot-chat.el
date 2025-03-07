@@ -35,15 +35,16 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'magit)
+
+(require 'copilot-chat-common)
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-org)
-(require 'copilot-chat-shell-maker)
-(require 'copilot-chat-common)
-(require 'copilot-chat-transient)
 (require 'copilot-chat-prompts)
-(require 'magit)
-(require 'cl-lib)
+(require 'copilot-chat-shell-maker)
+(require 'copilot-chat-transient)
 
 ;; customs
 (defcustom copilot-chat-list-added-buffers-only nil

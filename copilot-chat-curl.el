@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'json)
+
 (require 'copilot-chat-common)
 
 (defvar copilot-chat--curl-current-data nil)

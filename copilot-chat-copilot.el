@@ -26,10 +26,12 @@
 
 
 ;;; Code:
+
 (require 'json)
+
 (require 'copilot-chat-common)
-(require 'copilot-chat-request)
 (require 'copilot-chat-curl)
+(require 'copilot-chat-request)
 
 ;; customs
 (defcustom copilot-chat-prompt-explain "/explain\n"
