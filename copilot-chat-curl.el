@@ -295,11 +295,12 @@ Argument SEGMENT is data segment to parse."
 
 
 (defun copilot-chat--curl-analyze-response (_proc string callback no-history)
-  "Analyse curl resonse.
+  "Analyse curl response.
 Argument PROC is curl process.
 Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data.
-Argument NO-HISTORY is a boolean to indicate if the response should be added to history."
+Argument NO-HISTORY is a boolean to indicate
+if the response should be added to history."
   ;; The API conceptually sends us big blob of line-deliminated information, e.g.
   ;;
   ;;     data: {"choices":[{...,"delta":{"content":"great"}}],...}
@@ -393,7 +394,9 @@ Argument NO-HISTORY is a boolean to indicate if the response should be added to 
 o1 differs from the other models in the format of the reply.
 Argument PROC is curl process.
 Argument STRING is the data returned by curl.
-Argument CALLBACK is the function to call with analysed data."
+Argument CALLBACK is the function to call with analysed data.
+Argument NO-HISTORY is a boolean to indicate
+if the response should be added to history."
   (when copilot-chat--curl-current-data
     (setq string (concat copilot-chat--curl-current-data string))
     (setq copilot-chat--curl-current-data nil))
@@ -485,7 +488,8 @@ Argument STATUS is the status message to display."
   "Ask a question to Copilot using curl backend.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
-Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
+Argument OUT-OF-CONTEXT is a boolean to indicate
+if the prompt is out of context."
   (setq copilot-chat--curl-current-data nil)
   (setq copilot-chat--curl-answer nil)
 
