@@ -28,8 +28,10 @@
 ;;; Code:
 
 (require 'markdown-mode)
-(require 'copilot-chat-common)
 (require 'polymode)
+
+(require 'copilot-chat-common)
+(require 'copilot-chat-prompts)
 
 ;;; Constants
 (defconst copilot-chat--markdown-delimiter
