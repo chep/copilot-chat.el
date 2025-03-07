@@ -643,8 +643,6 @@ Requires the repository to have staged changes."
           (prompt (concat copilot-chat-commit-prompt diff))
           (current-buf (current-buffer))
           (start-pos (point))
-          (placeholder-pos nil)
-          (streaming-in-progress nil)
           (accumulated-content "")
           (error-occurred nil)
           ;; Store the git commit template comments
@@ -670,7 +668,6 @@ Requires the repository to have staged changes."
         (message "Generating commit message... Please wait.")
 
         (insert "# [copilot-chat] Working on generating commit message, please wait... ")
-        (setq placeholder-pos (point))
         (insert "\n\n")
 
         (goto-char start-pos)
@@ -678,8 +675,6 @@ Requires the repository to have staged changes."
         (when (fboundp 'copilot-chat--spinner-start)
           (let ((copilot-chat--buffer current-buf))
             (copilot-chat--spinner-start)))
-
-        (setq streaming-in-progress t)
 
         ;; Ask Copilot with streaming response
         (copilot-chat--ask
@@ -690,7 +685,6 @@ Requires the repository to have staged changes."
                 (if (string= content copilot-chat--magic)
                   ;; End of streaming
                   (progn
-                    (setq streaming-in-progress nil)
                     (when (fboundp 'copilot-chat--spinner-stop)
                       (let ((copilot-chat--buffer current-buf))
                         (copilot-chat--spinner-stop)))
@@ -825,8 +819,7 @@ wait for the fetch to complete."
             ;; No cache - need to fetch
             (message "No models available. Fetching from API...")
             (copilot-chat--auth)
-            (let ((inhibit-quit t)  ; Prevent C-g during fetch
-                   (fetch-done nil))
+            (let ((inhibit-quit t))  ; Prevent C-g during fetch
               (copilot-chat--request-models t)
               ;; Wait for models to be fetched (with timeout)
               (with-timeout (10 (error "Timeout waiting for models to be fetched"))
