@@ -896,8 +896,8 @@ INC is the number to use as increment for index in block ring."
          (github-token-file (expand-file-name copilot-chat-github-token-file)))
     (when (file-exists-p token-cache-file)
       (delete-file token-cache-file))
-    (when (file-exists-p github-token-file))
-    (delete-file github-token-file))
+    (when (file-exists-p github-token-file)
+      (delete-file github-token-file)))
   (message "Auth cache cleared.")
   (copilot-chat--create))
 
