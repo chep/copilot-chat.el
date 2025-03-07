@@ -90,7 +90,7 @@ Argument LANGUAGE is the language of the code."
     code))
 
 (defun copilot-chat--org-create-req (prompt &optional no-context)
-  "Create a request with org-mode syntax reminder.
+  "Create a request with `org-mode' syntax reminder.
 PROMPT is the input text.
 NO-CONTEXT is an optional flag (unused in current implementation)."
   (format "%s\n\nUse only Emacs org-mode formatting in your answers:
@@ -196,8 +196,8 @@ Replace selection if any."
     (insert content)
     (setq copilot-chat--last-yank-end (point))))
 
-(defun copilot-chat--org-write(data)
-  "Write data at the end of the chat part of the buffer."
+(defun copilot-chat--org-write (data)
+  "Write DATA at the end of the chat part of the buffer."
   (copilot-chat--org-goto-input)
   (forward-line -3)
   (end-of-line)
