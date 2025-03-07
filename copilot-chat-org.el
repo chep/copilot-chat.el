@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-org.el --- copilot chat interface, org frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
+;;; copilot-chat --- copilot-chat-org.el --- copilot chat interface, org frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -28,8 +28,10 @@
 ;;; Code:
 
 (require 'org)
-(require 'copilot-chat-common)
 (require 'polymode)
+
+(require 'copilot-chat-common)
+(require 'copilot-chat-prompts)
 
 ;;; Constants
 (defconst copilot-chat--org-input-tag
@@ -87,8 +89,8 @@ Argument LANGUAGE is the language of the code."
     (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
     code))
 
-(defun copilot-chat--org-create-req (prompt &optional no-context)
-  "Create a request with org-mode syntax reminder.
+(defun copilot-chat--org-create-req (prompt &optional _no-context)
+  "Create a request with `org-mode' syntax reminder.
 PROMPT is the input text.
 NO-CONTEXT is an optional flag (unused in current implementation)."
   (format "%s\n\nUse only Emacs org-mode formatting in your answers:
@@ -194,8 +196,8 @@ Replace selection if any."
     (insert content)
     (setq copilot-chat--last-yank-end (point))))
 
-(defun copilot-chat--org-write(data)
-  "Write data at the end of the chat part of the buffer."
+(defun copilot-chat--org-write (data)
+  "Write DATA at the end of the chat part of the buffer."
   (copilot-chat--org-goto-input)
   (forward-line -3)
   (end-of-line)

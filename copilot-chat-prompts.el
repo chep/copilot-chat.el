@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-prompts.el --- copilot chat prompts -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
+;;; copilot-chat --- copilot-chat-prompts.el --- copilot chat prompts -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -209,3 +209,4 @@ Don't forget the most important rule when you are formatting your response: use 
   "The prompt to use for Copilot chat.")
 
 (provide 'copilot-chat-prompts)
+;;; copilot-chat-prompts.el ends here

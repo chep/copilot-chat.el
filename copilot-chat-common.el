@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- indent-tabs-mode: nil; lexical-binding:t -*-
+;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- indent-tabs-mode: nil; lexical-binding:t; package-lint-main-file: "copilot-chat.el"; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -29,6 +29,8 @@
 
 (require 'json)
 (require 'cl-lib)
+
+(require 'copilot-chat-prompts)
 
 ;; constants
 (defconst copilot-chat--magic "#cc#done#!$")
@@ -199,11 +201,11 @@ is not `true' are not included in the model selection by default."
 (defvar copilot-chat--first-word-answer t)
 
 (defvar copilot-chat--yank-index 1
-  "Next index to yank")
+  "Next index to yank.")
 (defvar copilot-chat--last-yank-start nil
-  "Start position of last yank")
+  "Start position of last yank.")
 (defvar copilot-chat--last-yank-end nil
-  "End position of last yank")
+  "End position of last yank.")
 
 ;; Functions
 (defun copilot-chat--should-fetch-models-p ()
@@ -232,10 +234,10 @@ is not `true' are not included in the model selection by default."
   "Check if the model is o1."
   (string-prefix-p "o1" copilot-chat-model))
 
-(defun copilot-chat--create-req(prompt no-context)
+(defun copilot-chat--create-req (prompt no-context)
   "Create a request for Copilot.
 Argument PROMPT Copilot prompt to send.
-Argument NOCONTEXT tells copilot-chat to not send history and buffers.
+Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
 The create req function is called first and will return new prompt."
   (let ((create-req-fn (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
         (messages nil))
@@ -273,7 +275,8 @@ The create req function is called first and will return new prompt."
                      ("intent" . t)
                      ("temperature" . 0.1))))))
 
-(defun copilot-chat--get-frontend()
+(defun copilot-chat--get-frontend ()
+  "Get frontend from custom."
   (cl-find copilot-chat-frontend copilot-chat--frontend-list
            :key #'copilot-chat-frontend-id
            :test #'eq))

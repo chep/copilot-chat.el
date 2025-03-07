@@ -1,4 +1,4 @@
-;;; Copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
+;;; Copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -28,8 +28,10 @@
 ;;; Code:
 
 (require 'markdown-mode)
-(require 'copilot-chat-common)
 (require 'polymode)
+
+(require 'copilot-chat-common)
+(require 'copilot-chat-prompts)
 
 ;;; Constants
 (defconst copilot-chat--markdown-delimiter
@@ -121,7 +123,7 @@ Replace selection if any."
         (insert (plist-get content :content))))))
 
 (defun copilot-chat--markdown-write (data)
-  "Write data at the end of the chat part of the buffer."
+  "Write DATA at the end of the chat part of the buffer."
   (if copilot-chat-follow
     (save-excursion
       (copilot-chat--markdown-goto-input)
