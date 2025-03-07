@@ -28,8 +28,10 @@
 ;;; Code:
 
 (require 'org)
-(require 'copilot-chat-common)
 (require 'polymode)
+
+(require 'copilot-chat-common)
+(require 'copilot-chat-prompts)
 
 ;;; Constants
 (defconst copilot-chat--org-input-tag
