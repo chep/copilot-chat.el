@@ -177,7 +177,7 @@ Optional argument ARGS are additional arguments to pass to curl."
      :name "copilot-chat-curl"
      :buffer nil
      :filter filter
-     :sentinel (lambda (proc exit)
+     :sentinel (lambda (proc _exit)
                  (when (/= (process-exit-status proc) 0)
                    (error (format "curl returned non-zero status %d" (process-exit-status proc))))
                  )
