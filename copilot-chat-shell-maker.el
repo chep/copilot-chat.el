@@ -27,7 +27,7 @@
 
 ;;; Code:
 
-
+(require 'markdown-mode)
 (require 'shell-maker)
 
 (require 'copilot-chat-copilot)
