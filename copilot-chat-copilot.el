@@ -182,7 +182,8 @@ Then we need a session token."
   "Ask a question to Copilot.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
-Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
+Argument OUT-OF-CONTEXT is a boolean
+ to indicate if the prompt is out of context."
   (let* ((history (copilot-chat-history copilot-chat--instance))
          (new-history (cons (list prompt "user") history)))
     (copilot-chat--auth)
@@ -220,7 +221,7 @@ Argument buffer is the buffer to remove."
   (copilot-chat-buffers copilot-chat--instance))
 
 (defun copilot-chat--ready-p()
-  "Returns t if copilot chat is ready."
+  "Return t if copilot chat is ready."
   (copilot-chat-ready copilot-chat--instance))
 
 (provide 'copilot-chat-copilot)
