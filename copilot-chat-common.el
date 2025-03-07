@@ -30,6 +30,8 @@
 (require 'json)
 (require 'cl-lib)
 
+(require 'copilot-chat-prompts)
+
 ;; constants
 (defconst copilot-chat--magic "#cc#done#!$")
 (defconst copilot-chat--buffer-name "*Copilot Chat*"
