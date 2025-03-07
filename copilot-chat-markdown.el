@@ -121,7 +121,7 @@ Replace selection if any."
         (insert (plist-get content :content))))))
 
 (defun copilot-chat--markdown-write (data)
-  "Write data at the end of the chat part of the buffer."
+  "Write DATA at the end of the chat part of the buffer."
   (if copilot-chat-follow
     (save-excursion
       (copilot-chat--markdown-goto-input)
