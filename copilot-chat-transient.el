@@ -84,3 +84,4 @@
     ("q" "Quit" transient-quit-one)]])
 
 (provide 'copilot-chat-transient)
+;;; copilot-chat-transient.el ends here
