@@ -540,18 +540,23 @@ If there are more than 40 files, refuse to add and show warning message."
     (when prompt
       (copilot-chat--insert-prompt prompt))))
 
-(defun copilot-chat-reset()
-  "Reset copilot chat session."
-  (interactive)
-  (copilot-chat-list-clear-buffers)
-  (copilot-chat--clean)
-  (let ((buf (copilot-chat--get-buffer)))
+(defun copilot-chat-reset (&optional keep-buffers)
+  "Reset copilot chat session.
+When called interactively with prefix argument, preserve the buffer list.
+Optional argument KEEP-BUFFERS if non-nil, preserve the current buffer list."
+  (interactive "P")
+  (let ((old-buffers (when keep-buffers
+                       (copilot-chat-buffers copilot-chat--instance)))
+         (buf (copilot-chat--get-buffer))
+         (init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
     (when (buffer-live-p buf)
-      (kill-buffer buf)))
-  (let ((init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
+      (kill-buffer buf))
+    (copilot-chat--create)
     (when init-fn
       (funcall init-fn))
-    (copilot-chat--create)))
+    (when old-buffers
+      (setf (copilot-chat-buffers copilot-chat--instance) old-buffers))
+    (copilot-chat-list-refresh)))
 
 (defun copilot-chat--clean()
   "Cleaning function."
@@ -567,6 +572,13 @@ Replace selection if any."
   (let ((send-fn (copilot-chat-frontend-send-to-buffer-fn (copilot-chat--get-frontend))))
     (when send-fn
       (funcall send-fn))))
+
+(defun copilot-chat-copy-code-at-point ()
+  "Copy the code block at point into kill ring."
+  (interactive)
+  (let ((copy-fn (copilot-chat-frontend-copy-fn (copilot-chat--get-frontend))))
+    (when copy-fn
+      (funcall copy-fn))))
 
 (defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.

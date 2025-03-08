@@ -153,6 +153,13 @@ Replace selection if any."
           (select-window window)
           (switch-to-buffer buffer))))))
 
+(defun copilot-chat--org-copy ()
+  "Copy the code block at point into kill ring."
+  (let ((content (copilot-chat--get-org-block-content-at-point)))
+    (when content
+      (kill-new content))))
+
+
 (defun copilot-chat--org-get-code-blocks-under-heading (heading-regex)
   "Get source blocks under headings matching HEADING-REGEX."
   (let ((blocks))
