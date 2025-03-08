@@ -126,6 +126,7 @@ is not `true' are not included in the model selection by default."
   format-code-fn
   create-req-fn
   send-to-buffer-fn
+  copy-fn
   yank-fn
   write-fn
   get-buffer-fn
@@ -157,6 +158,7 @@ is not `true' are not included in the model selection by default."
          :format-code-fn #'copilot-chat--markdown-format-code
          :create-req-fn nil
          :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
+         :copy-fn #'copilot-chat--markdown-copy
          :yank-fn nil
          :write-fn #'copilot-chat--markdown-write
          :get-buffer-fn #'copilot-chat--markdown-get-buffer
@@ -172,6 +174,7 @@ is not `true' are not included in the model selection by default."
          :format-code-fn #'copilot-chat--org-format-code
          :create-req-fn #'copilot-chat--org-create-req
          :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
+         :copy-fn #'copilot-chat--org-copy
          :yank-fn #'copilot-chat--org-yank
          :write-fn #'copilot-chat--org-write
          :get-buffer-fn #'copilot-chat--org-get-buffer
@@ -187,6 +190,7 @@ is not `true' are not included in the model selection by default."
          :format-code-fn #'copilot-chat--markdown-format-code
          :create-req-fn nil
          :send-to-buffer-fn nil
+         :copy-fn nil
          :yank-fn nil
          :write-fn nil
          :get-buffer-fn #'copilot-chat--shell-maker-get-buffer

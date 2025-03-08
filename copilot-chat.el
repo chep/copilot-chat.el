@@ -573,6 +573,13 @@ Replace selection if any."
     (when send-fn
       (funcall send-fn))))
 
+(defun copilot-chat-copy-code-at-point ()
+  "Copy the code block at point into kill ring."
+  (interactive)
+  (let ((copy-fn (copilot-chat-frontend-copy-fn (copilot-chat--get-frontend))))
+    (when copy-fn
+      (funcall copy-fn))))
+
 (defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.
 Returns a string containing the diff, excluding files specified in

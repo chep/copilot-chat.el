@@ -127,6 +127,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-yank)~ yank the last code block at point (org frontend only).
 - ~(copilot-chat-yank-pop)~ Replace last yank with previous block, or use argument to choose the block. Acts like ~(yank-pop)~ (org frontend only).
 - ~(copilot-chat-send-to-buffer)~ send a code block to a chosen buffer. Replace selection if any (org and markdown frontends only).
+- ~(copilot-chat-copy-code-at-point)~ copy current code block into kill ring.
 
 *** Buffers
 - ~(copilot-chat-add-current-buffer)~ add current buffer to copilot chat. Its content will be sent with every request.

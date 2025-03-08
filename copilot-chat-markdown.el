@@ -122,6 +122,12 @@ Replace selection if any."
           (delete-region (region-beginning) (region-end)))
         (insert (plist-get content :content))))))
 
+(defun copilot-chat--markdown-copy ()
+  "Copy the code block at point into kill ring."
+  (let ((content (copilot-chat--get-markdown-block-content-at-point)))
+    (when content
+      (kill-new (plist-get content :content)))))
+
 (defun copilot-chat--markdown-write (data)
   "Write DATA at the end of the chat part of the buffer."
   (if copilot-chat-follow
