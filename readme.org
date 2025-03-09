@@ -118,7 +118,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 *** Prompt
 - ~copilot-chat-goto-input~ place point at the beginning of the prompt area.
 - ~(copilot-chat-custom-mini-buffer)~ ask for a prompt in minibuffer and send it to copilot.
-- ~(copilot-chat-custom-prompt-selection)~ ask for a prompt in minibuffer and pastes selection after it before sending it to copilot.
+- ~(copilot-chat-custom-prompt-selection)~ uses the provided prompt or asks for a prompt in minibuffer, then appends selection (or entire buffer), sends the result to copilot.
 - ~(copilot-chat-prompt-history-previous)~ insert previous prompt from history in prompt buffer.
 - ~(copilot-chat-prompt-history-next)~ insert next prompt from history in prompt buffer.
 - ~(copilot-chat-ask-and-insert)~ ask for a custom prompt and write answer in current buffer at point.

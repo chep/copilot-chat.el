@@ -269,15 +269,6 @@ Argument PROMPT is the prompt to send to Copilot."
       (funcall format-fn code (copilot-chat--get-language))
       code)))
 
-(defun copilot-chat--custom-prompt-selection()
-  "Send to Copilot a custom prompt followed by the current selected code."
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
-          (code (buffer-substring-no-properties (region-beginning) (region-end)))
-          (formatted-prompt (concat prompt "\n" (copilot-chat--format-code code))))
-    (copilot-chat--insert-and-send-prompt formatted-prompt)))
-
 ;;;###autoload
 (defun copilot-chat-explain-symbol-at-line ()
   "Ask Copilot to explain symbol under point.
@@ -331,12 +322,19 @@ Side by side with the current code editing buffer."
   (switch-to-buffer-other-window (copilot-chat--get-buffer)))
 
 ;;;###autoload
-(defun copilot-chat-custom-prompt-selection()
-  "Send to Copilot a custom prompt followed by the current selected code."
+(defun copilot-chat-custom-prompt-selection(&optional custom-prompt)
+  "Send to Copilot a custom prompt followed by the current selected code/buffer.
+If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
+
   (interactive)
   (unless (copilot-chat--ready-p)
     (copilot-chat-reset))
-  (copilot-chat--custom-prompt-selection))
+  (let* ((prompt (or custom-prompt (read-from-minibuffer "Copilot prompt: ")))
+          (code (if (use-region-p)
+                  (buffer-substring-no-properties (region-beginning) (region-end))
+                  (buffer-substring-no-properties (point-min) (point-max))))
+          (formatted-prompt (concat prompt "\n" (copilot-chat--format-code code))))
+    (copilot-chat--insert-and-send-prompt formatted-prompt)))
 
 ;;;###autoload
 (defun copilot-chat-custom-prompt-mini-buffer ()
