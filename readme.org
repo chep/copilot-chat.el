@@ -110,7 +110,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 ** Functions
 *** Basic functions
-- ~(copilot-chat-reset)~ reset everything including history, buffers and frontend.
+- ~(copilot-chat-reset)~ reset everything including history, frontend and included buffers (default). Use with prefix argument to preserve selected buffers.
 - ~(copilot-chat-display)~ display copilot chat buffers.
 - ~(copilot-chat-switch-to-buffer)~ switch to Copilot Chat buffer, side by side with the current code editing buffer.
 - ~(copilot-chat-set-model)~ Select AI model to use.

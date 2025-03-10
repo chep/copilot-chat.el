@@ -538,18 +538,23 @@ If there are more than 40 files, refuse to add and show warning message."
     (when prompt
       (copilot-chat--insert-prompt prompt))))
 
-(defun copilot-chat-reset()
-  "Reset copilot chat session."
-  (interactive)
-  (copilot-chat-list-clear-buffers)
-  (copilot-chat--clean)
-  (let ((buf (copilot-chat--get-buffer)))
+(defun copilot-chat-reset (&optional keep-buffers)
+  "Reset copilot chat session.
+When called interactively with prefix argument, preserve the buffer list.
+Optional argument KEEP-BUFFERS if non-nil, preserve the current buffer list."
+  (interactive "P")
+  (let ((old-buffers (when keep-buffers
+                       (copilot-chat-buffers copilot-chat--instance)))
+         (buf (copilot-chat--get-buffer))
+         (init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
     (when (buffer-live-p buf)
-      (kill-buffer buf)))
-  (let ((init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
+      (kill-buffer buf))
+    (copilot-chat--create)
     (when init-fn
       (funcall init-fn))
-    (copilot-chat--create)))
+    (when old-buffers
+      (setf (copilot-chat-buffers copilot-chat--instance) old-buffers))
+    (copilot-chat-list-refresh)))
 
 (defun copilot-chat--clean()
   "Cleaning function."
