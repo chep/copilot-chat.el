@@ -449,12 +449,11 @@ if the response should be added to history."
             (status-text (if copilot-chat--spinner-status
                              (concat copilot-chat--spinner-status " ")
                            "")))
-        ;; Remove existing spinner overlay if any
-        (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)
-
-        ;; Create new spinner overlay at the end of buffer
         (with-current-buffer buffer
           (save-excursion
+            ;; Remove existing spinner overlay if any
+            (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)
+            ;; Create new spinner overlay at the end of buffer
             (goto-char (point-max))
             (let ((ov (make-overlay (point) (point))))
               (overlay-put ov 'copilot-chat-spinner t)
