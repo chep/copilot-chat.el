@@ -407,6 +407,7 @@ if the response should be added to history."
              (message (and (> (length choices) 0) (alist-get 'message (aref choices 0))))
              (token (and message (alist-get 'content message))))
         (when (and token (not (eq token :null)))
+          (copilot-chat--spinner-stop)
           (funcall callback token)
           (funcall callback copilot-chat--magic)
           (setq copilot-chat--curl-answer (concat copilot-chat--curl-answer token))
@@ -424,6 +425,7 @@ if the response should be added to history."
      (progn
        (setq copilot-chat--curl-current-data string)
        (unless (process-live-p proc)
+         (copilot-chat--spinner-stop)
          (setq copilot-chat--curl-current-data nil)
          (funcall callback (format "GitHub Copilot error: %S\nResponse is %S" err (string-trim string))))))))
 
