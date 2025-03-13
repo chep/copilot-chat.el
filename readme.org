@@ -9,15 +9,20 @@ This plugin allows you to chat with GitHub copilot.
 Feel free to contribute, report issues or discuss new features.
 
 * News
+** V2
+v2.0.1 is here.
 
-v2.0.0 is +here+ in development.
+In v2, only one buffer is used for chat, thanks to polymode.
 
-The master branch is now v2 development branch. To get a stable release, use the v1.3.0 tag. A branch for bug fix may be created if needed.
+** Multiple instances
+You can try the =76-multiple-instances= branch. It's a work in progress.
+Copilot-chat instances are linked to a parent directory. Each instance has a dedicated history, context, model, buffer list…
+For the moment, I'm developping it with curl backend and org frontend. The other configuration may not work.
+This is a huge code transformation so please be patient and report bugs or wanted features/behavior in the dedicated issue.
 
-In v2, only one buffer is used for chat, thanks to polymode. For the moment, org mode is more stable but markdown will follow. Anyway, you should use org since it is so powerful.
+~Copilot-chat-display~ will try to guess current instance with current buffer file location. If it fails, instance will be asked to the user. With prefix argument, guessing is bypassed. 
 
-Shell-maker is back !
-
+** Help wanted
 Bug reports and new ideas are very welcome.
 
 
