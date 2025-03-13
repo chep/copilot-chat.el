@@ -113,8 +113,9 @@ Supports glob patterns like `*.lock' or `node_modules/'."
 ;; Functions
 (define-minor-mode copilot-chat-prompt-mode
   "Minor mode for the Copilot Chat Prompt region."
-  (use-local-map copilot-chat-prompt-mode-map)
-  (run-hooks 'copilot-chat-prompt-mode-hook))
+  :init-value nil
+  :lighter " Copilot Chat Prompt"
+  :keymap copilot-chat-prompt-mode-map)
 
 (define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
   "Major mode for listing and managing buffers in Copilot chat."
