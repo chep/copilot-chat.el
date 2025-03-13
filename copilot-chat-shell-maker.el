@@ -56,6 +56,7 @@
     (display-buffer (current-buffer))))
 
 (defun copilot-chat--shell-maker-get-buffer ()
+  "Create or retrieve the Copilot Chat shell-maker buffer."
   (unless (buffer-live-p copilot-chat--buffer)
     (setq copilot-chat--buffer (copilot-chat--shell)))
   (let ((tempb (get-buffer-create copilot-chat--shell-maker-temp-buffer))
@@ -126,10 +127,9 @@ Argument CONTENT is copilot chat answer."
       (copilot-chat--shell-cb-prompt shell content))))
 
 (defun copilot-chat--shell-cb (command shell)
-  "Callback for Copilot Chat shell-maker.
+  "Callback for Copilot Chat `shell-maker'.
 Argument COMMAND is the command to send to Copilot.
-Argument CALLBACK is the callback function to call.
-Argument ERROR-CALLBACK is the error callback function to call."
+Argument SHELL is the shell-maker instance."
   (setq
     copilot-chat--shell-cb-fn
     (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
