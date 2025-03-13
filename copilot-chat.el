@@ -40,6 +40,7 @@
 
 (require 'copilot-chat-common)
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-frontend)
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-org)
 (require 'copilot-chat-prompts)

@@ -30,7 +30,7 @@
 (require 'org)
 (require 'polymode)
 
-(require 'copilot-chat-common)
+(require 'copilot-chat-frontend)
 (require 'copilot-chat-prompts)
 
 ;;; Constants
@@ -255,6 +255,27 @@ The input is created if not found."
 (defun copilot-chat--org-init()
   "Initialize the copilot chat org frontend."
   (setq copilot-chat-prompt copilot-chat-org-prompt))
+
+;; Top-level execute code.
+
+(push
+  (make-copilot-chat-frontend
+    :id 'org
+    :init-fn #'copilot-chat--org-init
+    :clean-fn #'copilot-chat--org-clean
+    :format-fn #'copilot-chat--org-format-data
+    :format-code-fn #'copilot-chat--org-format-code
+    :create-req-fn #'copilot-chat--org-create-req
+    :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
+    :copy-fn #'copilot-chat--org-copy
+    :yank-fn #'copilot-chat--org-yank
+    :write-fn #'copilot-chat--org-write
+    :get-buffer-fn #'copilot-chat--org-get-buffer
+    :insert-prompt-fn #'copilot-chat--org-insert-prompt
+    :pop-prompt-fn #'copilot-chat--org-pop-prompt
+    :goto-input-fn #'copilot-chat--org-goto-input
+    :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
+  copilot-chat--frontend-list)
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here

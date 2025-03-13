@@ -29,7 +29,7 @@
 
 (require 'json)
 
-(require 'copilot-chat-common)
+(require 'copilot-chat-frontend)
 
 (defvar copilot-chat--curl-current-data nil)
 

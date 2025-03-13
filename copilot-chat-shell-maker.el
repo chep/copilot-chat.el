@@ -31,6 +31,7 @@
 (require 'shell-maker)
 
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-markdown)
 (require 'copilot-chat-prompts)
 
 ;; Variables
@@ -162,6 +163,26 @@ Argument ERROR-CALLBACK is the error callback function to call."
   (setq copilot-chat-prompt copilot-chat-markdown-prompt)
   (advice-add 'copilot-chat-prompt-send :override #'copilot-chat--shell-maker-prompt-send))
 
-(provide 'copilot-chat-shell-maker)
+;; Top-level execute code.
 
+(push
+  (make-copilot-chat-frontend
+    :id 'shell-maker
+    :init-fn #'copilot-chat-shell-maker-init
+    :clean-fn #'copilot-chat--shell-maker-clean
+    :format-fn nil
+    :format-code-fn #'copilot-chat--markdown-format-code
+    :create-req-fn nil
+    :send-to-buffer-fn nil
+    :copy-fn nil
+    :yank-fn nil
+    :write-fn nil
+    :get-buffer-fn #'copilot-chat--shell-maker-get-buffer
+    :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
+    :pop-prompt-fn nil
+    :goto-input-fn #'nil
+    :get-spinner-buffer-fn #'copilot-chat--shell-maker-get-buffer)
+  copilot-chat--frontend-list)
+
+(provide 'copilot-chat-shell-maker)
 ;;; copilot-chat-shell-maker.el ends here

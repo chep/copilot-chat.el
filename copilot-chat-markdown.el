@@ -30,7 +30,7 @@
 (require 'markdown-mode)
 (require 'polymode)
 
-(require 'copilot-chat-common)
+(require 'copilot-chat-frontend)
 (require 'copilot-chat-prompts)
 
 ;;; Constants
@@ -193,6 +193,27 @@ The input is created if not found."
 (defun copilot-chat--markdown-init ()
   "Initialize the copilot chat markdown frontend."
   (setq copilot-chat-prompt copilot-chat-markdown-prompt))
+
+;; Top-level execute code.
+
+(push
+  (make-copilot-chat-frontend
+    :id 'markdown
+    :init-fn #'copilot-chat--markdown-init
+    :clean-fn #'copilot-chat--markdown-clean
+    :format-fn #'copilot-chat--markdown-format-data
+    :format-code-fn #'copilot-chat--markdown-format-code
+    :create-req-fn nil
+    :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
+    :copy-fn #'copilot-chat--markdown-copy
+    :yank-fn nil
+    :write-fn #'copilot-chat--markdown-write
+    :get-buffer-fn #'copilot-chat--markdown-get-buffer
+    :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
+    :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
+    :goto-input-fn #'copilot-chat--markdown-goto-input
+    :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
+  copilot-chat--frontend-list)
 
 (provide 'copilot-chat-markdown)
 ;;; copilot-chat-markdown.el ends here
