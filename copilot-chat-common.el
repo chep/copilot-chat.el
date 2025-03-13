@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- lexical-binding:t;  -*-
+;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
