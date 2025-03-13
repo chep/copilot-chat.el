@@ -33,8 +33,8 @@
 (defcustom copilot-chat-frontend 'org
   "Frontend to use with `copilot-chat'.  Can be org or markdown."
   :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
+           (const :tag "markdown" markdown)
+           (const :tag "shell-maker" shell-maker))
   :group 'copilot-chat)
 
 (cl-defstruct copilot-chat-frontend
@@ -64,8 +64,8 @@ Elements are added in the module that defines each front end.")
 (defun copilot-chat--get-frontend ()
   "Get frontend from custom."
   (cl-find copilot-chat-frontend copilot-chat--frontend-list
-           :key #'copilot-chat-frontend-id
-           :test #'eq))
+    :key #'copilot-chat-frontend-id
+    :test #'eq))
 
 (defun copilot-chat--get-buffer()
   "Create copilot-chat buffers."
@@ -85,7 +85,7 @@ Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
 The create req function is called first and will return new prompt."
   (let ((create-req-fn (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
-        (messages nil))
+         (messages nil))
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
 
@@ -98,7 +98,7 @@ The create req function is called first and will return new prompt."
         (push (list (cons "content" (car history)) (cons "role" (cadr history))) messages))
       ;; buffers
       (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
-                                                                        (copilot-chat-buffers copilot-chat--instance)))
+                                                            (copilot-chat-buffers copilot-chat--instance)))
       (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
         (when (buffer-live-p buffer)
           (with-current-buffer buffer
@@ -109,16 +109,16 @@ The create req function is called first and will return new prompt."
 
 
     (json-encode (if (copilot-chat--model-is-o1)
-                     `(("messages" . ,(vconcat messages))
-                       ("model" . ,copilot-chat-model)
-                       ("stream" . :json-false))
                    `(("messages" . ,(vconcat messages))
-                     ("top_p" . 1)
-                     ("model" . ,copilot-chat-model)
-                     ("stream" . t)
-                     ("n" . 1)
-                     ("intent" . t)
-                     ("temperature" . 0.1))))))
+                      ("model" . ,copilot-chat-model)
+                      ("stream" . :json-false))
+                   `(("messages" . ,(vconcat messages))
+                      ("top_p" . 1)
+                      ("model" . ,copilot-chat-model)
+                      ("stream" . t)
+                      ("n" . 1)
+                      ("intent" . t)
+                      ("temperature" . 0.1))))))
 
 (provide 'copilot-chat-frontend)
 ;;; copilot-chat-frontend.el ends here
