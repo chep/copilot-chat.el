@@ -221,6 +221,7 @@ The input is created if not found."
 ;;; copilot-chat-markdown.el ends here
 
 ;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
 ;; indent-tabs-mode: nil
 ;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
