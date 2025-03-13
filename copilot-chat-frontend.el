@@ -67,14 +67,14 @@ Elements are added in the module that defines each front end.")
     :key #'copilot-chat-frontend-id
     :test #'eq))
 
-(defun copilot-chat--get-buffer()
-  "Create copilot-chat buffers."
+(defun copilot-chat--get-buffer ()
+  "Get Copilot Chat buffer from the active frontend."
   (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn))))
 
-(defun copilot-chat--get-spinner-buffer()
-  "Create copilot-chat buffers."
+(defun copilot-chat--get-spinner-buffer ()
+  "Get Spinner buffer from the active frontend."
   (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn))))
