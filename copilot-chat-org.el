@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'org-element)
 (require 'polymode)
 
 (require 'copilot-chat-command)
