@@ -58,6 +58,9 @@
   :head-mode 'host
   :tail-mode 'host)
 
+(declare-function copilot-chat-org-poly-mode "copilot-chat-org"
+  "Polymode for Copilot Chat Org.")
+
 (define-polymode copilot-chat-org-poly-mode
   :hostmode 'poly-copilot-org-hostmode
   :innermodes '(poly-copilot-org-prompt-innermode))

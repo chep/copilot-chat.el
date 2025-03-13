@@ -54,6 +54,9 @@
   :head-mode 'inner
   :tail-mode 'host)
 
+(declare-function copilot-chat-markdown-poly-mode "copilot-chat-markdown"
+  "Polymode for Copilot Chat Markdown.")
+
 (define-polymode copilot-chat-markdown-poly-mode
   :hostmode 'poly-copilot-markdown-hostmode
   :innermodes '(poly-copilot-markdown-innermode))
