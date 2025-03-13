@@ -93,8 +93,8 @@
           (goto-char (point-max)))))))
 
 (defun copilot-chat--shell-cb-prompt (shell content)
-  "Callback for Copilot Chat shell-maker.
-Argument SHELL is the shell-maker instance.
+  "Callback for Copilot Chat `shell-maker'.
+Argument SHELL is the `shell-maker' instance.
 Argument CONTENT is copilot chat answer."
   (with-current-buffer copilot-chat--buffer
     (goto-char (point-max))
@@ -119,7 +119,7 @@ Argument CONTENT is copilot chat answer."
 
 (defun copilot-chat--shell-cb-prompt-wrapper (shell content)
   "Wrapper around copilot-chat--shell-cb-prompt.
-Argument SHELL is the shell-maker instance.
+Argument SHELL is the `shell-maker' instance.
 Argument CONTENT is copilot chat answer."
   (if copilot-chat-follow
     (copilot-chat--shell-cb-prompt shell content)
@@ -129,7 +129,7 @@ Argument CONTENT is copilot chat answer."
 (defun copilot-chat--shell-cb (command shell)
   "Callback for Copilot Chat `shell-maker'.
 Argument COMMAND is the command to send to Copilot.
-Argument SHELL is the shell-maker instance."
+Argument SHELL is the `shell-maker' instance."
   (setq
     copilot-chat--shell-cb-fn
     (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
@@ -152,14 +152,14 @@ Argument SHELL is the shell-maker instance."
     (insert prompt)))
 
 (defun copilot-chat--shell-maker-clean()
-  "Clean the copilot chat shell-maker frontend."
+  "Clean the copilot chat `shell-maker' frontend."
   (when (buffer-live-p copilot-chat--buffer)
     (with-current-buffer copilot-chat--buffer
       (shell-maker--write-input-ring-history copilot-chat--shell-config)))
   (advice-remove 'copilot-chat-prompt-send #'copilot-chat--shell-maker-prompt-send))
 
 (defun copilot-chat-shell-maker-init()
-  "Initialize the copilot chat shell-maker frontend."
+  "Initialize the copilot chat `shell-maker' frontend."
   (setq copilot-chat-prompt copilot-chat-markdown-prompt)
   (advice-add 'copilot-chat-prompt-send :override #'copilot-chat--shell-maker-prompt-send))
 
