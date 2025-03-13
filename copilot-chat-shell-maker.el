@@ -118,7 +118,7 @@ Argument CONTENT is copilot chat answer."
         (funcall (map-elt shell :write-output) content)))))
 
 (defun copilot-chat--shell-cb-prompt-wrapper (shell content)
-  "Wrapper around copilot-chat--shell-cb-prompt.
+  "Wrapper around `copilot-chat--shell-cb-prompt'.
 Argument SHELL is the `shell-maker' instance.
 Argument CONTENT is copilot chat answer."
   (if copilot-chat-follow
