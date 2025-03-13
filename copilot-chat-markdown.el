@@ -65,18 +65,18 @@
 
 
 ;;; Functions
-(defun copilot-chat--markdown-format-data (content type)
+(defun copilot-chat--markdown-format-data (instance content type)
   "Format the CONTENT according to the frontend.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((data ""))
     (if (eq type 'prompt)
       (progn
-        (setq copilot-chat--first-word-answer t)
+        (setf (copilot-chat-first-word-answer instance) t)
         (setq data (concat "\n# " (format-time-string "*[%T]* You\n") (format "%s\n" content))))
-      (when copilot-chat--first-word-answer
-        (setq copilot-chat--first-word-answer nil)
-        (setq data (concat "\n## " (concat (format-time-string "*[%T]* ") (format "Copilot(%s):\n" copilot-chat-model)))))
+      (when (copilot-chat-first-word-answer instance)
+        (setf (copilot-chat-first-word-answer instance) nil)
+        (setq data (concat "\n## " (concat (format-time-string "*[%T]* ") (format "Copilot(%s):\n" (copilot-chat-model instance))))))
       (setq data (concat data content)))
     data))
 
@@ -160,37 +160,39 @@ The input is created if not found."
         (overlay-put overlay 'read-only t)
         (overlay-put overlay 'evaporate t)))))
 
-(defun copilot-chat--markdown-get-buffer ()
+(defun copilot-chat--markdown-get-buffer (instance)
   "Create copilot-chat buffers."
-  (unless (buffer-live-p copilot-chat--buffer)
-    (setq copilot-chat--buffer (get-buffer-create (copilot-chat--get-buffer-name)))
-    (with-current-buffer copilot-chat--buffer
+  (unless (buffer-live-p (copilot-chat-chat-buffer instance))
+    (setf (copilot-chat-chat-buffer instance)
+      (get-buffer-create (copilot-chat--get-buffer-name (copilot-chat-directory instance))))
+    (with-current-buffer (copilot-chat-chat-buffer instance)
       (copilot-chat-markdown-poly-mode)
-      (copilot-chat--markdown-goto-input)))
-  copilot-chat--buffer)
+      (copilot-chat--markdown-goto-input)
+      (setq-local default-directory (copilot-chat-directory instance))))
+  (copilot-chat-chat-buffer instance))
 
 
-(defun copilot-chat--markdown-get-spinner-buffer ()
+(defun copilot-chat--markdown-get-spinner-buffer (instance)
   "Get markdown spinner buffer."
-  (let ((buffer (copilot-chat--markdown-get-buffer)))
+  (let ((buffer (copilot-chat--markdown-get-buffer instance)))
     (if copilot-chat-follow
       buffer
       (with-current-buffer buffer
         (pm-get-buffer-of-mode 'markdown-view-mode)))))
 
-(defun copilot-chat--markdown-insert-prompt (prompt)
+(defun copilot-chat--markdown-insert-prompt (instance prompt)
   "Insert PROMPT in the chat buffer."
-  (with-current-buffer (copilot-chat--markdown-get-buffer)
+  (with-current-buffer (copilot-chat--markdown-get-buffer instance)
     (copilot-chat--markdown-goto-input)
     (unless (eobp)
       (delete-region (point) (point-max)))
     (insert prompt)))
 
-(defun copilot-chat--markdown-pop-prompt ()
+(defun copilot-chat--markdown-pop-prompt (instance)
   "Get current prompt to send and clean it."
-  (with-current-buffer (copilot-chat--markdown-get-buffer)
+  (with-current-buffer (copilot-chat--markdown-get-buffer instance)
     (copilot-chat--markdown-goto-input)
-    (let ((prompt (buffer-substring (point) (point-max))))
+    (let ((prompt (buffer-substring-no-properties (point) (point-max))))
       (delete-region (point) (point-max))
       prompt)))
 

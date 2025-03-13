@@ -68,24 +68,27 @@ Elements are added in the module that defines each front end.")
     :key #'copilot-chat-frontend-id
     :test #'eq))
 
-(defun copilot-chat--get-buffer ()
+(defun copilot-chat--get-buffer(instance)
   "Get Copilot Chat buffer from the active frontend."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
+  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn
+                         (copilot-chat--get-frontend))))
     (when get-buffer-fn
-      (funcall get-buffer-fn))))
+      (funcall get-buffer-fn instance))))
 
-(defun copilot-chat--get-spinner-buffer ()
+(defun copilot-chat--get-spinner-buffer(instance)
   "Get Spinner buffer from the active frontend."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn (copilot-chat--get-frontend))))
+  (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn
+                         (copilot-chat--get-frontend))))
     (when get-buffer-fn
-      (funcall get-buffer-fn))))
+      (funcall get-buffer-fn instance))))
 
-(defun copilot-chat--create-req (prompt no-context)
+(defun copilot-chat--create-req (instance prompt no-context)
   "Create a request for Copilot.
 Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
 The create req function is called first and will return new prompt."
-  (let ((create-req-fn (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
+  (let ( (create-req-fn (copilot-chat-frontend-create-req-fn
+                          (copilot-chat--get-frontend)))
          (messages nil))
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
@@ -95,12 +98,13 @@ The create req function is called first and will return new prompt."
 
     (unless no-context
       ;; history
-      (dolist (history (copilot-chat-history copilot-chat--instance))
+      (dolist (history (copilot-chat-history instance))
         (push (list `(content . ,(car history)) `(role . ,(cadr history))) messages))
       ;; buffers
-      (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
-                                                            (copilot-chat-buffers copilot-chat--instance)))
-      (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
+
+      (setf (copilot-chat-buffers instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
+                                              (copilot-chat-buffers instance)))
+      (dolist (buffer (copilot-chat-buffers instance))
         (when (buffer-live-p buffer)
           (with-current-buffer buffer
             (push (list `(content . ,(buffer-substring-no-properties (point-min) (point-max))) `(role . "user"))
@@ -110,13 +114,13 @@ The create req function is called first and will return new prompt."
     (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)
 
 
-    (json-serialize (if (copilot-chat--model-is-o1)
+    (json-serialize (if (copilot-chat--model-is-o1 instance)
                       `( (messages . ,(vconcat messages))
-                         (model . ,copilot-chat-model)
+                         (model . ,(copilot-chat-model instance))
                          (stream . :false))
                       `( (messages . ,(vconcat messages))
                          (top_p . 1)
-                         (model . ,copilot-chat-model)
+                         (model . ,(copilot-chat-model instance))
                          (stream . t)
                          (n . 1)
                          (intent . t)
