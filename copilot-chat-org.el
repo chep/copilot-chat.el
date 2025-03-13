@@ -117,7 +117,8 @@ NO-CONTEXT is an optional flag (unused in current implementation)."
         content))))
 
 (defun copilot-chat--get-language-mode (element)
-  "Get major mode name from org source block language."
+  "Get major mode name from org source block language.
+When ELEMENT is a source block (`src-block`), extracts its language property."
   (when (eq (org-element-type element) 'src-block)
     (let ((language (org-element-property :language element)))
       (org-src-get-lang-mode language))))
@@ -183,7 +184,8 @@ Replace selection if any."
       heading-regex)
     (seq-uniq blocks #'equal)))
 
-(defun copilot-chat--org-yank()
+(defun copilot-chat--org-yank ()
+  "Insert code block from Copilot Chat's org buffer at point."
   (let ((content ""))
     (with-current-buffer copilot-chat--buffer
       (let ((blocks (copilot-chat--org-get-code-blocks-under-heading "copilot")))
