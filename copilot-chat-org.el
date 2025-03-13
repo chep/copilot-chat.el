@@ -94,6 +94,7 @@ Argument LANGUAGE is the language of the code."
 PROMPT is the input text.
 NO-CONTEXT is an optional flag (unused in current implementation)."
   (format "%s\n\nUse only Emacs org-mode formatting in your answers:
+- Use ~~~ for inline code
 - Use ~*~ for headers (starting at level 3 with ~***~)
 - Use ~+~ for unordered lists
 - Use ~1.~ for ordered lists
