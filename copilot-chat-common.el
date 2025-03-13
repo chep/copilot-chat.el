@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- indent-tabs-mode: nil; lexical-binding:t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- lexical-binding:t;  -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -169,3 +169,9 @@ is not `true' are not included in the model selection by default."
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

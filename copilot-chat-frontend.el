@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-frontend.el --- define copilot frontend interface -*- indent-tabs-mode: nil; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-frontend.el --- define copilot frontend interface -*- lexical-binding:t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -122,3 +122,9 @@ The create req function is called first and will return new prompt."
 
 (provide 'copilot-chat-frontend)
 ;;; copilot-chat-frontend.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-command.el --- copilot chat command -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-command.el --- copilot chat command -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -930,3 +930,9 @@ Clears model cache from memory and disk, then triggers background fetch."
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

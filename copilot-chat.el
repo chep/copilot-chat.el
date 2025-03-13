@@ -1,4 +1,4 @@
-;;; copilot-chat.el --- Copilot chat interface -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t -*-
+;;; copilot-chat.el --- Copilot chat interface -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -47,3 +47,9 @@
 
 (provide 'copilot-chat)
 ;;; copilot-chat.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:
