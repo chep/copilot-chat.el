@@ -1,4 +1,4 @@
-;;; Copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -30,8 +30,7 @@
 (require 'markdown-mode)
 (require 'polymode)
 
-(require 'copilot-chat-frontend)
-(require 'copilot-chat-prompts)
+(require 'copilot-chat-command)
 
 ;;; Constants
 (defconst copilot-chat--markdown-delimiter
