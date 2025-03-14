@@ -34,6 +34,10 @@
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-prompt-mode)
 
+(require 'copilot-chat-markdown)
+(require 'copilot-chat-org)
+(require 'copilot-chat-shell-maker)
+
 ;; customs
 (defcustom copilot-chat-list-added-buffers-only nil
   "If non-nil, only show buffers that have been added to the Copilot chat list."
