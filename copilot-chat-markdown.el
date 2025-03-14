@@ -198,7 +198,7 @@ The input is created if not found."
 
 ;; Top-level execute code.
 
-(push
+(cl-pushnew
   (make-copilot-chat-frontend
     :id 'markdown
     :init-fn #'copilot-chat--markdown-init
@@ -215,7 +215,8 @@ The input is created if not found."
     :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
     :goto-input-fn #'copilot-chat--markdown-goto-input
     :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
-  copilot-chat--frontend-list)
+  copilot-chat--frontend-list
+  :test #'equal)
 
 (provide 'copilot-chat-markdown)
 ;;; copilot-chat-markdown.el ends here

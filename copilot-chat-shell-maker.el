@@ -165,7 +165,7 @@ Argument SHELL is the `shell-maker' instance."
 
 ;; Top-level execute code.
 
-(push
+(cl-pushnew
   (make-copilot-chat-frontend
     :id 'shell-maker
     :init-fn #'copilot-chat-shell-maker-init
@@ -182,7 +182,8 @@ Argument SHELL is the `shell-maker' instance."
     :pop-prompt-fn nil
     :goto-input-fn #'nil
     :get-spinner-buffer-fn #'copilot-chat--shell-maker-get-buffer)
-  copilot-chat--frontend-list)
+  copilot-chat--frontend-list
+  :test #'equal)
 
 (provide 'copilot-chat-shell-maker)
 ;;; copilot-chat-shell-maker.el ends here
