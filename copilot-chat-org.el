@@ -31,7 +31,9 @@
 (require 'org-element)
 (require 'polymode)
 
-(require 'copilot-chat-command)
+(require 'copilot-chat-common)
+(require 'copilot-chat-frontend)
+(require 'copilot-chat-prompt-mode)
 
 ;;; Constants
 (defconst copilot-chat--org-input-tag

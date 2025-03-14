@@ -32,6 +32,7 @@
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-curl)
 (require 'copilot-chat-frontend)
+(require 'copilot-chat-prompt-mode)
 
 ;; customs
 (defcustom copilot-chat-list-added-buffers-only nil
@@ -65,20 +66,6 @@ Supports glob patterns like `*.lock' or `node_modules/'."
 
 ;; Variables
 (defvar copilot-chat-list-buffer "*Copilot-chat-list*")
-(defvar copilot-chat-prompt-mode-map
-  (let ((map (make-keymap)))
-    (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
-    (define-key map (kbd "C-c C-c") 'copilot-chat-prompt-send)
-    (define-key map (kbd "C-c C-q") (lambda()
-                                      (interactive)
-                                      (bury-buffer)
-                                      (delete-window)))
-    (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
-    (define-key map (kbd "C-c C-t") 'copilot-chat-transient)
-    (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
-    (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
-    map)
-  "Keymap for Copilot Chat Prompt mode.")
 (defvar copilot-chat-list-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'copilot-chat-list-add-or-remove-buffer)
@@ -97,63 +84,10 @@ Supports glob patterns like `*.lock' or `node_modules/'."
   "Current position in copilot-chat prompt history.")
 
 ;; Functions
-(define-minor-mode copilot-chat-prompt-mode
-  "Minor mode for the Copilot Chat Prompt region."
-  :init-value nil
-  :lighter " Copilot Chat Prompt"
-  :keymap copilot-chat-prompt-mode-map)
-
 (define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
   "Major mode for listing and managing buffers in Copilot chat."
   (setq buffer-read-only t)
   (copilot-chat-list-refresh))
-
-(defun copilot-chat--write-buffer(data save &optional buffer)
-  "Write content to the Copilot Chat BUFFER.
-Argument DATA data to be inserted in buffer.
-If SAVE is t and BUFFER is nil, `save-excursion' is called before moving point"
-  (if buffer
-    (with-current-buffer buffer
-      (insert data))
-    (with-current-buffer (copilot-chat--get-buffer)
-      (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
-        (when write-fn
-          (if save
-            (save-excursion
-              (funcall write-fn data))
-            (funcall write-fn data)))))))
-
-(defun copilot-chat--format-data (content type)
-  "Format the CONTENT according to the frontend.
-Argument CONTENT is the data to format.
-Argument TYPE is the type of data to format: `answer` or `prompt`."
-  (let ((format-fn (copilot-chat-frontend-format-fn (copilot-chat--get-frontend))))
-    (if format-fn
-      (funcall format-fn content type)
-      content)))
-
-(defun copilot-chat-prompt-cb (content &optional buffer)
-  "Function called by backend when data is received.
-Argument CONTENT is data received from backend.
-Optional argument BUFFER is the buffer to write data in."
-  (if (string= content copilot-chat--magic)
-    (progn
-      (when (boundp 'copilot-chat--spinner-timer)
-        (copilot-chat--spinner-stop))
-      (copilot-chat--write-buffer
-        (copilot-chat--format-data "\n\n" 'answer)
-        (not copilot-chat-follow)
-        buffer))
-    (copilot-chat--write-buffer
-      (copilot-chat--format-data content 'answer)
-      (not copilot-chat-follow)
-      buffer)))
-
-(defun copilot-chat--pop-current-prompt()
-  "Get current prompt to send and clean it."
-  (let ((pop-prompt-fn (copilot-chat-frontend-pop-prompt-fn (copilot-chat--get-frontend))))
-    (when pop-prompt-fn
-      (funcall pop-prompt-fn))))
 
 (defun copilot-chat-prompt-send ()
   "Function to send the prompt content."
