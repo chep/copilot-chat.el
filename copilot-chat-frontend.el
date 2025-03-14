@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-frontend.el --- define copilot frontend interface -*- lexical-binding:t; -*-
+;;; copilot-chat --- copilot-chat-frontend.el --- define copilot frontend interface -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 

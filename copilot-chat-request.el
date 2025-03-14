@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-request.el --- copilot chat request backend -*- lexical-binding:t; -*-
+;;; copilot-chat --- copilot-chat-request.el --- copilot chat request backend -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
