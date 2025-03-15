@@ -188,10 +188,10 @@ Then we need a session token."
 
 (defun copilot-chat--ask (instance prompt callback &optional out-of-context)
   "Ask a question to Copilot.
+Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
-Argument OUT-OF-CONTEXT is a boolean
- to indicate if the prompt is out of context."
+Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
   (let* ((history (copilot-chat-history instance))
           (new-history (cons (list prompt "user") history)))
     (copilot-chat--auth)
@@ -207,7 +207,8 @@ Argument OUT-OF-CONTEXT is a boolean
 
 (defun copilot-chat--add-buffer (instance buffer)
   "Add a BUFFER to copilot buffers list.
-Argument buffer is the buffer to add."
+Argument INSTANCE is the copilot chat instance to modify.
+Argument BUFFER is the buffer to add to the context."
   (setq buffer (get-buffer buffer))
   (unless (memq buffer (copilot-chat-buffers instance))
     (let* ((buffers (copilot-chat-buffers instance))
@@ -215,19 +216,22 @@ Argument buffer is the buffer to add."
       (setf (copilot-chat-buffers instance) new-buffers))))
 
 (defun copilot-chat--clear-buffers (instance)
-  "Remove all buffers in copilot buffers list."
+  "Remove all buffers in copilot buffers list.
+Argument INSTANCE is the copilot chat instance to modify."
   (setf (copilot-chat-buffers instance) nil))
 
 (defun copilot-chat--del-buffer (instance buffer)
   "Remove a BUFFER from copilot buffers list.
-Argument buffer is the buffer to remove."
+Argument INSTANCE is the copilot chat instance to modify.
+Argument BUFFER is the buffer to remove from the context."
   (setq buffer (get-buffer buffer))
   (when (memq buffer (copilot-chat-buffers instance))
     (setf (copilot-chat-buffers instance)
       (delete buffer (copilot-chat-buffers instance)))))
 
 (defun copilot-chat--get-buffers (instance)
-  "Get copilot buffer list."
+  "Get copilot buffer list for the given INSTANCE.
+Argument INSTANCE is the copilot chat instance to get the buffers for."
   (copilot-chat-buffers instance))
 
 (provide 'copilot-chat-copilot)

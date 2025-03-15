@@ -157,6 +157,7 @@ Non-streaming version."
 
 (defun copilot-chat--request-ask (instance prompt callback out-of-context)
   "Ask a question to Copilot using request backend.
+Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT is a boolean to indicate

@@ -15,12 +15,13 @@ v2.0.1 is here.
 In v2, only one buffer is used for chat, thanks to polymode.
 
 ** Multiple instances
-You can try the =76-multiple-instances= branch. It's a work in progress.
-Copilot-chat instances are linked to a parent directory. Each instance has a dedicated history, context, model, buffer list…
-For the moment, I'm developping it with curl backend and org frontend. The other configuration may not work.
-This is a huge code transformation so please be patient and report bugs or wanted features/behavior in the dedicated issue.
+You can now work with multiple chat instances at once. Copilot-chat instances are linked to a parent directory, with each instance having dedicated:
+- Chat history
+- Context
+- Model selection
+- Buffer list
 
-~Copilot-chat-display~ will try to guess current instance with current buffer file location. If it fails, instance will be asked to the user. With prefix argument, guessing is bypassed. 
+~Copilot-chat-display~ will try to guess the appropriate instance based on the current buffer's file location. If it fails, it will ask you to choose an instance. With a prefix argument (~C-u M-x copilot-chat-display~), it will always prompt you to select an instance.
 
 ** Help wanted
 Bug reports and new ideas are very welcome.
@@ -115,10 +116,11 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 ** Functions
 *** Basic functions
-- ~(copilot-chat-reset)~ reset everything including history, frontend and included buffers (default). Use with prefix argument to preserve selected buffers.
-- ~(copilot-chat-display)~ display copilot chat buffers.
+- ~(copilot-chat-display)~ display copilot chat buffer. When using ~(copilot-chat-display)~ with a prefix argument, you'll be prompted to select which instance to use.
+- ~(copilot-chat-reset)~ reset the current instance including history, frontend and included buffers (default). Use with prefix argument to preserve selected buffers.
 - ~(copilot-chat-switch-to-buffer)~ switch to Copilot Chat buffer, side by side with the current code editing buffer.
-- ~(copilot-chat-set-model)~ Select AI model to use.
+- ~(copilot-chat-set-model)~ Select AI model to use for current instance.
+- ~(copilot-chat-kill-instance)~ Kill a selected Copilot chat instance and close its associated buffers.
 
 *** Prompt
 - ~copilot-chat-goto-input~ place point at the beginning of the prompt area.
@@ -188,7 +190,7 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 - ~copilot-chat-token-cache~ - File path to store session token cache.
 
 *** Model settings
-- ~copilot-chat-model~ - AI model to use. It is better to use ~(copilot-chat-set-model)~ to set it.
+- ~copilot-chat-default-model~ - Default AI model to use. Use ~(copilot-chat-set-model)~ to set it for a specific instance.
 - ~copilot-chat-model-ignore-picker~ - If ~nil~ (default) add a filter to ~(copilot-chat-set-model)~ which will only show models with ~model_picker_enabled~ attribute.
 
 *** Prompts

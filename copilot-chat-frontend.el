@@ -69,14 +69,16 @@ Elements are added in the module that defines each front end.")
     :test #'eq))
 
 (defun copilot-chat--get-buffer(instance)
-  "Get Copilot Chat buffer from the active frontend."
+  "Get Copilot Chat buffer from the active frontend.
+Argument INSTANCE is the copilot chat instance to get the buffer for."
   (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn
                          (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn instance))))
 
 (defun copilot-chat--get-spinner-buffer(instance)
-  "Get Spinner buffer from the active frontend."
+  "Get Spinner buffer from the active frontend.
+Argument INSTANCE is the copilot chat instance to get the buffer for."
   (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn
                          (copilot-chat--get-frontend))))
     (when get-buffer-fn
@@ -84,6 +86,7 @@ Elements are added in the module that defines each front end.")
 
 (defun copilot-chat--create-req (instance prompt no-context)
   "Create a request for Copilot.
+Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
 The create req function is called first and will return new prompt."

@@ -279,6 +279,7 @@ Argument SEGMENT is data segment to parse."
 
 (defun copilot-chat--curl-analyze-response (instance string callback no-history)
   "Analyse curl response.
+Argument INSTANCE is the copilot chat instance to use.
 Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data.
 Argument NO-HISTORY is a boolean to indicate
@@ -374,11 +375,12 @@ if the response should be added to history."
 (defun copilot-chat--curl-analyze-nonstream-response (instance proc string callback no-history)
   "Analyse curl response non stream version.
 o1 differs from the other models in the format of the reply.
+Argument INSTANCE is the copilot chat instance to use.
 Argument PROC is curl process.
 Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data.
 Argument NO-HISTORY is a boolean to indicate
-if the response should be added to history."
+ if the response should be added to history."
   (when (copilot-chat-curl-current-data instance)
     (setq string (concat (copilot-chat-curl-current-data instance) string))
     (setf (copilot-chat-curl-current-data instance) nil))
@@ -414,7 +416,8 @@ if the response should be added to history."
           (funcall callback instance (format "GitHub Copilot error: %S\nResponse is %S" err (string-trim string))))))))
 
 (defun copilot-chat--spinner-start (instance)
-  "Start the spinner animation in the Copilot Chat buffer."
+  "Start the spinner animation in the Copilot Chat buffer.
+Argument INSTANCE is the copilot chat instance to use."
   (when (copilot-chat-spinner-timer instance)
     (cancel-timer (copilot-chat-spinner-timer instance)))
 
@@ -426,7 +429,8 @@ if the response should be added to history."
                                             instance)))
 
 (defun copilot-chat--spinner-update (instance)
-  "Update the spinner animation in the Copilot Chat buffer."
+  "Update the spinner animation in the Copilot Chat buffer.
+Argument INSTANCE is the copilot chat instance to use."
   (let ((buffer (copilot-chat--get-spinner-buffer instance)))
     (when (and buffer (buffer-live-p buffer))
       (let ((frame (nth (copilot-chat-spinner-index instance) copilot-chat-spinner-frames))
@@ -451,7 +455,8 @@ if the response should be added to history."
           (length copilot-chat-spinner-frames))))))
 
 (defun copilot-chat--spinner-stop (instance)
-  "Stop the spinner animation."
+  "Stop the spinner animation.
+Argument INSTANCE is the copilot chat instance to use."
   (when (copilot-chat-spinner-timer instance)
     (cancel-timer (copilot-chat-spinner-timer instance))
     (setf (copilot-chat-spinner-timer instance) nil))
@@ -464,6 +469,7 @@ if the response should be added to history."
 
 (defun copilot-chat--spinner-set-status (instance status)
   "Set the status message to display with the spinner.
+Argument INSTANCE is the copilot chat instance to use.
 Argument STATUS is the status message to display."
   (setf (copilot-chat-spinner-status instance) status)
   (when (copilot-chat-spinner-timer instance)
@@ -471,12 +477,12 @@ Argument STATUS is the status message to display."
 
 (defun copilot-chat--curl-ask(instance prompt callback out-of-context)
   "Ask a question to Copilot using curl backend.
+Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT is a boolean to indicate
 if the prompt is out of context."
-  (setf
-    (copilot-chat-curl-current-data instance) nil
+  (setf (copilot-chat-curl-current-data instance) nil
     (copilot-chat-curl-answer instance) nil)
 
   ;; Start the spinner animation
