@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-request.el --- copilot chat request backend -*- indent-tabs-mode: nil; lexical-binding:t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-request.el --- copilot chat request backend -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -28,10 +28,10 @@
 
 ;;; Code:
 
-
 (require 'json)
 (require 'request)
-(require 'copilot-chat-common)
+
+(require 'copilot-chat-frontend)
 
 (cl-defun copilot-chat--request-token-cb (&key response
                                                &key data
@@ -403,3 +403,9 @@ Optional argument QUIET suppresses user messages when non-nil."
 
 (provide 'copilot-chat-request)
 ;;; copilot-chat-request.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

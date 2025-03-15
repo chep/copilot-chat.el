@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- indent-tabs-mode: nil; lexical-binding:t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-common.el --- copilot chat variables and const -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -23,7 +23,7 @@
 ;; SOFTWARE.
 
 ;;; Commentary:
-;; All shared variables and constants
+;; The shared variables and constants
 
 ;;; Code:
 
@@ -41,13 +41,6 @@
 (defgroup copilot-chat nil
   "GitHub Copilot chat."
   :group 'tools)
-
-(defcustom copilot-chat-frontend 'org
-  "Frontend to use with `copilot-chat'.  Can be org or markdown."
-  :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
-  :group 'copilot-chat)
 
 (defcustom copilot-chat-follow nil
   "Follow the chat buffer."
@@ -118,23 +111,6 @@ is not `true' are not included in the model selection by default."
   (models nil :type list)
   (last-models-fetch-time 0 :type number))
 
-(cl-defstruct copilot-chat-frontend
-  id
-  init-fn
-  clean-fn
-  format-fn
-  format-code-fn
-  create-req-fn
-  send-to-buffer-fn
-  copy-fn
-  yank-fn
-  write-fn
-  get-buffer-fn
-  insert-prompt-fn
-  pop-prompt-fn
-  goto-input-fn
-  get-spinner-buffer-fn)
-
 ;; variables
 (defvar copilot-chat--instance
   (copilot-chat--make
@@ -148,57 +124,6 @@ is not `true' are not included in the model selection by default."
    :models nil
    :last-models-fetch-time 0)
   "Global instance of Copilot chat.")
-
-(defvar copilot-chat--frontend-list
-  (list (make-copilot-chat-frontend
-         :id 'markdown
-         :init-fn #'copilot-chat--markdown-init
-         :clean-fn #'copilot-chat--markdown-clean
-         :format-fn #'copilot-chat--markdown-format-data
-         :format-code-fn #'copilot-chat--markdown-format-code
-         :create-req-fn nil
-         :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
-         :copy-fn #'copilot-chat--markdown-copy
-         :yank-fn nil
-         :write-fn #'copilot-chat--markdown-write
-         :get-buffer-fn #'copilot-chat--markdown-get-buffer
-         :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
-         :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
-         :goto-input-fn #'copilot-chat--markdown-goto-input
-         :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
-        (make-copilot-chat-frontend
-         :id 'org
-         :init-fn #'copilot-chat--org-init
-         :clean-fn #'copilot-chat--org-clean
-         :format-fn #'copilot-chat--org-format-data
-         :format-code-fn #'copilot-chat--org-format-code
-         :create-req-fn #'copilot-chat--org-create-req
-         :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
-         :copy-fn #'copilot-chat--org-copy
-         :yank-fn #'copilot-chat--org-yank
-         :write-fn #'copilot-chat--org-write
-         :get-buffer-fn #'copilot-chat--org-get-buffer
-         :insert-prompt-fn #'copilot-chat--org-insert-prompt
-         :pop-prompt-fn #'copilot-chat--org-pop-prompt
-         :goto-input-fn #'copilot-chat--org-goto-input
-         :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
-        (make-copilot-chat-frontend
-         :id 'shell-maker
-         :init-fn #'copilot-chat-shell-maker-init
-         :clean-fn #'copilot-chat--shell-maker-clean
-         :format-fn nil
-         :format-code-fn #'copilot-chat--markdown-format-code
-         :create-req-fn nil
-         :send-to-buffer-fn nil
-         :copy-fn nil
-         :yank-fn nil
-         :write-fn nil
-         :get-buffer-fn #'copilot-chat--shell-maker-get-buffer
-         :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
-         :pop-prompt-fn nil
-         :goto-input-fn #'nil
-         :get-spinner-buffer-fn #'copilot-chat--shell-maker-get-buffer))
-  "Copilot-chat frontends and functions list.")
 
 (defvar copilot-chat--buffer nil)
 
@@ -238,68 +163,15 @@ is not `true' are not included in the model selection by default."
   "Check if the model is o1."
   (string-prefix-p "o1" copilot-chat-model))
 
-(defun copilot-chat--create-req (prompt no-context)
-  "Create a request for Copilot.
-Argument PROMPT Copilot prompt to send.
-Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
-The create req function is called first and will return new prompt."
-  (let ((create-req-fn (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
-        (messages nil))
-    (when create-req-fn
-      (setq prompt (funcall create-req-fn prompt no-context)))
-
-    ;; user prompt
-    (push (list (cons "content" prompt) (cons "role" "user")) messages)
-
-    (unless no-context
-      ;; history
-      (dolist (history (copilot-chat-history copilot-chat--instance))
-        (push (list (cons "content" (car history)) (cons "role" (cadr history))) messages))
-      ;; buffers
-      (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
-                                                                        (copilot-chat-buffers copilot-chat--instance)))
-      (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
-        (when (buffer-live-p buffer)
-          (with-current-buffer buffer
-            (push (list (cons "content" (buffer-substring-no-properties (point-min) (point-max))) (cons "role" "user")) messages)))))
-
-    ;; system
-    (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
-
-
-    (json-encode (if (copilot-chat--model-is-o1)
-                     `(("messages" . ,(vconcat messages))
-                       ("model" . ,copilot-chat-model)
-                       ("stream" . :json-false))
-                   `(("messages" . ,(vconcat messages))
-                     ("top_p" . 1)
-                     ("model" . ,copilot-chat-model)
-                     ("stream" . t)
-                     ("n" . 1)
-                     ("intent" . t)
-                     ("temperature" . 0.1))))))
-
-(defun copilot-chat--get-frontend ()
-  "Get frontend from custom."
-  (cl-find copilot-chat-frontend copilot-chat--frontend-list
-           :key #'copilot-chat-frontend-id
-           :test #'eq))
-
 (defun copilot-chat--get-buffer-name ()
   "Get the formatted buffer name including model info."
   (format "*Copilot Chat [%s]*" copilot-chat-model))
 
-(defun copilot-chat--get-buffer()
-  "Create copilot-chat buffers."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
-    (when get-buffer-fn
-      (funcall get-buffer-fn))))
-
-(defun copilot-chat--get-spinner-buffer()
-  "Create copilot-chat buffers."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn (copilot-chat--get-frontend))))
-    (when get-buffer-fn
-      (funcall get-buffer-fn))))
-
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

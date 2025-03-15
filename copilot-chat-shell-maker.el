@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-shell-maker.el --- copilot chat interface, shell-maker frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-shell-maker.el --- copilot chat interface, shell-maker frontend -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -31,6 +31,7 @@
 (require 'shell-maker)
 
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-markdown)
 (require 'copilot-chat-prompts)
 
 ;; Variables
@@ -55,6 +56,7 @@
     (display-buffer (current-buffer))))
 
 (defun copilot-chat--shell-maker-get-buffer ()
+  "Create or retrieve the Copilot Chat shell-maker buffer."
   (unless (buffer-live-p copilot-chat--buffer)
     (setq copilot-chat--buffer (copilot-chat--shell)))
   (let ((tempb (get-buffer-create copilot-chat--shell-maker-temp-buffer))
@@ -91,8 +93,8 @@
           (goto-char (point-max)))))))
 
 (defun copilot-chat--shell-cb-prompt (shell content)
-  "Callback for Copilot Chat shell-maker.
-Argument SHELL is the shell-maker instance.
+  "Callback for Copilot Chat `shell-maker'.
+Argument SHELL is the `shell-maker' instance.
 Argument CONTENT is copilot chat answer."
   (with-current-buffer copilot-chat--buffer
     (goto-char (point-max))
@@ -116,8 +118,8 @@ Argument CONTENT is copilot chat answer."
         (funcall (map-elt shell :write-output) content)))))
 
 (defun copilot-chat--shell-cb-prompt-wrapper (shell content)
-  "Wrapper around copilot-chat--shell-cb-prompt.
-Argument SHELL is the shell-maker instance.
+  "Wrapper around `copilot-chat--shell-cb-prompt'.
+Argument SHELL is the `shell-maker' instance.
 Argument CONTENT is copilot chat answer."
   (if copilot-chat-follow
     (copilot-chat--shell-cb-prompt shell content)
@@ -125,10 +127,9 @@ Argument CONTENT is copilot chat answer."
       (copilot-chat--shell-cb-prompt shell content))))
 
 (defun copilot-chat--shell-cb (command shell)
-  "Callback for Copilot Chat shell-maker.
+  "Callback for Copilot Chat `shell-maker'.
 Argument COMMAND is the command to send to Copilot.
-Argument CALLBACK is the callback function to call.
-Argument ERROR-CALLBACK is the error callback function to call."
+Argument SHELL is the `shell-maker' instance."
   (setq
     copilot-chat--shell-cb-fn
     (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
@@ -151,17 +152,44 @@ Argument ERROR-CALLBACK is the error callback function to call."
     (insert prompt)))
 
 (defun copilot-chat--shell-maker-clean()
-  "Clean the copilot chat shell-maker frontend."
+  "Clean the copilot chat `shell-maker' frontend."
   (when (buffer-live-p copilot-chat--buffer)
     (with-current-buffer copilot-chat--buffer
       (shell-maker--write-input-ring-history copilot-chat--shell-config)))
   (advice-remove 'copilot-chat-prompt-send #'copilot-chat--shell-maker-prompt-send))
 
 (defun copilot-chat-shell-maker-init()
-  "Initialize the copilot chat shell-maker frontend."
+  "Initialize the copilot chat `shell-maker' frontend."
   (setq copilot-chat-prompt copilot-chat-markdown-prompt)
   (advice-add 'copilot-chat-prompt-send :override #'copilot-chat--shell-maker-prompt-send))
 
-(provide 'copilot-chat-shell-maker)
+;; Top-level execute code.
 
+(cl-pushnew
+  (make-copilot-chat-frontend
+    :id 'shell-maker
+    :init-fn #'copilot-chat-shell-maker-init
+    :clean-fn #'copilot-chat--shell-maker-clean
+    :format-fn nil
+    :format-code-fn #'copilot-chat--markdown-format-code
+    :create-req-fn nil
+    :send-to-buffer-fn nil
+    :copy-fn nil
+    :yank-fn nil
+    :write-fn nil
+    :get-buffer-fn #'copilot-chat--shell-maker-get-buffer
+    :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
+    :pop-prompt-fn nil
+    :goto-input-fn #'nil
+    :get-spinner-buffer-fn #'copilot-chat--shell-maker-get-buffer)
+  copilot-chat--frontend-list
+  :test #'equal)
+
+(provide 'copilot-chat-shell-maker)
 ;;; copilot-chat-shell-maker.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

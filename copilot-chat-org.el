@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-org.el --- copilot chat interface, org frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-org.el --- copilot chat interface, org frontend -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -28,10 +28,12 @@
 ;;; Code:
 
 (require 'org)
+(require 'org-element)
 (require 'polymode)
 
 (require 'copilot-chat-common)
-(require 'copilot-chat-prompts)
+(require 'copilot-chat-frontend)
+(require 'copilot-chat-prompt-mode)
 
 ;;; Constants
 (defconst copilot-chat--org-input-tag
@@ -57,6 +59,9 @@
   :tail-matcher "\\'"
   :head-mode 'host
   :tail-mode 'host)
+
+(declare-function copilot-chat-org-poly-mode "copilot-chat-org"
+  "Polymode for Copilot Chat Org.")
 
 (define-polymode copilot-chat-org-poly-mode
   :hostmode 'poly-copilot-org-hostmode
@@ -117,7 +122,8 @@ NO-CONTEXT is an optional flag (unused in current implementation)."
         content))))
 
 (defun copilot-chat--get-language-mode (element)
-  "Get major mode name from org source block language."
+  "Get major mode name from org source block language.
+When ELEMENT is a source block (`src-block`), extracts its language property."
   (when (eq (org-element-type element) 'src-block)
     (let ((language (org-element-property :language element)))
       (org-src-get-lang-mode language))))
@@ -183,7 +189,8 @@ Replace selection if any."
       heading-regex)
     (seq-uniq blocks #'equal)))
 
-(defun copilot-chat--org-yank()
+(defun copilot-chat--org-yank ()
+  "Insert code block from Copilot Chat's org buffer at point."
   (let ((content ""))
     (with-current-buffer copilot-chat--buffer
       (let ((blocks (copilot-chat--org-get-code-blocks-under-heading "copilot")))
@@ -256,5 +263,34 @@ The input is created if not found."
   "Initialize the copilot chat org frontend."
   (setq copilot-chat-prompt copilot-chat-org-prompt))
 
+;; Top-level execute code.
+
+(cl-pushnew
+  (make-copilot-chat-frontend
+    :id 'org
+    :init-fn #'copilot-chat--org-init
+    :clean-fn #'copilot-chat--org-clean
+    :format-fn #'copilot-chat--org-format-data
+    :format-code-fn #'copilot-chat--org-format-code
+    :create-req-fn #'copilot-chat--org-create-req
+    :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
+    :copy-fn #'copilot-chat--org-copy
+    :yank-fn #'copilot-chat--org-yank
+    :write-fn #'copilot-chat--org-write
+    :get-buffer-fn #'copilot-chat--org-get-buffer
+    :insert-prompt-fn #'copilot-chat--org-insert-prompt
+    :pop-prompt-fn #'copilot-chat--org-pop-prompt
+    :goto-input-fn #'copilot-chat--org-goto-input
+    :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
+  copilot-chat--frontend-list
+  :test #'equal)
+
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

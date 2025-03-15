@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-curl.el --- copilot chat curl backend -*- indent-tabs-mode: nil; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-curl.el --- copilot chat curl backend -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -28,7 +28,8 @@
 ;;; Code:
 
 (require 'json)
-(require 'copilot-chat-common)
+
+(require 'copilot-chat-frontend)
 
 (defvar copilot-chat--curl-current-data nil)
 
@@ -521,3 +522,9 @@ if the prompt is out of context."
 
 (provide 'copilot-chat-curl)
 ;;; copilot-chat-curl.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

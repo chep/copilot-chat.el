@@ -1,4 +1,4 @@
-;;; Copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- indent-tabs-mode: nil; lisp-indent-offset: 2; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-markdown.el --- copilot chat interface, markdown frontend -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -31,7 +31,8 @@
 (require 'polymode)
 
 (require 'copilot-chat-common)
-(require 'copilot-chat-prompts)
+(require 'copilot-chat-frontend)
+(require 'copilot-chat-prompt-mode)
 
 ;;; Constants
 (defconst copilot-chat--markdown-delimiter
@@ -54,6 +55,9 @@
   :tail-matcher (concat copilot-chat--markdown-delimiter "\n")
   :head-mode 'inner
   :tail-mode 'host)
+
+(declare-function copilot-chat-markdown-poly-mode "copilot-chat-markdown"
+  "Polymode for Copilot Chat Markdown.")
 
 (define-polymode copilot-chat-markdown-poly-mode
   :hostmode 'poly-copilot-markdown-hostmode
@@ -194,5 +198,34 @@ The input is created if not found."
   "Initialize the copilot chat markdown frontend."
   (setq copilot-chat-prompt copilot-chat-markdown-prompt))
 
+;; Top-level execute code.
+
+(cl-pushnew
+  (make-copilot-chat-frontend
+    :id 'markdown
+    :init-fn #'copilot-chat--markdown-init
+    :clean-fn #'copilot-chat--markdown-clean
+    :format-fn #'copilot-chat--markdown-format-data
+    :format-code-fn #'copilot-chat--markdown-format-code
+    :create-req-fn nil
+    :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
+    :copy-fn #'copilot-chat--markdown-copy
+    :yank-fn nil
+    :write-fn #'copilot-chat--markdown-write
+    :get-buffer-fn #'copilot-chat--markdown-get-buffer
+    :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
+    :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
+    :goto-input-fn #'copilot-chat--markdown-goto-input
+    :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
+  copilot-chat--frontend-list
+  :test #'equal)
+
 (provide 'copilot-chat-markdown)
 ;;; copilot-chat-markdown.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-transient.el  --- copilot chat transient functions -*- indent-tabs-mode: nil; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-transient.el  --- copilot chat transient functions -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -26,8 +26,10 @@
 
 
 ;;; Code:
+
 (require 'transient)
 
+(require 'copilot-chat-command)
 
 ;;;###autoload (autoload 'copilot-chat-transient "copilot-chat" nil t)
 (transient-define-prefix copilot-chat-transient ()
@@ -85,3 +87,9 @@
 
 (provide 'copilot-chat-transient)
 ;;; copilot-chat-transient.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:

@@ -1,4 +1,4 @@
-;;; copilot-chat --- copilot-chat-copilot.el  --- copilot chat engine -*- indent-tabs-mode: nil; lexical-binding: t; package-lint-main-file: "copilot-chat.el"; -*-
+;;; copilot-chat --- copilot-chat-copilot.el  --- copilot chat engine -*- lexical-binding: t;  -*-
 
 ;; Copyright (C) 2024  copilot-chat maintainers
 
@@ -26,10 +26,12 @@
 
 
 ;;; Code:
+
 (require 'json)
+
 (require 'copilot-chat-common)
-(require 'copilot-chat-request)
 (require 'copilot-chat-curl)
+(require 'copilot-chat-request)
 
 ;; customs
 (defcustom copilot-chat-prompt-explain "/explain\n"
@@ -226,3 +228,9 @@ Argument buffer is the buffer to remove."
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; lisp-indent-offset: 2
+;; package-lint-main-file: "copilot-chat.el"
+;; End:
