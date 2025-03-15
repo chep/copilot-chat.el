@@ -56,8 +56,10 @@
 
 (defun copilot-chat--write-buffer(instance data save &optional buffer)
   "Write content to the Copilot Chat BUFFER.
+Argument INSTANCE is the copilot chat instance to use.
 Argument DATA data to be inserted in buffer.
-If SAVE is t and BUFFER is nil, `save-excursion' is called before moving point"
+Argument SAVE if t and BUFFER is nil, `save-excursion' is called before moving point.
+Optional argument BUFFER is the buffer to write to, defaults to instance's chat buffer."
   (if buffer
     (with-current-buffer buffer
       (insert data))
@@ -71,6 +73,7 @@ If SAVE is t and BUFFER is nil, `save-excursion' is called before moving point"
 
 (defun copilot-chat--format-data (instance content type)
   "Format the CONTENT according to the frontend.
+Argument INSTANCE is the copilot chat instance to use.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((format-fn (copilot-chat-frontend-format-fn (copilot-chat--get-frontend))))
@@ -80,6 +83,7 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
 
 (defun copilot-chat-prompt-cb (instance content &optional buffer)
   "Function called by backend when data is received.
+Argument INSTANCE is the copilot chat instance to use.
 Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
@@ -98,7 +102,8 @@ Optional argument BUFFER is the buffer to write data in."
       buffer)))
 
 (defun copilot-chat--pop-current-prompt(instance)
-  "Get current prompt to send and clean it."
+  "Get current prompt to send and clean it.
+Argument INSTANCE is the copilot chat instance to use."
   (let ((pop-prompt-fn (copilot-chat-frontend-pop-prompt-fn (copilot-chat--get-frontend))))
     (when pop-prompt-fn
       (funcall pop-prompt-fn instance))))

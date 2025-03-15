@@ -29,6 +29,8 @@
 
 ;;;###autoload
 (defun copilot-chat-kill-instance ()
+  "Interactively kill a selected copilot chat instance.
+All its associated buffers are killed."
   (interactive)
   (let* ( (instance (copilot-chat--choose-instance))
           (buf (copilot-chat--get-buffer instance))
@@ -44,6 +46,7 @@
 
 
 (defun copilot-chat--create-instance ()
+  "Create a new copilot chat instance for a given directory."
   (let* ((current-dir (file-name-directory (or (buffer-file-name) default-directory)))
           (directory (expand-file-name
                        (read-directory-name "Choose a directory: " current-dir)))
@@ -56,7 +59,8 @@
     instance))
 
 (defun copilot-chat--find-instance (directory)
-  "Find the instance with the parent path of DIRECTORY."
+  "Find the instance corresponding to a path.
+Argument DIRECTORY is the path to search for matching instance."
   (cl-find-if (lambda (instance)
                 (string-prefix-p (copilot-chat-directory instance) directory))
     copilot-chat--instances))

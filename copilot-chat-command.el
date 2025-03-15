@@ -91,7 +91,9 @@ Supports glob patterns like `*.lock' or `node_modules/'."
   (setq buffer-read-only t))
 
 (defun copilot-chat-prompt-send ()
-  "Function to send the prompt content."
+  "Send the prompt content to Copilot.
+Retrieves the current prompt, displays it in the chat buffer, and sends it
+to Copilot for processing."
   (interactive)
   (let ((instance (copilot-chat--current-instance)))
     (when instance
@@ -163,18 +165,23 @@ Argument PROMPT is the prompt to send to Copilot."
   (copilot-chat--ask-region 'test))
 
 (defun copilot-chat--insert-prompt (instance prompt)
-  "Insert PROMPT in the Copilot Chat prompt region."
+  "Insert PROMPT in the Copilot Chat prompt region.
+Argument INSTANCE is the copilot chat instance to use.
+Argument PROMPT is the text to insert in the prompt region."
   (let ((prompt-fn (copilot-chat-frontend-insert-prompt-fn (copilot-chat--get-frontend))))
     (when prompt-fn
       (funcall prompt-fn instance prompt))))
 
 (defun copilot-chat--insert-and-send-prompt (instance prompt)
-  "Helper function to prepare buffer and send PROMPT to Copilot."
+  "Helper function to prepare buffer and send PROMPT to Copilot.
+Argument INSTANCE is the copilot chat instance to use.
+Argument PROMPT is the text to send to Copilot."
   (copilot-chat--insert-prompt instance prompt)
   (copilot-chat-prompt-send))
 
 (defun copilot-chat--get-language ()
-  "Get the current language of the buffer."
+  "Get the current language of the buffer.
+Derives language name from the major mode of the current buffer."
   (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
     (let* ((major-mode-str (symbol-name major-mode))
             (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str)))
@@ -182,7 +189,8 @@ Argument PROMPT is the prompt to send to Copilot."
     nil))
 
 (defun copilot-chat--format-code(code)
-  "Format the CODE according to the frontend."
+  "Format code according to the frontend.
+Argument CODE is the code to be formatted."
   (let ((format-fn (copilot-chat-frontend-format-code-fn (copilot-chat--get-frontend))))
     (if format-fn
       (funcall format-fn code (copilot-chat--get-language))
@@ -272,7 +280,8 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
     (switch-to-buffer buffer)))
 
 (defun copilot-chat--display (instance)
-  "Internal function to display copilot chat buffer."
+  "Internal function to display copilot chat buffer.
+Argument INSTANCE is the copilot chat instance to display."
   (let ((base-buffer (copilot-chat--get-buffer instance))
          (init-fn (copilot-chat-frontend-init-fn
                     (copilot-chat--get-frontend)))
@@ -297,7 +306,8 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
 ;;;###autoload
 (defun copilot-chat-display (&optional arg)
   "Display copilot chat buffer.
-With prefix ARG, select instance instead of guessing it."
+With prefix argument, explicitly ask for which instance to use.
+Optional argument ARG if non-nil, force instance selection."
   (interactive "P")
   (let ((instance (if arg
                     (copilot-chat--ask-for-instance)
@@ -391,7 +401,8 @@ If there are more than 40 files, refuse to add and show warning message."
           (length files) current-suffix)))))
 
 (defun copilot-chat-list-refresh (&optional instance)
-  "Refresh the list of buffers in the current Copilot chat list buffer."
+  "Refresh the list of buffers in the current Copilot chat list buffer.
+Optional argument INSTANCE specifies which instance to refresh the list for."
   (interactive)
   (unless instance
     (setq instance (copilot-chat--current-instance)))
@@ -843,7 +854,8 @@ INC is the number to use as increment for index in block ring."
     (setq this-command 'copilot-chat-yank-pop)))
 
 (defun copilot-chat--yank(instance)
-  "Insert the code block at the current index in the block ring."
+  "Insert at point the code block at the current index in the block ring.
+Argument INSTANCE is the copilot chat instance to use."
   (let ((yank-fn (copilot-chat-frontend-yank-fn (copilot-chat--get-frontend))))
     (when yank-fn
       (funcall yank-fn instance))))
