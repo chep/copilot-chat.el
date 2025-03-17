@@ -798,7 +798,7 @@ wait for the fetch to complete."
               (copilot-chat--request-models t)
               ;; Wait for models to be fetched (with timeout)
               (with-timeout (10 (error "Timeout waiting for models to be fetched"))
-                (while (not (copilot-chat-models copilot-chat--instance))
+                (while (not (copilot-chat-connection-models copilot-chat--connection))
                   (sit-for 0.1)))
               (copilot-chat--get-model-choices-with-wait))))))))
 
