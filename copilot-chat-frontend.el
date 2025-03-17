@@ -30,14 +30,6 @@
 
 (require 'copilot-chat-common)
 
-(defcustom copilot-chat-frontend 'org
-  "Frontend to use with `copilot-chat'.  Can be org or markdown."
-  :type '(choice
-           (const :tag "org-mode" org)
-           (const :tag "markdown" markdown)
-           (const :tag "shell-maker" shell-maker))
-  :group 'copilot-chat)
-
 (cl-defstruct copilot-chat-frontend
   id
   init-fn
@@ -60,6 +52,7 @@
 Each element must be a `copilot-chat-frontend' struct instance.
 Elements are added in the module that defines each front end.")
 
+(defvar copilot-chat-frontend)
 (cl-declaim (type (list-of copilot-chat-frontend) copilot-chat--frontend-list))
 
 (defun copilot-chat--get-frontend ()
