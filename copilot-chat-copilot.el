@@ -202,6 +202,7 @@ Argument OUT-OF-CONTEXT is a boolean
 (defun copilot-chat--add-buffer (buffer)
   "Add a BUFFER to copilot buffers list.
 Argument buffer is the buffer to add."
+  (setq buffer (get-buffer buffer))
   (unless (memq buffer (copilot-chat-buffers copilot-chat--instance))
     (let* ((buffers (copilot-chat-buffers copilot-chat--instance))
            (new-buffers (cons buffer buffers)))
@@ -214,6 +215,7 @@ Argument buffer is the buffer to add."
 (defun copilot-chat--del-buffer (buffer)
   "Remove a BUFFER from copilot buffers list.
 Argument buffer is the buffer to remove."
+  (setq buffer (get-buffer buffer))
   (when (memq buffer (copilot-chat-buffers copilot-chat--instance))
     (setf (copilot-chat-buffers copilot-chat--instance)
           (delete buffer (copilot-chat-buffers copilot-chat--instance)))))

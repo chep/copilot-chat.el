@@ -61,9 +61,10 @@
 (transient-define-prefix copilot-chat-transient-buffers ()
   "Copilot chat buffers menu."
   [["Buffers"
-    ("a" "Add current buffer" copilot-chat-add-current-buffer)
+    ("a" "Add buffers" copilot-chat-add-buffers)
     ("A" "Add all buffers in current frame" copilot-chat-add-buffers-in-current-window)
-    ("d" "Delete current buffer" copilot-chat-del-current-buffer)
+    ("d" "Delete buffers" copilot-chat-del-buffers)
+    ("D" "Delete all buffers" copilot-chat-list-clear-buffers)
     ("f" "Add files under current directory" copilot-chat-add-files-under-dir)
     ("l" "Display buffer list" copilot-chat-list)
     ("c" "Clear buffers" copilot-chat-list-clear-buffers)
