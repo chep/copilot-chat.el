@@ -5,7 +5,7 @@
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
 ;; Version: 3.0.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((emacs "27.1") (aio "1.0") (request "0.3.2") (transient "0.8.3") (polymode "0.2.2"))
+;; Package-Requires: ((emacs "27.1") (aio "1.0") (request "0.3.2") (transient "0.8.3") (polymode "0.2.2") (org "9.4.6") (markdown-mode "2.6") (shell-maker "0.76.2"))
 ;; Keywords: convenience, tools
 
 
@@ -39,11 +39,21 @@
 (require 'copilot-chat-common)
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-frontend)
-(require 'copilot-chat-markdown)
-(require 'copilot-chat-org)
 (require 'copilot-chat-prompts)
-(require 'copilot-chat-shell-maker)
 (require 'copilot-chat-transient)
+
+(defcustom copilot-chat-frontend 'org
+  "Frontend to use with `copilot-chat'.  Can be org or markdown."
+  :type '(choice (const :tag "org-mode" org)
+                 (const :tag "markdown" markdown)
+                 (const :tag "shell-maker" shell-maker))
+  :set (lambda (symbol value)
+         (set-default-toplevel-value symbol value)
+         (pcase value
+           (`org (require 'copilot-chat-org))
+           (`markdown (require 'copilot-chat-markdown))
+           (`shell-maker (require 'copilot-chat-shell-maker))))
+  :group 'copilot-chat)
 
 (provide 'copilot-chat)
 ;;; copilot-chat.el ends here
