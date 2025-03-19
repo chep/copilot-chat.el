@@ -334,6 +334,25 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
   (copilot-chat--del-buffer (current-buffer))
   (copilot-chat-list-refresh))
 
+(defun copilot-chat-add-buffers (buffers)
+  "Add BUFFERS to sent buffers list."
+  (interactive
+    (list (completing-read-multiple "Buffers: "
+            (mapcar #'buffer-name (buffer-list))
+            nil t (buffer-name (current-buffer)))))
+  (mapc #'copilot-chat--add-buffer buffers)
+  (copilot-chat-list-refresh))
+
+(defun copilot-chat-del-buffers (buffers)
+  "Remove BUFFERS from sent buffers list."
+  (interactive
+    (list
+      (completing-read-multiple "Buffers: "
+        (mapcar #'buffer-name (copilot-chat--get-buffers))
+        nil t (buffer-name (current-buffer)))))
+  (mapc #'copilot-chat--del-buffer buffers)
+  (copilot-chat-list-refresh))
+
 (defun copilot-chat-add-file (file-path)
   "Add FILE-PATH to copilot-chat buffers without changing current window layout."
   (interactive "fFile to add: ")
