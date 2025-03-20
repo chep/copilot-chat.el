@@ -234,7 +234,8 @@ Given the code line as background info."
 It can be used to review the magit diff for my change, or other people's"
   (interactive)
   (save-excursion
-    (mark-whole-buffer)
+    (goto-char (point-min))
+    (push-mark (point-max) nil t)
     (copilot-chat-review)
     (deactivate-mark)))
 
