@@ -911,6 +911,7 @@ Clears model cache from memory and disk, then triggers background fetch."
   nil)
 
 (defun copilot-chat--get-list-buffer-create (instance)
+  "Get or create the Copilot chat list buffer for INSTANCE."
   (let ((list-buffer (get-buffer-create
                        (concat copilot-chat-list-buffer
                          "-"

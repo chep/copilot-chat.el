@@ -54,7 +54,10 @@
   :lighter " Copilot Chat Prompt"
   :keymap copilot-chat-prompt-mode-map)
 
-(defun copilot-chat--write-buffer(instance data save &optional buffer)
+(defun copilot-chat--write-buffer( instance
+                                   data
+                                   save
+                                   &optional buffer)
   "Write content to the Copilot Chat BUFFER.
 Argument INSTANCE is the copilot chat instance to use.
 Argument DATA data to be inserted in buffer.
