@@ -347,18 +347,24 @@ Optional argument ARG if non-nil, force instance selection."
     (list (completing-read-multiple "Buffers: "
             (mapcar #'buffer-name (buffer-list))
             nil t (buffer-name (current-buffer)))))
-  (mapc #'copilot-chat--add-buffer buffers)
-  (copilot-chat-list-refresh))
+  (let ((instance (copilot-chat--current-instance)))
+    (mapc (lambda (buf)
+            (copilot-chat--add-buffer instance buf))
+      buffers)
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-del-buffers (buffers)
   "Remove BUFFERS from sent buffers list."
   (interactive
     (list
       (completing-read-multiple "Buffers: "
-        (mapcar #'buffer-name (copilot-chat--get-buffers))
+        (mapcar #'buffer-name (buffer-list))
         nil t (buffer-name (current-buffer)))))
-  (mapc #'copilot-chat--del-buffer buffers)
-  (copilot-chat-list-refresh))
+  (let ((instance (copilot-chat--current-instance)))
+    (mapc (lambda (buf)
+            (copilot-chat--del-buffer instance buf))
+      buffers)
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-add-file (file-path)
   "Add FILE-PATH to copilot-chat buffers without changing current window layout."
