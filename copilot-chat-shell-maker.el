@@ -36,7 +36,7 @@
 (require 'copilot-chat-instance)
 
 ;; Constants
-(defconst copilot-chat--shell-maker-temp-buffer
+(defconst copilot-chat--shell-maker-temp-buffer-prefix
   "*copilot-chat-shell-maker-temp "
   "Temporary buffer prefix for Copilot Chat shell-maker.")
 
@@ -51,7 +51,7 @@
 (defun copilot-chat--shell-maker-temp-buffer-name (instance)
   "Return the temporary buffer name for the Copilot Chat shell-maker.
 INSTANCE is used to get directory"
-  (concat copilot-chat--shell-maker-temp-buffer
+  (concat copilot-chat--shell-maker-temp-buffer-prefix
     (copilot-chat-directory instance)
     "*"))
 
@@ -59,14 +59,14 @@ INSTANCE is used to get directory"
 (defun copilot-chat--shell-maker-get-buffer (instance)
   "Create or retrieve the Copilot Chat shell-maker buffer."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
-    (setf (copilot-chat-chat-buffer instance) (copilot-chat--shell instance)))
-  (let ( (tempb (if (copilot-chat-shell-maker-tmp-buf instance)
-                  (copilot-chat-shell-maker-tmp-buf instance)
-                  (get-buffer-create (copilot-chat--shell-maker-temp-buffer-name instance))))
-         (inhibit-read-only t))
+    (setf (copilot-chat-chat-buffer instance)
+      (copilot-chat--shell instance)))
+  (let ((tempb (or (copilot-chat-shell-maker-tmp-buf instance)
+                 (get-buffer-create (copilot-chat--shell-maker-temp-buffer-name instance)))))
     (setf (copilot-chat-shell-maker-tmp-buf instance) tempb)
     (with-current-buffer tempb
-      (markdown-view-mode))
+      (let ((inhibit-read-only t))
+        (markdown-view-mode)))
     (copilot-chat-chat-buffer instance)))
 
 (defun copilot-chat--shell-maker-font-lock-faces (instance)
