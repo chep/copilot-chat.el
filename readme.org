@@ -140,6 +140,8 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-add-current-buffer)~ add current buffer to copilot chat. Its content will be sent with every request.
 - ~(copilot-chat-del-current-buffer)~ remove current buffer.
 - ~(copilot-chat-list)~ open buffer list.
+- ~(copilot-chat-add-buffers)~ ask for buffers and add them to copilot chat context.
+- ~(copilot-chat-del-buffers)~ ask for buffers and remove them from copilot chat context.
 - ~(copilot-chat-add-buffers-in-current-window)~ add all buffers in current Emacs window to copilot chat.
 - ~(copilot-chat-add-files-under-dir)~ Add all files with same suffix as current file under current directory. If there are more than 40 files, refuse to add and show warning message.
   
