@@ -400,6 +400,16 @@ If there are more than 40 files, refuse to add and show warning message."
         (message "Added %d files with suffix .%s"
           (length files) current-suffix)))))
 
+(defun copilot-chat--buffer-list (instance)
+  "Return a list of buffer with files in INSTANCE directory."
+  (let ((dir (copilot-chat-directory instance)))
+    (cl-remove-if-not
+      (lambda (buf)
+        (with-current-buffer buf
+          (and buffer-file-name
+            (file-in-directory-p buffer-file-name dir))))
+      (buffer-list))))
+
 (defun copilot-chat-list-refresh (&optional instance)
   "Refresh the list of buffers in the current Copilot chat list buffer.
 Optional argument INSTANCE specifies which instance to refresh the list for."
@@ -411,7 +421,7 @@ Optional argument INSTANCE specifies which instance to refresh the list for."
             (inhibit-read-only t)
             (buffers (if copilot-chat-list-added-buffers-only
                        (copilot-chat-buffers instance)
-                       (buffer-list)))
+                       (copilot-chat--buffer-list instance)))
             (sorted-buffers (sort buffers
                               (lambda (a b)
                                 (string< (symbol-name (buffer-local-value 'major-mode a))
