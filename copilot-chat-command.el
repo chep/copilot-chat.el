@@ -468,7 +468,7 @@ Optional argument INSTANCE specifies which instance to refresh the list for."
   "Clear all buffers from the Copilot chat list."
   (interactive)
   (let ((instance (copilot-chat--current-instance)))
-    (copilot-chat--clear-buffers)
+    (copilot-chat--clear-buffers instance)
     (message "Cleared all buffers from Copilot chat list.")
     (copilot-chat-list-refresh instance)))
 
