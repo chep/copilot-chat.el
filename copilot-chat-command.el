@@ -409,13 +409,14 @@ If there are more than 40 files, refuse to add and show warning message."
 
 (defun copilot-chat--buffer-list (instance)
   "Return a list of buffer with files in INSTANCE directory."
-  (let ((dir (copilot-chat-directory instance)))
-    (cl-remove-if-not
-      (lambda (buf)
-        (with-current-buffer buf
-          (and buffer-file-name
-            (file-in-directory-p buffer-file-name dir))))
-      (buffer-list))))
+  (let* ( (dir (copilot-chat-directory instance))
+          (bufs-under-dir (cl-remove-if-not
+                            (lambda (buf)
+                              (with-current-buffer buf
+                                (and buffer-file-name
+                                  (file-in-directory-p buffer-file-name dir))))
+                            (buffer-list))))
+    (cl-union bufs-under-dir (copilot-chat-buffers instance) :test #'eq)))
 
 (defun copilot-chat-list-refresh (&optional instance)
   "Refresh the list of buffers in the current Copilot chat list buffer.
