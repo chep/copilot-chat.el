@@ -92,24 +92,35 @@
 
 (defun copilot-chat--create (directory)
   "Create a new Copilot chat instance with DIRECTORY as source directory."
-  (copilot-chat--make
-    :directory directory
-    :model copilot-chat-default-model
-    :chat-buffer nil
-    :first-word-answer t
-    :history nil
-    :buffers nil
-    :prompt-history nil
-    :prompt-history-position nil
-    :yank-index 1
-    :last-yank-start nil
-    :last-yank-end nil
-    :spinner-timer nil
-    :spinner-index 0
-    :spinner-status nil
-    :curl-answer nil
-    :curl-file nil
-    :curl-current-data nil))
+  ;; Load models from cache if available
+  (let ( (instance (copilot-chat--make
+                     :directory directory
+                     :model copilot-chat-default-model
+                     :chat-buffer nil
+                     :first-word-answer t
+                     :history nil
+                     :buffers nil
+                     :prompt-history nil
+                     :prompt-history-position nil
+                     :yank-index 1
+                     :last-yank-start nil
+                     :last-yank-end nil
+                     :spinner-timer nil
+                     :spinner-index 0
+                     :spinner-status nil
+                     :curl-answer nil
+                     :curl-file nil
+                     :curl-current-data nil))
+         (cached-models (copilot-chat--load-models-from-cache)))
+    (when cached-models
+      (setf (copilot-chat-connection-models copilot-chat--connection)
+        cached-models)
+      (message "Loaded models from cache. %d models available." (length cached-models)))
+
+    ;; Schedule background model fetching with slight delay
+    (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
+
+    instance))
 
 (defun copilot-chat--fetch-models-async ()
   "Fetch models asynchronously in the background."
