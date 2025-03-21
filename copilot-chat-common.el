@@ -142,10 +142,6 @@ is not `true' are not included in the model selection by default."
   "Global instance of Copilot chat.")
 
 ;; Functions
-(defun copilot-chat--should-fetch-models-p ()
-  "Return t if models should be fetched."
-  t)
-
 (defun copilot-chat--uuid ()
   "Generate a UUID."
   (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"
