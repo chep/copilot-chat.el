@@ -33,6 +33,7 @@
 (require 'copilot-chat-curl)
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-prompt-mode)
+(require 'copilot-chat-instance)
 
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-org)
@@ -69,56 +70,61 @@ Supports glob patterns like `*.lock' or `node_modules/'."
   :group 'copilot-chat)
 
 ;; Variables
-(defvar copilot-chat-list-buffer "*Copilot-chat-list*")
 (defvar copilot-chat-list-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'copilot-chat-list-add-or-remove-buffer)
     (define-key map (kbd "SPC") 'copilot-chat-list-add-or-remove-buffer)
     (define-key map (kbd "C-c C-c") 'copilot-chat-list-clear-buffers)
-    (define-key map (kbd "g") 'copilot-chat-list-refresh)
+    (define-key map (kbd "g") (lambda()
+                                (interactive)
+                                (copilot-chat-list-refresh (copilot-chat--current-instance))))
     (define-key map (kbd "q") (lambda()
                                 (interactive)
                                 (bury-buffer)
                                 (delete-window)))
     map)
   "Keymap for `copilot-chat-list-mode'.")
-(defvar copilot-chat--prompt-history nil
-  "Copilot-chat prompt history.")
-(defvar copilot-chat--prompt-history-position nil
-  "Current position in copilot-chat prompt history.")
 
 ;; Functions
 (define-derived-mode copilot-chat-list-mode special-mode "Copilot Chat List"
   "Major mode for listing and managing buffers in Copilot chat."
-  (setq buffer-read-only t)
-  (copilot-chat-list-refresh))
+  (setq buffer-read-only t))
 
 (defun copilot-chat-prompt-send ()
-  "Function to send the prompt content."
+  "Send the prompt content to Copilot.
+Retrieves the current prompt, displays it in the chat buffer, and sends it
+to Copilot for processing."
   (interactive)
-  (copilot-chat-display)
-  (let ((prompt (copilot-chat--pop-current-prompt)))
-    (copilot-chat--write-buffer (copilot-chat--format-data prompt 'prompt) nil)
-    (push prompt copilot-chat--prompt-history)
-    (setq copilot-chat--prompt-history-position nil)
-    (copilot-chat--ask prompt 'copilot-chat-prompt-cb)))
+  (let ((instance (copilot-chat--current-instance)))
+    (when instance
+      (copilot-chat--display instance)
+      (let ((prompt (copilot-chat--pop-current-prompt instance)))
+        (copilot-chat--write-buffer instance
+          (copilot-chat--format-data instance prompt 'prompt) nil)
+        (push prompt (copilot-chat-prompt-history instance))
+        (setf (copilot-chat-prompt-history-position instance) nil)
+        (copilot-chat--ask instance prompt 'copilot-chat-prompt-cb)))))
 
 ;;;###autoload
 (defun copilot-chat-ask-and-insert()
   "Send to Copilot a custom prompt and insert answer in current buffer at point."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (let* ((prompt (read-from-minibuffer "Copilot prompt: "))
+  (let* ((instance (copilot-chat--current-instance))
+          (prompt (read-from-minibuffer "Copilot prompt: "))
           (current-buf (current-buffer)))
-    (copilot-chat--ask prompt (lambda (content)
-                                (copilot-chat-prompt-cb content current-buf)))))
+    (copilot-chat--ask
+      instance
+      prompt
+      (lambda (instance content)
+        (copilot-chat-prompt-cb instance content current-buf)))))
 
 (defun copilot-chat--ask-region(prompt)
   "Send to Copilot a prompt followed by the current selected code.
 Argument PROMPT is the prompt to send to Copilot."
-  (let ((code (buffer-substring-no-properties (region-beginning) (region-end))))
+  (let ((instance (copilot-chat--current-instance))
+         (code (buffer-substring-no-properties (region-beginning) (region-end))))
     (copilot-chat--insert-and-send-prompt
+      instance
       (concat (cdr (assoc prompt (copilot-chat--prompts)))
         (copilot-chat--format-code code)))))
 
@@ -126,63 +132,56 @@ Argument PROMPT is the prompt to send to Copilot."
 (defun copilot-chat-explain()
   "Ask Copilot to explain the current selected code."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
   (copilot-chat--ask-region 'explain))
 
 ;;;###autoload
 (defun copilot-chat-review()
   "Ask Copilot to review the current selected code."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
   (copilot-chat--ask-region 'review))
 
 ;;;###autoload
 (defun copilot-chat-doc()
   "Ask Copilot to write documentation for the current selected code."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
   (copilot-chat--ask-region 'doc))
 
 ;;;###autoload
 (defun copilot-chat-fix()
   "Ask Copilot to fix the current selected code."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
   (copilot-chat--ask-region 'fix))
 
 ;;;###autoload
 (defun copilot-chat-optimize()
   "Ask Copilot to optimize the current selected code."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
   (copilot-chat--ask-region 'optimize))
 
 ;;;###autoload
 (defun copilot-chat-test ()
   "Ask Copilot to generate test for the current selected code."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
   (copilot-chat--ask-region 'test))
 
-(defun copilot-chat--insert-prompt (prompt)
-  "Insert PROMPT in the Copilot Chat prompt region."
+(defun copilot-chat--insert-prompt (instance prompt)
+  "Insert PROMPT in the Copilot Chat prompt region.
+Argument INSTANCE is the copilot chat instance to use.
+Argument PROMPT is the text to insert in the prompt region."
   (let ((prompt-fn (copilot-chat-frontend-insert-prompt-fn (copilot-chat--get-frontend))))
     (when prompt-fn
-      (funcall prompt-fn prompt))))
+      (funcall prompt-fn instance prompt))))
 
-(defun copilot-chat--insert-and-send-prompt (prompt)
-  "Helper function to prepare buffer and send PROMPT to Copilot."
-  (copilot-chat--insert-prompt prompt)
+(defun copilot-chat--insert-and-send-prompt (instance prompt)
+  "Helper function to prepare buffer and send PROMPT to Copilot.
+Argument INSTANCE is the copilot chat instance to use.
+Argument PROMPT is the text to send to Copilot."
+  (copilot-chat--insert-prompt instance prompt)
   (copilot-chat-prompt-send))
 
 (defun copilot-chat--get-language ()
-  "Get the current language of the buffer."
+  "Get the current language of the buffer.
+Derives language name from the major mode of the current buffer."
   (if (derived-mode-p 'prog-mode)  ; current buffer is a programming language buffer
     (let* ((major-mode-str (symbol-name major-mode))
             (lang (replace-regexp-in-string "\\(?:-ts\\)?-mode$" "" major-mode-str)))
@@ -190,7 +189,8 @@ Argument PROMPT is the prompt to send to Copilot."
     nil))
 
 (defun copilot-chat--format-code(code)
-  "Format the CODE according to the frontend."
+  "Format code according to the frontend.
+Argument CODE is the code to be formatted."
   (let ((format-fn (copilot-chat-frontend-format-code-fn (copilot-chat--get-frontend))))
     (if format-fn
       (funcall format-fn code (copilot-chat--get-language))
@@ -201,15 +201,14 @@ Argument PROMPT is the prompt to send to Copilot."
   "Ask Copilot to explain symbol under point.
 Given the code line as background info."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (let* ((symbol (thing-at-point 'symbol))
+  (let* ((instance (copilot-chat--current-instance))
+          (symbol (thing-at-point 'symbol))
           (line (buffer-substring-no-properties
                   (line-beginning-position)
                   (line-end-position)))
           (prompt (format "Please explain what '%s' means in the context of this code line:\n%s"
                     symbol (copilot-chat--format-code line))))
-    (copilot-chat--insert-and-send-prompt prompt)))
+    (copilot-chat--insert-and-send-prompt instance prompt)))
 
 ;;;###autoload
 (defun copilot-chat-explain-defun ()
@@ -245,49 +244,51 @@ It can be used to review the magit diff for my change, or other people's"
   "Switch to Copilot Chat buffer.
 Side by side with the current code editing buffer."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (switch-to-buffer-other-window (copilot-chat--get-buffer)))
+  (let ((instance (copilot-chat--current-instance)))
+    (switch-to-buffer-other-window (copilot-chat--get-buffer instance))))
 
 ;;;###autoload
 (defun copilot-chat-custom-prompt-selection(&optional custom-prompt)
   "Send to Copilot a custom prompt followed by the current selected code/buffer.
 If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
-
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (let* ((prompt (or custom-prompt (read-from-minibuffer "Copilot prompt: ")))
+  (let* ((instance (copilot-chat--current-instance))
+          (prompt (or custom-prompt (read-from-minibuffer "Copilot prompt: ")))
           (code (if (use-region-p)
                   (buffer-substring-no-properties (region-beginning) (region-end))
                   (buffer-substring-no-properties (point-min) (point-max))))
           (formatted-prompt (concat prompt "\n" (copilot-chat--format-code code))))
-    (copilot-chat--insert-and-send-prompt formatted-prompt)))
+    (copilot-chat--insert-and-send-prompt instance formatted-prompt)))
 
 ;;;###autoload
 (defun copilot-chat-custom-prompt-mini-buffer ()
   "Read a string with Helm completion, showing historical inputs."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (let* ((prompt "Question for copilot-chat: ")
+  (let* ((instance (copilot-chat--current-instance))
+          (prompt "Question for copilot-chat: ")
           (input (read-string prompt nil 'copilot-chat--prompt-history)))
-    (copilot-chat--insert-and-send-prompt input)))
+    (copilot-chat--insert-and-send-prompt instance input)))
 
 ;;;###autoload
 (defun copilot-chat-list ()
   "Open Copilot Chat list buffer."
   (interactive)
-  (let ((buffer (get-buffer-create copilot-chat-list-buffer)))
+  (let* ( (instance (copilot-chat--current-instance))
+          (buffer (copilot-chat--get-list-buffer-create instance)))
     (with-current-buffer buffer
       (copilot-chat-list-mode))
+    (copilot-chat-list-refresh instance)
     (switch-to-buffer buffer)))
 
-(defun copilot-chat--display ()
-  "Internal function to display copilot chat buffer."
-  (let ((base-buffer (copilot-chat--get-buffer))
+(defun copilot-chat--display (instance)
+  "Internal function to display copilot chat buffer.
+Argument INSTANCE is the copilot chat instance to display."
+  (let ((base-buffer (copilot-chat--get-buffer instance))
+         (init-fn (copilot-chat-frontend-init-fn
+                    (copilot-chat--get-frontend)))
          (window-found nil))
-
+    (when init-fn
+      (funcall init-fn))
     ;; Check if any window is already displaying the base buffer or an indirect
     ;; buffer
     (cl-block window-search
@@ -304,18 +305,22 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
       (pop-to-buffer base-buffer))))
 
 ;;;###autoload
-(defun copilot-chat-display ()
-  "Display copilot chat buffer."
-  (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-  (copilot-chat--display))
+(defun copilot-chat-display (&optional arg)
+  "Display copilot chat buffer.
+With prefix argument, explicitly ask for which instance to use.
+Optional argument ARG if non-nil, force instance selection."
+  (interactive "P")
+  (let ((instance (if arg
+                    (copilot-chat--ask-for-instance)
+                    (copilot-chat--current-instance))))
+    (copilot-chat--display instance)))
 
 ;;;###autoload
 (defun copilot-chat-hide ()
   "Hide copilot chat buffer."
   (interactive)
-  (let ((base-buffer (copilot-chat--get-buffer)))
+  (let* ((instance (copilot-chat--current-instance))
+          (base-buffer (copilot-chat--get-buffer instance)))
     (dolist (window (window-list))
       (let ((buf (window-buffer window)))
         (when (or (eq buf base-buffer)
@@ -325,14 +330,16 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
 (defun copilot-chat-add-current-buffer ()
   "Add current buffer in sent buffers list."
   (interactive)
-  (copilot-chat--add-buffer (current-buffer))
-  (copilot-chat-list-refresh))
+  (let ((instance (copilot-chat--current-instance)))
+    (copilot-chat--add-buffer instance (current-buffer))
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-del-current-buffer ()
   "Remove current buffer from sent buffers list."
   (interactive)
-  (copilot-chat--del-buffer (current-buffer))
-  (copilot-chat-list-refresh))
+  (let ((instance (copilot-chat--current-instance)))
+    (copilot-chat--del-buffer instance (current-buffer))
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-add-buffers (buffers)
   "Add BUFFERS to sent buffers list."
@@ -340,18 +347,24 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
     (list (completing-read-multiple "Buffers: "
             (mapcar #'buffer-name (buffer-list))
             nil t (buffer-name (current-buffer)))))
-  (mapc #'copilot-chat--add-buffer buffers)
-  (copilot-chat-list-refresh))
+  (let ((instance (copilot-chat--current-instance)))
+    (mapc (lambda (buf)
+            (copilot-chat--add-buffer instance buf))
+      buffers)
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-del-buffers (buffers)
   "Remove BUFFERS from sent buffers list."
   (interactive
     (list
       (completing-read-multiple "Buffers: "
-        (mapcar #'buffer-name (copilot-chat--get-buffers))
+        (mapcar #'buffer-name (buffer-list))
         nil t (buffer-name (current-buffer)))))
-  (mapc #'copilot-chat--del-buffer buffers)
-  (copilot-chat-list-refresh))
+  (let ((instance (copilot-chat--current-instance)))
+    (mapc (lambda (buf)
+            (copilot-chat--del-buffer instance buf))
+      buffers)
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-add-file (file-path)
   "Add FILE-PATH to copilot-chat buffers without changing current window layout."
@@ -394,23 +407,37 @@ If there are more than 40 files, refuse to add and show warning message."
         (message "Added %d files with suffix .%s"
           (length files) current-suffix)))))
 
-(defun copilot-chat-list-refresh ()
-  "Refresh the list of buffers in the current Copilot chat list buffer."
+(defun copilot-chat--buffer-list (instance)
+  "Return a list of buffer with files in INSTANCE directory."
+  (let* ( (dir (copilot-chat-directory instance))
+          (bufs-under-dir (cl-remove-if-not
+                            (lambda (buf)
+                              (with-current-buffer buf
+                                (and buffer-file-name
+                                  (file-in-directory-p buffer-file-name dir))))
+                            (buffer-list))))
+    (cl-union bufs-under-dir (copilot-chat-buffers instance) :test #'eq)))
+
+(defun copilot-chat-list-refresh (&optional instance)
+  "Refresh the list of buffers in the current Copilot chat list buffer.
+Optional argument INSTANCE specifies which instance to refresh the list for."
   (interactive)
-  (let* ((pt (point))
-          (inhibit-read-only t)
-          (buffers (if copilot-chat-list-added-buffers-only
-                     (copilot-chat-buffers copilot-chat--instance)
-                     (buffer-list)))
-          (sorted-buffers (sort buffers
-                            (lambda (a b)
-                              (string< (symbol-name (buffer-local-value 'major-mode a))
-                                (symbol-name (buffer-local-value 'major-mode b)))))))
-    (with-current-buffer (get-buffer-create copilot-chat-list-buffer)
+  (unless instance
+    (setq instance (copilot-chat--current-instance)))
+  (with-current-buffer (copilot-chat--get-list-buffer-create instance)
+    (let* ( (pt (point))
+            (inhibit-read-only t)
+            (buffers (if copilot-chat-list-added-buffers-only
+                       (copilot-chat-buffers instance)
+                       (copilot-chat--buffer-list instance)))
+            (sorted-buffers (sort buffers
+                              (lambda (a b)
+                                (string< (symbol-name (buffer-local-value 'major-mode a))
+                                  (symbol-name (buffer-local-value 'major-mode b)))))))
       (erase-buffer)
       (dolist (buffer sorted-buffers)
         (let ((buffer-name (buffer-name buffer))
-               (cop-bufs (copilot-chat--get-buffers)))
+               (cop-bufs (copilot-chat--get-buffers instance)))
           (when (and (not (string-prefix-p " " buffer-name))
                   (not (string-prefix-p "*" buffer-name)))
             (insert (propertize buffer-name
@@ -424,24 +451,26 @@ If there are more than 40 files, refuse to add and show warning message."
 (defun copilot-chat-list-add-or-remove-buffer ()
   "Add or remove the buffer at point from the Copilot chat list."
   (interactive)
-  (let* ((buffer-name (buffer-substring (line-beginning-position) (line-end-position)))
+  (let* ( (instance (copilot-chat--current-instance))
+          (buffer-name (buffer-substring (line-beginning-position) (line-end-position)))
           (buffer (get-buffer buffer-name))
-          (cop-bufs (copilot-chat--get-buffers)))
+          (cop-bufs (copilot-chat--get-buffers instance)))
     (when buffer
       (if (member buffer cop-bufs)
         (progn
-          (copilot-chat--del-buffer buffer)
+          (copilot-chat--del-buffer instance buffer)
           (message "Buffer '%s' removed from Copilot chat list." buffer-name))
-        (copilot-chat--add-buffer buffer)
+        (copilot-chat--add-buffer instance buffer)
         (message "Buffer '%s' added to Copilot chat list." buffer-name)))
-    (copilot-chat-list-refresh)))
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-list-clear-buffers ()
   "Clear all buffers from the Copilot chat list."
   (interactive)
-  (copilot-chat--clear-buffers)
-  (message "Cleared all buffers from Copilot chat list.")
-  (copilot-chat-list-refresh))
+  (let ((instance (copilot-chat--current-instance)))
+    (copilot-chat--clear-buffers instance)
+    (message "Cleared all buffers from Copilot chat list.")
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-prompt-split-and-list()
   "Split prompt window and display buffer list."
@@ -456,52 +485,64 @@ If there are more than 40 files, refuse to add and show warning message."
 (defun copilot-chat-prompt-history-previous()
   "Insert previous prompt in prompt buffer."
   (interactive)
-  (let ((prompt (if (null copilot-chat--prompt-history)
-                  nil
-                  (if (null copilot-chat--prompt-history-position)
-                    (progn
-                      (setq copilot-chat--prompt-history-position 0)
-                      (car copilot-chat--prompt-history))
-                    (if (= copilot-chat--prompt-history-position (1- (length copilot-chat--prompt-history)))
-                      (car (last copilot-chat--prompt-history))
-                      (setq copilot-chat--prompt-history-position (1+ copilot-chat--prompt-history-position))
-                      (nth copilot-chat--prompt-history-position copilot-chat--prompt-history))))))
+  (let* ( (instance (copilot-chat--current-instance))
+          (prompt (if (null (copilot-chat-prompt-history instance))
+                    nil
+                    (if (null (copilot-chat-prompt-history-position instance))
+                      (progn
+                        (setf (copilot-chat-prompt-history-position instance) 0)
+                        (car (copilot-chat-prompt-history instance)))
+                      (if (= (copilot-chat-prompt-history-position instance)
+                            (1- (length (copilot-chat-prompt-history instance))))
+                        (car (last (copilot-chat-prompt-history instance)))
+                        (setf (copilot-chat-prompt-history-position instance)
+                          (1+ (copilot-chat-prompt-history-position instance)))
+                        (nth (copilot-chat-prompt-history-position instance) (copilot-chat-prompt-history instance)))))))
     (when prompt
-      (copilot-chat--insert-prompt prompt))))
+      (copilot-chat--insert-prompt instance prompt))))
 
 
 (defun copilot-chat-prompt-history-next()
   "Insert next prompt in prompt buffer."
   (interactive)
-  (let ((prompt (if (null copilot-chat--prompt-history)
-                  nil
-                  (if (null copilot-chat--prompt-history-position)
+  (let* ((instance (copilot-chat--current-instance))
+          (prompt (if (null (copilot-chat-prompt-history instance))
                     nil
-                    (if (= 0 copilot-chat--prompt-history-position)
-                      ""
-                      (progn
-                        (setq copilot-chat--prompt-history-position (1- copilot-chat--prompt-history-position))
-                        (nth copilot-chat--prompt-history-position copilot-chat--prompt-history)))))))
+                    (if (null (copilot-chat-prompt-history-position instance))
+                      nil
+                      (if (= 0 (copilot-chat-prompt-history-position instance))
+                        ""
+                        (progn
+                          (setf (copilot-chat-prompt-history-position instance)
+                            (1- (copilot-chat-prompt-history-position instance)))
+                          (nth (copilot-chat-prompt-history-position instance) (copilot-chat-prompt-history instance))))))))
     (when prompt
-      (copilot-chat--insert-prompt prompt))))
+      (copilot-chat--insert-prompt instance prompt))))
 
 (defun copilot-chat-reset (&optional keep-buffers)
   "Reset copilot chat session.
 When called interactively with prefix argument, preserve the buffer list.
 Optional argument KEEP-BUFFERS if non-nil, preserve the current buffer list."
   (interactive "P")
-  (let ((old-buffers (when keep-buffers
-                       (copilot-chat-buffers copilot-chat--instance)))
-         (buf (copilot-chat--get-buffer))
-         (init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend))))
+  (let* ( (instance (copilot-chat--current-instance))
+          (old-buffers (when keep-buffers
+                         (copilot-chat-buffers instance)))
+          (buf (copilot-chat--get-buffer instance)))
     (when (buffer-live-p buf)
       (kill-buffer buf))
-    (copilot-chat--create)
-    (when init-fn
-      (funcall init-fn))
-    (when old-buffers
-      (setf (copilot-chat-buffers copilot-chat--instance) old-buffers))
-    (copilot-chat-list-refresh)))
+    (setf (copilot-chat-history instance) nil
+      (copilot-chat-prompt-history instance) nil
+      (copilot-chat-prompt-history-position instance) nil
+      (copilot-chat-yank-index instance) 1
+      (copilot-chat-last-yank-start instance) nil
+      (copilot-chat-last-yank-end instance) nil
+      (copilot-chat-spinner-timer instance) nil
+      (copilot-chat-spinner-index instance) 0
+      (copilot-chat-spinner-status instance) nil)
+    (unless old-buffers
+      (setf (copilot-chat-buffers instance) nil))
+    (copilot-chat--display instance)
+    (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat--clean()
   "Cleaning function."
@@ -558,10 +599,11 @@ lock files and build artifacts."
 (defun copilot-chat-goto-input()
   "Go to the input area."
   (interactive)
-  (when (equal (pm-base-buffer) (copilot-chat--get-buffer))
-    (let ((goto-fn (copilot-chat-frontend-goto-input-fn (copilot-chat--get-frontend))))
-      (when goto-fn
-        (funcall goto-fn)))))
+  (let ((instance (copilot-chat--current-instance)))
+    (when (equal (pm-base-buffer) (copilot-chat--get-buffer instance))
+      (let ((goto-fn (copilot-chat-frontend-goto-input-fn (copilot-chat--get-frontend))))
+        (when goto-fn
+          (funcall goto-fn))))))
 
 (defun copilot-chat--debug (category format-string &rest args)
   "Print debug message when `copilot-chat-debug' is enabled.
@@ -592,11 +634,9 @@ Uses the current staged changes in git
 to generate an appropriate commit message.
 Requires the repository to have staged changes."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-
   ;; Get magit staged diff
-  (let* ((diff (copilot-chat--get-diff))
+  (let* ((instance (copilot-chat--current-instance))
+          (diff (copilot-chat--get-diff))
           (prompt (concat copilot-chat-commit-prompt diff))
           (current-buf (current-buffer))
           (start-pos (point))
@@ -614,7 +654,7 @@ Requires the repository to have staged changes."
     ;; Debug messages using structured format
     (copilot-chat--debug 'commit "Starting commit message generation")
     (copilot-chat--debug 'commit "Diff size: %d bytes, Model: %s"
-      (length diff) copilot-chat-model)
+      (length diff) (copilot-chat-model instance))
 
     (cond
       ((string-empty-p diff)
@@ -630,21 +670,20 @@ Requires the repository to have staged changes."
         (goto-char start-pos)
 
         (when (fboundp 'copilot-chat--spinner-start)
-          (let ((copilot-chat--buffer current-buf))
-            (copilot-chat--spinner-start)))
+          (copilot-chat--spinner-start instance))
 
         ;; Ask Copilot with streaming response
         (copilot-chat--ask
+          instance
           prompt
-          (lambda (content)
+          (lambda (instance content)
             (with-current-buffer current-buf
               (save-excursion
                 (if (string= content copilot-chat--magic)
                   ;; End of streaming
                   (progn
                     (when (fboundp 'copilot-chat--spinner-stop)
-                      (let ((copilot-chat--buffer current-buf))
-                        (copilot-chat--spinner-stop)))
+                      (copilot-chat--spinner-stop instance))
                     (with-current-buffer current-buf
                       (save-excursion
                         (goto-char start-pos)
@@ -666,7 +705,7 @@ Requires the repository to have staged changes."
                     ;; If this is the first response chunk, update the UI accordingly
                     (when (string= accumulated-content "")
                       (if (fboundp 'copilot-chat--spinner-set-status)
-                        (copilot-chat--spinner-set-status "Generating")
+                        (copilot-chat--spinner-set-status instance "Generating")
                         (message "Generating commit message...")))
 
                     ;; Handle error messages
@@ -703,8 +742,9 @@ waiting for fetch if needed.
 If models haven't been fetched yet and no cache exists,
 wait for the fetch to complete."
   (let ((models (if copilot-chat-model-ignore-picker
-                  (copilot-chat-models copilot-chat--instance)
-                  (seq-filter #'copilot-chat--model-picker-enabled (copilot-chat-models copilot-chat--instance)))))
+                  (copilot-chat-connection-models copilot-chat--connection)
+                  (seq-filter #'copilot-chat--model-picker-enabled (copilot-chat-connection-models
+                                                                     copilot-chat--connection)))))
     (if models
       (let* ((model-info-list
                (mapcar (lambda (model)
@@ -763,15 +803,11 @@ wait for the fetch to complete."
           (lambda (a b) (string< (cdr a) (cdr b)))))
       ;; No models available - fetch and wait
       (progn
-        ;; If not initialized, initialize copilot-chat
-        (unless (copilot-chat--ready-p)
-          (copilot-chat-reset))
-
         ;; Try loading from cache first
         (let ((cached-models (copilot-chat--load-models-from-cache)))
           (if cached-models
             (progn
-              (setf (copilot-chat-models copilot-chat--instance) cached-models)
+              (setf (copilot-chat-connection-models copilot-chat--connection) cached-models)
               (copilot-chat--get-model-choices-with-wait))
             ;; No cache - need to fetch
             (message "No models available. Fetching from API...")
@@ -780,17 +816,16 @@ wait for the fetch to complete."
               (copilot-chat--request-models t)
               ;; Wait for models to be fetched (with timeout)
               (with-timeout (10 (error "Timeout waiting for models to be fetched"))
-                (while (not (copilot-chat-models copilot-chat--instance))
+                (while (not (copilot-chat-connection-models copilot-chat--connection))
                   (sit-for 0.1)))
               (copilot-chat--get-model-choices-with-wait))))))))
-
 
 ;;;###autoload
 (defun copilot-chat-set-model (model)
   "Set the Copilot Chat model to MODEL.
 Fetches available models from the API if not already fetched."
   (interactive
-    (let* ((choices (copilot-chat--get-model-choices-with-wait))
+    (let* ( (choices (copilot-chat--get-model-choices-with-wait))
             (max-id-width (apply #'max (mapcar (lambda (choics) (length (cdr choics))) choices)))
             ;; Create completion list with ID as prefix for unique identification
             (completion-choices (mapcar (lambda (choice)
@@ -807,41 +842,41 @@ Fetches available models from the API if not already fetched."
           (message "Setting model to: %s" model-value))
         (list model-value))))
 
-  ;; Check if we need to initialize Copilot chat first
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-
   ;; Set the model value
-  (setq copilot-chat-model model)
-  (customize-save-variable 'copilot-chat-model copilot-chat-model)
-  (message "Copilot Chat model set to %s" copilot-chat-model))
+  (let ((instance (copilot-chat--current-instance)))
+    (setf (copilot-chat-model instance) model)
+    (message "Copilot Chat model set to %s" model)))
 
 (defun copilot-chat-yank()
   "Insert last code block given by copilot-chat."
   (interactive)
-  (setq copilot-chat--yank-index 1
-    copilot-chat--last-yank-start nil
-    copilot-chat--last-yank-end nil)
-  (copilot-chat--yank))
+  (let ((instance (copilot-chat--current-instance)))
+    (setf
+      (copilot-chat-yank-index instance) 1
+      (copilot-chat-last-yank-start instance) nil
+      (copilot-chat-last-yank-end instance) nil)
+    (copilot-chat--yank instance)))
 
 (defun copilot-chat-yank-pop(&optional inc)
   "Replace just-yanked code block with a different block.
 INC is the number to use as increment for index in block ring."
   (interactive "*p")
-  (if (not (eq last-command 'copilot-chat-yank-pop))
-    (unless (eq last-command 'copilot-chat-yank)
-      (error "Previous command was not a yank")))
-  (if inc
-    (setq copilot-chat--yank-index (+ copilot-chat--yank-index inc))
-    (setq copilot-chat--yank-index (1+ copilot-chat--yank-index)))
-  (copilot-chat--yank)
-  (setq this-command 'copilot-chat-yank-pop))
+  (let ((instance (copilot-chat--current-instance)))
+    (if (not (eq last-command 'copilot-chat-yank-pop))
+      (unless (eq last-command 'copilot-chat-yank)
+        (error "Previous command was not a yank")))
+    (if inc
+      (setf (copilot-chat-yank-index instance) (+ (copilot-chat-yank-index instance) inc))
+      (setf (copilot-chat-yank-index instance) (1+ (copilot-chat-yank-index instance))))
+    (copilot-chat--yank instance)
+    (setq this-command 'copilot-chat-yank-pop)))
 
-(defun copilot-chat--yank()
-  "Insert the code block at the current index in the block ring."
+(defun copilot-chat--yank(instance)
+  "Insert at point the code block at the current index in the block ring.
+Argument INSTANCE is the copilot chat instance to use."
   (let ((yank-fn (copilot-chat-frontend-yank-fn (copilot-chat--get-frontend))))
     (when yank-fn
-      (funcall yank-fn))))
+      (funcall yank-fn instance))))
 
 ;;;###autoload
 (defun copilot-chat-clear-auth-cache()
@@ -856,7 +891,7 @@ INC is the number to use as increment for index in block ring."
     (when (file-exists-p github-token-file)
       (delete-file github-token-file)))
   (message "Auth cache cleared.")
-  (copilot-chat--create))
+  (setq copilot-chat--connection (copilot-chat-connection--make)))
 
 ;;;###autoload
 (defun copilot-chat-reset-models()
@@ -864,12 +899,9 @@ INC is the number to use as increment for index in block ring."
 This is useful when GitHub adds new models or updates model capabilities.
 Clears model cache from memory and disk, then triggers background fetch."
   (interactive)
-  (unless (copilot-chat--ready-p)
-    (copilot-chat-reset))
-
-  ;; Clear models from instance
-  (setf (copilot-chat-models copilot-chat--instance) nil)
-  (setf (copilot-chat-last-models-fetch-time copilot-chat--instance) 0)
+  ;; Clear models
+  (setf (copilot-chat-connection-models copilot-chat--connection) nil)
+  (setf (copilot-chat-connection-last-models-fetch-time copilot-chat--connection) 0)
 
   ;; Remove cached models file if it exists
   (let ((models-cache-file (expand-file-name copilot-chat-models-cache-file)))
@@ -884,6 +916,17 @@ Clears model cache from memory and disk, then triggers background fetch."
 
   ;; Return nil for programmatic usage
   nil)
+
+(defun copilot-chat--get-list-buffer-create (instance)
+  "Get or create the Copilot chat list buffer for INSTANCE."
+  (let ((list-buffer (get-buffer-create
+                       (concat copilot-chat-list-buffer
+                         "-"
+                         (copilot-chat-directory instance)
+                         "*"))))
+    (with-current-buffer list-buffer
+      (setq-local default-directory (copilot-chat-directory instance)))
+    list-buffer))
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here

@@ -15,12 +15,13 @@ v2.0.1 is here.
 In v2, only one buffer is used for chat, thanks to polymode.
 
 ** Multiple instances
-You can try the =76-multiple-instances= branch. It's a work in progress.
-Copilot-chat instances are linked to a parent directory. Each instance has a dedicated history, context, model, buffer list…
-For the moment, I'm developping it with curl backend and org frontend. The other configuration may not work.
-This is a huge code transformation so please be patient and report bugs or wanted features/behavior in the dedicated issue.
+You can now work with multiple chat instances at once. Copilot-chat instances are linked to a parent directory, with each instance having dedicated:
+- Chat history
+- Context
+- Model selection
+- Buffer list
 
-~Copilot-chat-display~ will try to guess current instance with current buffer file location. If it fails, instance will be asked to the user. With prefix argument, guessing is bypassed. 
+~Copilot-chat-display~ will try to guess the appropriate instance based on the current buffer's file location. If it fails, it will ask you to choose an instance. With a prefix argument (~C-u M-x copilot-chat-display~), it will always prompt you to select an instance.
 
 ** Help wanted
 Bug reports and new ideas are very welcome.
@@ -77,7 +78,7 @@ You will need a GitHub account with access to copilot API. When sending the firs
 ** Backend
 ~copilot-chat-backend~ can be set to ~'curl~ (default) or ~'request~.
 
-With curl, answers will be written token by token. Curl path can be set with `copilot-chat-curl-program` variable.  
+With curl, answers will be written token by token. Curl path can be set with `copilot-chat-curl-program` variable.
 With request library, the text is written when all data is read and this can be long.
 
 ** Frontend
@@ -103,7 +104,7 @@ Proxies have not been thoroughly tested yet, so there may be bugs. Many options 
 
 * Usage
 ** Basic
-Start chatting with ~(copilot-chat-display)~. Type your question in prompt, then press ~C-c C-c~ or ~C-c RET~.  
+Start chatting with ~(copilot-chat-display)~. Type your question in prompt, then press ~C-c C-c~ or ~C-c RET~.
 You may need to authenticate to GitHub. Follow instructions.
 
 You can select buffers that will be added as context in your prompt. Use ~copilot-chat-add-current-buffer~ and ~copilot-chat-del-current-buffer~. You can also manage buffers by using ~(copilot-chat-list)~. In the list, selected buffer will be highlighted using ~copilot-chat-list-selected-buffer-face~ which inherit from ~font-lock-keyword-face~.
@@ -115,10 +116,11 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 ** Functions
 *** Basic functions
-- ~(copilot-chat-reset)~ reset everything including history, frontend and included buffers (default). Use with prefix argument to preserve selected buffers.
-- ~(copilot-chat-display)~ display copilot chat buffers.
+- ~(copilot-chat-display)~ display copilot chat buffer. When using ~(copilot-chat-display)~ with a prefix argument, you'll be prompted to select which instance to use.
+- ~(copilot-chat-reset)~ reset the current instance including history, frontend and included buffers (default). Use with prefix argument to preserve selected buffers.
 - ~(copilot-chat-switch-to-buffer)~ switch to Copilot Chat buffer, side by side with the current code editing buffer.
-- ~(copilot-chat-set-model)~ Select AI model to use.
+- ~(copilot-chat-set-model)~ Select AI model to use for current instance.
+- ~(copilot-chat-kill-instance)~ Kill a selected Copilot chat instance and close its associated buffers.
 
 *** Prompt
 - ~copilot-chat-goto-input~ place point at the beginning of the prompt area.
@@ -138,9 +140,11 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-add-current-buffer)~ add current buffer to copilot chat. Its content will be sent with every request.
 - ~(copilot-chat-del-current-buffer)~ remove current buffer.
 - ~(copilot-chat-list)~ open buffer list.
+- ~(copilot-chat-add-buffers)~ ask for buffers and add them to copilot chat context.
+- ~(copilot-chat-del-buffers)~ ask for buffers and remove them from copilot chat context.
 - ~(copilot-chat-add-buffers-in-current-window)~ add all buffers in current Emacs window to copilot chat.
 - ~(copilot-chat-add-files-under-dir)~ Add all files with same suffix as current file under current directory. If there are more than 40 files, refuse to add and show warning message.
-  
+
 *** Code helper functions
 - ~(copilot-chat-explain-symbol-at-line)~ ask Copilot to explain symbol under point.
 - ~(copilot-chat-explain)~ ask copilot to explain selected code.
@@ -153,7 +157,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-custom-prompt-function)~ ask copilot to apply a custom prompt to the function body under point. Eg. instruct on how to refactor the function.
 - ~(copilot-chat-review-whole-buffer)~ ask copilot to review the current whole buffer. It can be used to review the full class, or, review the magit diff for my change, or other people's change.
 
-*** Magit 
+*** Magit
 - ~(copilot-chat-insert-commit-message)~ Insert in the current buffer a copilot generated commit message.
 
 *** Transient
@@ -164,6 +168,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 *** Troubleshooting
 - ~(copilot-chat-clear-auth-cache)~ clears the auth cache for Copilot Chat. You will have to login again.
+- ~(copilot-chat-reset-models)~: Resets the model cache and fetches models again. Useful when GitHub adds new models or updates model capabilities.
 
 
 ** Customizable variables
@@ -188,8 +193,10 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 - ~copilot-chat-token-cache~ - File path to store session token cache.
 
 *** Model settings
-- ~copilot-chat-model~ - AI model to use. It is better to use ~(copilot-chat-set-model)~ to set it.
+- ~copilot-chat-default-model~ - Default AI model to use. Use ~(copilot-chat-set-model)~ to set it for a specific instance.
 - ~copilot-chat-model-ignore-picker~ - If ~nil~ (default) add a filter to ~(copilot-chat-set-model)~ which will only show models with ~model_picker_enabled~ attribute.
+- ~copilot-chat-models-cache-file~ - File path to cache fetched models.
+- ~copilot-chat-models-fetch-cooldown~ - Minimum time between model fetch attempts in seconds (default: 5 minutes).
 
 *** Prompts
 Default prompts used by various commands:
@@ -202,6 +209,10 @@ Default prompts used by various commands:
 - ~copilot-chat-prompt-optimize~ - Prompt for optimization command.
 - ~copilot-chat-prompt-test~ - Prompt for test generation command.
 - ~copilot-chat-commit-prompt~ - Prompt for generating commit messages.
+
+*** Git
+- ~copilot-chat-ignored-commit-files~ - List of file patterns to ignore when generating commit messages.
+
 
 ** Faces
 You can customize the appearance of the buffer list by modifying these faces:
