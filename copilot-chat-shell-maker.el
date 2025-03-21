@@ -27,22 +27,24 @@
 
 ;;; Code:
 
-(require 'markdown-mode)
 (require 'shell-maker)
-
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
 (require 'copilot-chat-prompts)
 
 ;; Variables
 (defvar copilot-chat--shell-cb-fn nil)
-(defvar copilot-chat--shell-config
-  (make-shell-maker-config
-    :name "Copilot-Chat"
-    :execute-command 'copilot-chat--shell-cb))
+(defvar copilot-chat--shell-config nil)
 (defvar copilot-chat--shell-maker-answer-point 0
   "Start of the current answer.")
 
+(defun copilot-chat--shell-config ()
+  "Lazily initialize the shell-maker config."
+  (or copilot-chat--shell-config
+    (setq copilot-chat--shell-config
+      (make-shell-maker-config
+        :name "Copilot-Chat"
+        :execute-command 'copilot-chat--shell-cb))))
 
 ;; Constants
 (defconst copilot-chat--shell-maker-temp-buffer "*copilot-chat-shell-maker-temp*")
@@ -142,7 +144,7 @@ Argument SHELL is the `shell-maker' instance."
 (defun copilot-chat--shell ()
   "Start a Copilot Chat shell."
   (shell-maker-start
-    copilot-chat--shell-config
+    (copilot-chat--shell-config)
     t nil t
     (copilot-chat--get-buffer-name)))
 
@@ -155,7 +157,7 @@ Argument SHELL is the `shell-maker' instance."
   "Clean the copilot chat `shell-maker' frontend."
   (when (buffer-live-p copilot-chat--buffer)
     (with-current-buffer copilot-chat--buffer
-      (shell-maker--write-input-ring-history copilot-chat--shell-config)))
+      (shell-maker--write-input-ring-history (copilot-chat--shell-config))))
   (advice-remove 'copilot-chat-prompt-send #'copilot-chat--shell-maker-prompt-send))
 
 (defun copilot-chat-shell-maker-init()
