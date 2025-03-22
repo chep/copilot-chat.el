@@ -91,35 +91,36 @@ The create req function is called first and will return new prompt."
       (setq prompt (funcall create-req-fn prompt no-context)))
 
     ;; user prompt
-    (push (list (cons "content" prompt) (cons "role" "user")) messages)
+    (push (list `(content . ,prompt) `(role . "user")) messages)
 
     (unless no-context
       ;; history
       (dolist (history (copilot-chat-history copilot-chat--instance))
-        (push (list (cons "content" (car history)) (cons "role" (cadr history))) messages))
+        (push (list `(content . ,(car history)) `(role . ,(cadr history))) messages))
       ;; buffers
       (setf (copilot-chat-buffers copilot-chat--instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
                                                             (copilot-chat-buffers copilot-chat--instance)))
       (dolist (buffer (copilot-chat-buffers copilot-chat--instance))
         (when (buffer-live-p buffer)
           (with-current-buffer buffer
-            (push (list (cons "content" (buffer-substring-no-properties (point-min) (point-max))) (cons "role" "user")) messages)))))
+            (push (list `(content . ,(buffer-substring-no-properties (point-min) (point-max))) `(role . "user"))
+              messages)))))
 
     ;; system
-    (push (list (cons "content" copilot-chat-prompt) (cons "role" "system")) messages)
+    (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)
 
 
-    (json-encode (if (copilot-chat--model-is-o1)
-                   `(("messages" . ,(vconcat messages))
-                      ("model" . ,copilot-chat-model)
-                      ("stream" . :json-false))
-                   `(("messages" . ,(vconcat messages))
-                      ("top_p" . 1)
-                      ("model" . ,copilot-chat-model)
-                      ("stream" . t)
-                      ("n" . 1)
-                      ("intent" . t)
-                      ("temperature" . 0.1))))))
+    (json-serialize (if (copilot-chat--model-is-o1)
+                      `( (messages . ,(vconcat messages))
+                         (model . ,copilot-chat-model)
+                         (stream . :false))
+                      `( (messages . ,(vconcat messages))
+                         (top_p . 1)
+                         (model . ,copilot-chat-model)
+                         (stream . t)
+                         (n . 1)
+                         (intent . t)
+                         (temperature . 0.1))))))
 
 (provide 'copilot-chat-frontend)
 ;;; copilot-chat-frontend.el ends here

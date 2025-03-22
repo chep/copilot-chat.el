@@ -28,7 +28,6 @@
 
 ;;; Code:
 
-(require 'json)
 (require 'request)
 
 (require 'copilot-chat-frontend)
@@ -77,7 +76,7 @@ If your browser does not open automatically, browse to %s."
                  ("editor-version" . "Neovim/0.10.0")
                  ("user-agent" . "CopilotChat.nvim/2.0.0"))
       :data (format "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"device_code\":\"%s\",\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"}" device-code)
-      :parser 'json-read
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
       :sync t
       :complete #'copilot-chat--request-token-cb)))
 
@@ -92,7 +91,7 @@ If your browser does not open automatically, browse to %s."
                ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
                ("user-agent" . "CopilotChat.nvim/2.0.0")
                ("editor-version" . "Neovim/0.10.0"))
-    :parser 'json-read
+    :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
     :complete #'copilot-chat--request-code-cb))
 
 
@@ -111,7 +110,7 @@ Argument DATA is whatever PARSER function returns, or nil."
     (when (not (file-directory-p cache-dir))
       (make-directory  cache-dir t))
     (with-temp-file copilot-chat-token-cache
-      (insert (json-encode data)))))
+      (insert (json-serialize data)))))
 
 (defun copilot-chat--request-renew-token()
   "Renew session token."
@@ -122,7 +121,7 @@ Argument DATA is whatever PARSER function returns, or nil."
                ("editor-version" . "Neovim/0.10.0")
                ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
                ("user-agent" . "CopilotChat.nvim/2.0.0"))
-    :parser 'json-read
+    :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
     :sync t
     :complete #'copilot-chat--request-renew-token-cb))
 
@@ -296,14 +295,14 @@ Argument RESPONSE is request-response object."
   "Enable policy for MODEL-ID."
   (let ((url (format "https://api.githubcopilot.com/models/%s/policy" model-id))
         (headers (copilot-chat--get-headers))
-        (data (json-encode '((state . "enabled")))))
+        (data (json-serialize '((state . "enabled")))))
     (when copilot-chat-debug
       (message "Enabling policy for model %s" model-id))
     (request url
       :type "POST"
       :headers headers
       :data data
-      :parser 'json-read)))
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil))))
 
 (defun copilot-chat--request-models (&optional quiet)
   "Fetch available models from Copilot API.
@@ -317,7 +316,7 @@ Optional argument QUIET suppresses user messages when non-nil."
     (request url
       :type "GET"
       :headers headers
-      :parser 'json-read
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
       :sync t  ; Use synchronous request when called directly
       :complete #'copilot-chat--request-models-cb)))
 
@@ -333,7 +332,7 @@ Optional argument QUIET suppresses user messages when non-nil."
     (request url
       :type "GET"
       :headers headers
-      :parser 'json-read
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
       :sync nil  ; Use asynchronous request for background fetching
       :success (cl-function
                 (lambda (&key data &allow-other-keys)
@@ -372,7 +371,7 @@ Optional argument QUIET suppresses user messages when non-nil."
     (let ((cache-data `((timestamp . ,(round (float-time)))
                         (models . ,models))))
       (with-temp-file copilot-chat-models-cache-file
-        (insert (json-encode cache-data)))
+        (insert (json-serialize cache-data)))
       (when copilot-chat-debug
         (message "Saved %d models to cache %s" (length models) copilot-chat-models-cache-file)))))
 

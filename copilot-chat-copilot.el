@@ -27,8 +27,6 @@
 
 ;;; Code:
 
-(require 'json)
-
 (require 'copilot-chat-common)
 (require 'copilot-chat-curl)
 (require 'copilot-chat-request)
