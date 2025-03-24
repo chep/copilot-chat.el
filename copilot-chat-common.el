@@ -27,7 +27,6 @@
 
 ;;; Code:
 
-(require 'json)
 (require 'cl-lib)
 
 (require 'copilot-chat-prompts)

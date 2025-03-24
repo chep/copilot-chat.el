@@ -27,8 +27,6 @@
 
 ;;; Code:
 
-(require 'json)
-
 (require 'copilot-chat-frontend)
 
 (defvar copilot-chat--curl-current-data nil)
@@ -247,7 +245,7 @@ If your browser does not open automatically, browse to %s."
     (when (not (file-directory-p cache-dir))
       (make-directory  cache-dir t))
     (with-temp-file copilot-chat-token-cache
-      (insert (json-encode json-data)))))
+      (insert (json-serialize json-data)))))
 
 
 (defun copilot-chat--curl-renew-token()
@@ -501,8 +499,9 @@ if the prompt is out of context."
   (when copilot-chat--curl-file
     (delete-file copilot-chat--curl-file))
   (setq copilot-chat--curl-file (make-temp-file "copilot-chat"))
-  (with-temp-file copilot-chat--curl-file
-    (insert (copilot-chat--create-req prompt out-of-context)))
+  (let ((coding-system-for-write 'raw-text))
+    (with-temp-file copilot-chat--curl-file
+      (insert (copilot-chat--create-req prompt out-of-context))))
 
   (copilot-chat--curl-make-process
    "https://api.githubcopilot.com/chat/completions"
