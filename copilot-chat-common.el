@@ -161,11 +161,11 @@ is not `true' are not included in the model selection by default."
     hex))
 
 (defun copilot-chat--model-is-o1 (instance)
-  "Check if the model is o1."
+  "Check if the model of INSTANCE is o1."
   (string-prefix-p "o1" (copilot-chat-model instance)))
 
 (defun copilot-chat--get-buffer-name (directory)
-  "Get the formatted buffer name including directory info."
+  "Get the corresponding chat buffer name for DIRECTORY."
   (format "*Copilot Chat [%s]*" directory))
 
 (provide 'copilot-chat-common)

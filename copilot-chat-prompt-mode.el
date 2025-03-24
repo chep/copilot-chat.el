@@ -61,8 +61,9 @@
   "Write content to the Copilot Chat BUFFER.
 Argument INSTANCE is the copilot chat instance to use.
 Argument DATA data to be inserted in buffer.
-Argument SAVE if t and BUFFER is nil, `save-excursion' is called before moving point.
-Optional argument BUFFER is the buffer to write to, defaults to instance's chat buffer."
+If argument SAVE is t and BUFFER nil, `save-excursion' is used.
+Optional argument BUFFER is the buffer to write to,
+defaults to instance's chat buffer."
   (if buffer
     (with-current-buffer buffer
       (insert data))

@@ -201,7 +201,7 @@ Then we need a session token."
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
-Argument OUT-OF-CONTEXT is a boolean to indicate if the prompt is out of context."
+Argument OUT-OF-CONTEXT indicates if prompt is out of context (git commit)."
   (let* ((history (copilot-chat-history instance))
           (new-history (cons (list prompt "user") history)))
     (copilot-chat--auth)

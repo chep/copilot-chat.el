@@ -57,7 +57,7 @@ INSTANCE is used to get directory"
 
 
 (defun copilot-chat--shell-maker-get-buffer (instance)
-  "Create or retrieve the Copilot Chat shell-maker buffer."
+  "Create or retrieve the Copilot Chat shell-maker buffer for INSTANCE."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
       (copilot-chat--shell instance)))
@@ -70,7 +70,7 @@ INSTANCE is used to get directory"
     (copilot-chat-chat-buffer instance)))
 
 (defun copilot-chat--shell-maker-font-lock-faces (instance)
-  "Replace faces by font-lock-faces."
+  "Replace faces by font-lock-faces in INSTANCE buffer."
   (with-current-buffer (copilot-chat-shell-maker-tmp-buf instance)
     (let ((inhibit-read-only t))
       (font-lock-ensure)
@@ -83,7 +83,7 @@ INSTANCE is used to get directory"
           (goto-char next-change))))))
 
 (defun copilot-chat--shell-maker-copy-faces(instance)
-  "Apply faces to the copilot chat buffer."
+  "Apply faces to the copilot chat buffer corresponding to INSTANCE."
   (with-current-buffer (copilot-chat-shell-maker-tmp-buf instance)
     (save-restriction
       (widen)
@@ -98,6 +98,7 @@ INSTANCE is used to get directory"
 
 (defun copilot-chat--shell-cb-prompt (instance shell content)
   "Callback for Copilot Chat `shell-maker'.
+Argument INSTANCE is copilot-chat instance.
 Argument SHELL is the `shell-maker' instance.
 Argument CONTENT is copilot chat answer."
   (with-current-buffer (copilot-chat--shell-maker-get-buffer instance)
@@ -126,6 +127,7 @@ Argument CONTENT is copilot chat answer."
 (defun copilot-chat--shell-cb-prompt-wrapper (shell instance content)
   "Wrapper around `copilot-chat--shell-cb-prompt'.
 Argument SHELL is the `shell-maker' instance.
+Argument INSTANCE is copilot-chat instance.
 Argument CONTENT is copilot chat answer."
   (if copilot-chat-follow
     (copilot-chat--shell-cb-prompt instance shell content)
@@ -134,6 +136,7 @@ Argument CONTENT is copilot chat answer."
 
 (defun copilot-chat--shell-cb (instance command shell)
   "Callback for Copilot Chat `shell-maker'.
+Argument INSTANCE is copilot-chat instance.
 Argument COMMAND is the command to send to Copilot.
 Argument SHELL is the `shell-maker' instance."
   (setf
@@ -146,7 +149,7 @@ Argument SHELL is the `shell-maker' instance."
   (copilot-chat--ask instance command (copilot-chat-shell-cb-fn instance)))
 
 (defun copilot-chat--shell (instance)
-  "Start a Copilot Chat shell."
+  "Start a Copilot Chat shell for INSTANCE."
   (let ((buf (shell-maker-start
                (make-shell-maker-config
                  :name (format "Copilot-Chat %s" (copilot-chat-directory instance))
@@ -159,7 +162,7 @@ Argument SHELL is the `shell-maker' instance."
     buf))
 
 (defun copilot-chat--shell-maker-insert-prompt(instance prompt)
-  "Insert PROMPT in the chat buffer."
+  "Insert PROMPT in the chat buffer corresponding to INSTANCE."
   (with-current-buffer (copilot-chat--shell-maker-get-buffer instance)
     (goto-char (point-max))
     (insert prompt)))

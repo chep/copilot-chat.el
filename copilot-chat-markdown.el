@@ -67,7 +67,7 @@
 ;;; Functions
 (defun copilot-chat--markdown-format-data (instance content type)
   "Format the CONTENT according to the frontend.
-Argument CONTENT is the data to format.
+INSTANCE is copilot-chat instance to use.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((data ""))
     (if (eq type 'prompt)
@@ -161,7 +161,7 @@ The input is created if not found."
         (overlay-put overlay 'evaporate t)))))
 
 (defun copilot-chat--markdown-get-buffer (instance)
-  "Create copilot-chat buffers."
+  "Create copilot-chat buffers for INSTANCE."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
       (get-buffer-create (copilot-chat--get-buffer-name (copilot-chat-directory instance))))
@@ -173,7 +173,7 @@ The input is created if not found."
 
 
 (defun copilot-chat--markdown-get-spinner-buffer (instance)
-  "Get markdown spinner buffer."
+  "Get markdown spinner buffer for INSTANCE."
   (let ((buffer (copilot-chat--markdown-get-buffer instance)))
     (if copilot-chat-follow
       buffer
@@ -181,7 +181,7 @@ The input is created if not found."
         (pm-get-buffer-of-mode 'markdown-view-mode)))))
 
 (defun copilot-chat--markdown-insert-prompt (instance prompt)
-  "Insert PROMPT in the chat buffer."
+  "Insert PROMPT in the chat buffer corresponding to INSTANCE."
   (with-current-buffer (copilot-chat--markdown-get-buffer instance)
     (copilot-chat--markdown-goto-input)
     (unless (eobp)
@@ -189,7 +189,8 @@ The input is created if not found."
     (insert prompt)))
 
 (defun copilot-chat--markdown-pop-prompt (instance)
-  "Get current prompt to send and clean it."
+  "Get current prompt to send and clean it.
+INSTANCE is copilot-chat instance to use."
   (with-current-buffer (copilot-chat--markdown-get-buffer instance)
     (copilot-chat--markdown-goto-input)
     (let ((prompt (buffer-substring-no-properties (point) (point-max))))
