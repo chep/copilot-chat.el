@@ -76,7 +76,7 @@ If your browser does not open automatically, browse to %s."
                   ("editor-version" . "Neovim/0.10.0")
                   ("user-agent" . "CopilotChat.nvim/2.0.0"))
       :data (format "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"device_code\":\"%s\",\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"}" device-code)
-      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist)
       :sync t
       :complete #'copilot-chat--request-token-cb)))
 
@@ -86,12 +86,12 @@ If your browser does not open automatically, browse to %s."
     :type "POST"
     :data "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"scope\":\"read:user\"}"
     :sync t
-    :headers `( ("content-type" . "application/json")
-                ("accept" . "application/json")
-                ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-                ("user-agent" . "CopilotChat.nvim/2.0.0")
-                ("editor-version" . "Neovim/0.10.0"))
-    :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
+    :headers `(("content-type" . "application/json")
+               ("accept" . "application/json")
+               ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
+               ("user-agent" . "CopilotChat.nvim/2.0.0")
+               ("editor-version" . "Neovim/0.10.0"))
+    :parser (apply-partially 'json-parse-buffer :object-type 'alist)
     :complete #'copilot-chat--request-code-cb))
 
 
@@ -119,11 +119,11 @@ Argument DATA is whatever PARSER function returns, or nil."
     :headers `( ("authorization" . ,(concat "token "
                                       (copilot-chat-connection-github-token
                                         copilot-chat--connection)))
-                ("accept" . "application/json")
-                ("editor-version" . "Neovim/0.10.0")
-                ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-                ("user-agent" . "CopilotChat.nvim/2.0.0"))
-    :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
+               ("accept" . "application/json")
+               ("editor-version" . "Neovim/0.10.0")
+               ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
+               ("user-agent" . "CopilotChat.nvim/2.0.0"))
+    :parser (apply-partially 'json-parse-buffer :object-type 'alist)
     :sync t
     :complete #'copilot-chat--request-renew-token-cb))
 
@@ -309,7 +309,7 @@ Argument RESPONSE is request-response object."
       :type "POST"
       :headers headers
       :data data
-      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil))))
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist))))
 
 (defun copilot-chat--request-models (&optional quiet)
   "Fetch available models from Copilot API.
@@ -323,7 +323,7 @@ Optional argument QUIET suppresses user messages when non-nil."
     (request url
       :type "GET"
       :headers headers
-      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist)
       :sync t  ; Use synchronous request when called directly
       :complete #'copilot-chat--request-models-cb)))
 
@@ -339,7 +339,7 @@ Optional argument QUIET suppresses user messages when non-nil."
     (request url
       :type "GET"
       :headers headers
-      :parser (apply-partially 'json-parse-buffer :object-type 'alist :false-object :json-false :null-object nil)
+      :parser (apply-partially 'json-parse-buffer :object-type 'alist)
       :sync nil  ; Use asynchronous request for background fetching
       :success (cl-function
                  (lambda (&key data &allow-other-keys)
@@ -376,7 +376,7 @@ Optional argument QUIET suppresses user messages when non-nil."
   "Save MODELS to disk cache."
   (when models
     (let ((cache-data `((timestamp . ,(round (float-time)))
-                         (models . ,models))))
+                         (models . ,(vconcat models)))))
       (with-temp-file copilot-chat-models-cache-file
         (insert (json-serialize cache-data)))
       (when copilot-chat-debug
