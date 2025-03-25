@@ -9,10 +9,10 @@ This plugin allows you to chat with GitHub copilot.
 Feel free to contribute, report issues or discuss new features.
 
 * News
-** V2
-v2.0.1 is here.
+** V3
+v3.0.0 is here.
 
-In v2, only one buffer is used for chat, thanks to polymode.
+In v3, you can start several chat instances.
 
 ** Multiple instances
 You can now work with multiple chat instances at once. Copilot-chat instances are linked to a parent directory, with each instance having dedicated:
@@ -46,6 +46,9 @@ When using the org frontend, you can yank code blocks provided by Copilot just a
 
 ** Find input section
 In copilot-chat buffer, you can use (or bind to a key) the interactive ~copilot-chat-goto-input~ function to place point at the beginning of the prompt area.
+
+** Start new instance
+Calling ~copilot-chat-display~ with prefix argument will let you choose instance or create a new one.
 
 * Installation
 ** Melpa
