@@ -169,11 +169,10 @@ Optional argument ARGS are additional arguments to pass to curl."
 (defun copilot-chat--curl-parse-github-token()
   "Curl github token request parsing."
   (goto-char (point-min))
-  (let* ((json-data (json-parse-buffer
-                      :array-type 'list))
-          (token (gethash "access_token" json-data))
-          (token-dir (file-name-directory
-                       (expand-file-name copilot-chat-github-token-file))))
+  (let* ((json-data (json-parse-buffer))
+         (token (gethash "access_token" json-data))
+         (token-dir (file-name-directory
+                     (expand-file-name copilot-chat-github-token-file))))
     (setf (copilot-chat-connection-github-token copilot-chat--connection) token)
     (when (not (file-directory-p token-dir))
       (make-directory token-dir t))
@@ -183,11 +182,10 @@ Optional argument ARGS are additional arguments to pass to curl."
 (defun copilot-chat--curl-parse-login()
   "Curl login request parsing."
   (goto-char (point-min))
-  (let* ((json-data (json-parse-buffer
-                      :array-type 'list))
-          (device-code (gethash "device_code" json-data))
-          (user-code (gethash "user_code" json-data))
-          (verification-uri (gethash "verification_uri" json-data)))
+  (let* ((json-data (json-parse-buffer))
+         (device-code (gethash "device_code" json-data))
+         (user-code (gethash "user_code" json-data))
+         (verification-uri (gethash "verification_uri" json-data)))
     (gui-set-selection 'CLIPBOARD user-code)
     (read-from-minibuffer
       (format "Your one-time code %s is copied. \
@@ -221,8 +219,8 @@ If your browser does not open automatically, browse to %s."
   (let ((json-data (json-parse-buffer
                      :object-type 'alist ;need alist to be compatible with
                                         ;copilot-chat-token format
-                     :array-type 'list))
-         (cache-dir (file-name-directory (expand-file-name copilot-chat-token-cache))))
+                    ))
+        (cache-dir (file-name-directory (expand-file-name copilot-chat-token-cache))))
     (setf (copilot-chat-connection-token copilot-chat--connection) json-data)
     ;; save token in copilot-chat-token-cache file after creating
     ;; folders if needed
