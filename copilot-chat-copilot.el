@@ -67,16 +67,20 @@
   :type 'symbol
   :group 'copilot-chat)
 
+;; constants
+(defconst copilot-chat-list-buffer "*Copilot-chat-list"
+  "Fixed part of the Copilot chat list buffer name.")
+
 
 ;; Functions
 (defun copilot-chat--prompts ()
   "Return assoc list of promts for each command."
-  `((explain . ,copilot-chat-prompt-explain)
-    (review . ,copilot-chat-prompt-review)
-    (doc . ,copilot-chat-prompt-doc)
-    (fix . ,copilot-chat-prompt-fix)
-    (optimize . ,copilot-chat-prompt-optimize)
-    (test . ,copilot-chat-prompt-test)))
+  `( (explain . ,copilot-chat-prompt-explain)
+     (review . ,copilot-chat-prompt-review)
+     (doc . ,copilot-chat-prompt-doc)
+     (fix . ,copilot-chat-prompt-fix)
+     (optimize . ,copilot-chat-prompt-optimize)
+     (test . ,copilot-chat-prompt-test)))
 
 (defun copilot-chat--get-cached-token ()
   "Get the cached GitHub token."
@@ -86,145 +90,159 @@
         (insert-file-contents token-file)
         (buffer-substring-no-properties (point-min) (point-max))))))
 
-
-(defun copilot-chat--create ()
-  "Create a new Copilot chat instance."
-  (setq copilot-chat--instance (copilot-chat--make
-                                :ready t
-                                :github-token (copilot-chat--get-cached-token)
-                                :token nil
-                                :sessionid (concat (copilot-chat--uuid) (number-to-string (* (round (float-time (current-time))) 1000)))
-                                :machineid (copilot-chat--machine-id)
-                                :history nil
-                                :buffers nil
-                                :last-models-fetch-time 0))
-
+(defun copilot-chat--create (directory)
+  "Create a new Copilot chat instance with DIRECTORY as source directory."
   ;; Load models from cache if available
-  (let ((cached-models (copilot-chat--load-models-from-cache)))
+  (let ( (instance (copilot-chat--make
+                     :directory directory
+                     :model copilot-chat-default-model
+                     :chat-buffer nil
+                     :first-word-answer t
+                     :history nil
+                     :buffers nil
+                     :prompt-history nil
+                     :prompt-history-position nil
+                     :yank-index 1
+                     :last-yank-start nil
+                     :last-yank-end nil
+                     :spinner-timer nil
+                     :spinner-index 0
+                     :spinner-status nil
+                     :curl-answer nil
+                     :curl-file nil
+                     :curl-current-data nil))
+         (cached-models (copilot-chat--load-models-from-cache)))
     (when cached-models
-      (setf (copilot-chat-models copilot-chat--instance) cached-models)
-      (message "Loaded models from cache. %d models available." (length cached-models))))
+      (setf (copilot-chat-connection-models copilot-chat--connection)
+        cached-models)
+      (message "Loaded models from cache. %d models available." (length cached-models)))
 
-  ;; Schedule background model fetching with slight delay
-  (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
+    ;; Schedule background model fetching with slight delay
+    (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
 
-  copilot-chat--instance)
+    instance))
 
 (defun copilot-chat--fetch-models-async ()
   "Fetch models asynchronously in the background."
-  (when (copilot-chat--ready-p)
-    (let ((current-time (round (float-time)))
-          (last-fetch-time (copilot-chat-last-models-fetch-time copilot-chat--instance))
-          (cooldown-period copilot-chat-models-fetch-cooldown))
+  (let ((current-time (round (float-time)))
+         (last-fetch-time (copilot-chat-connection-last-models-fetch-time copilot-chat--connection))
+         (cooldown-period copilot-chat-models-fetch-cooldown))
 
-      (if (< (- current-time last-fetch-time) cooldown-period)
-          (when copilot-chat-debug
-            (message "Skipping model fetch - in cooldown period (%d seconds left)"
-                     (- cooldown-period (- current-time last-fetch-time))))
+    (if (< (- current-time last-fetch-time) cooldown-period)
+      (when copilot-chat-debug
+        (message "Skipping model fetch - in cooldown period (%d seconds left)"
+          (- cooldown-period (- current-time last-fetch-time))))
 
-        (if (not (copilot-chat-github-token copilot-chat--instance))
-            (run-with-timer 5 nil #'copilot-chat--fetch-models-async)
-          (setf (copilot-chat-last-models-fetch-time copilot-chat--instance) current-time)
+      (if (not (copilot-chat-connection-github-token copilot-chat--connection))
+        (run-with-timer 5 nil #'copilot-chat--fetch-models-async)
+        (setf (copilot-chat-connection-last-models-fetch-time copilot-chat--connection) current-time)
 
-          (when copilot-chat-debug
-            (message "Starting background model fetch"))
+        (when copilot-chat-debug
+          (message "Starting background model fetch"))
 
-          (condition-case err
-              (progn
-                (copilot-chat--auth)
-                (if (eq copilot-chat-backend 'request)
-                    (copilot-chat--request-models-async t)
-                  (copilot-chat--request-models t)))
-            (error
-             (message "Failed to fetch models in background: %s" (error-message-string err)))))))))
+        (condition-case err
+          (progn
+            (copilot-chat--auth)
+            (if (eq copilot-chat-backend 'request)
+              (copilot-chat--request-models-async t)
+              (copilot-chat--request-models t)))
+          (error
+            (message "Failed to fetch models in background: %s" (error-message-string err))))))))
 
 (defun copilot-chat--login()
   "Login to GitHub Copilot API."
   (cond
-   ((eq copilot-chat-backend 'curl)
-    (copilot-chat--curl-login))
-   ((eq copilot-chat-backend 'request)
-    (copilot-chat--request-login))
-   (t
-    (error "Unknown backend: %s" copilot-chat-backend))))
+    ((eq copilot-chat-backend 'curl)
+      (copilot-chat--curl-login))
+    ((eq copilot-chat-backend 'request)
+      (copilot-chat--request-login))
+    (t
+      (error "Unknown backend: %s" copilot-chat-backend))))
 
 
 (defun copilot-chat--renew-token()
   "Renew the session token."
   (cond
-   ((eq copilot-chat-backend 'curl)
-    (copilot-chat--curl-renew-token))
-   ((eq copilot-chat-backend 'request)
-    (copilot-chat--request-renew-token))
-   (t
-    (error "Unknown backend: %s" copilot-chat-backend))))
+    ((eq copilot-chat-backend 'curl)
+      (copilot-chat--curl-renew-token))
+    ((eq copilot-chat-backend 'request)
+      (copilot-chat--request-renew-token))
+    (t
+      (error "Unknown backend: %s" copilot-chat-backend))))
 
 (defun copilot-chat--auth()
   "Authenticate with GitHub Copilot API.
 We first need github authorization (github token).
 Then we need a session token."
-  (unless (copilot-chat-github-token copilot-chat--instance)
-    (copilot-chat--login))
+  (unless (copilot-chat-connection-github-token copilot-chat--connection)
+    (let ((token (copilot-chat--get-cached-token)))
+      (if token
+        (setf (copilot-chat-connection-github-token copilot-chat--connection) token)
+        (copilot-chat--login))))
 
-  (when (null (copilot-chat-token copilot-chat--instance))
+  (when (null (copilot-chat-connection-token copilot-chat--connection))
     ;; try to load token from ~/.cache/copilot-chat-token
     (let ((token-file (expand-file-name copilot-chat-token-cache)))
       (when (file-exists-p token-file)
         (with-temp-buffer
           (insert-file-contents token-file)
-          (setf (copilot-chat-token copilot-chat--instance) (json-read-from-string (buffer-substring-no-properties (point-min) (point-max))))))))
+          (setf (copilot-chat-connection-token copilot-chat--connection)
+            (json-read-from-string
+              (buffer-substring-no-properties (point-min) (point-max))))))))
 
-  (when (or (null (copilot-chat-token copilot-chat--instance))
-            (> (round (float-time (current-time))) (alist-get 'expires_at (copilot-chat-token copilot-chat--instance))))
-    (copilot-chat--renew-token)))
+  (when (or (null (copilot-chat-connection-token copilot-chat--connection))
+          (> (round (float-time (current-time)))
+            (alist-get 'expires_at (copilot-chat-connection-token copilot-chat--connection))))
+    (copilot-chat--renew-token))
+  (setf (copilot-chat-connection-ready copilot-chat--connection) t))
 
-(defun copilot-chat--ask (prompt callback &optional out-of-context)
+(defun copilot-chat--ask (instance prompt callback &optional out-of-context)
   "Ask a question to Copilot.
+Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
-Argument OUT-OF-CONTEXT is a boolean
- to indicate if the prompt is out of context."
-  (let* ((history (copilot-chat-history copilot-chat--instance))
-         (new-history (cons (list prompt "user") history)))
+Argument OUT-OF-CONTEXT indicates if prompt is out of context (git commit)."
+  (let* ((history (copilot-chat-history instance))
+          (new-history (cons (list prompt "user") history)))
     (copilot-chat--auth)
     (cond
-     ((eq copilot-chat-backend 'curl)
-      (copilot-chat--curl-ask prompt callback out-of-context))
-     ((eq copilot-chat-backend 'request)
-      (copilot-chat--request-ask prompt callback out-of-context))
-     (t
-      (error "Unknown backend: %s" copilot-chat-backend)))
+      ((eq copilot-chat-backend 'curl)
+        (copilot-chat--curl-ask instance prompt callback out-of-context))
+      ((eq copilot-chat-backend 'request)
+        (copilot-chat--request-ask instance prompt callback out-of-context))
+      (t
+        (error "Unknown backend: %s" copilot-chat-backend)))
     (unless out-of-context
-      (setf (copilot-chat-history copilot-chat--instance) new-history))))
+      (setf (copilot-chat-history instance) new-history))))
 
-(defun copilot-chat--add-buffer (buffer)
+(defun copilot-chat--add-buffer (instance buffer)
   "Add a BUFFER to copilot buffers list.
-Argument buffer is the buffer to add."
+Argument INSTANCE is the copilot chat instance to modify.
+Argument BUFFER is the buffer to add to the context."
   (setq buffer (get-buffer buffer))
-  (unless (memq buffer (copilot-chat-buffers copilot-chat--instance))
-    (let* ((buffers (copilot-chat-buffers copilot-chat--instance))
-           (new-buffers (cons buffer buffers)))
-      (setf (copilot-chat-buffers copilot-chat--instance) new-buffers))))
+  (unless (memq buffer (copilot-chat-buffers instance))
+    (let* ((buffers (copilot-chat-buffers instance))
+            (new-buffers (cons buffer buffers)))
+      (setf (copilot-chat-buffers instance) new-buffers))))
 
-(defun copilot-chat--clear-buffers ()
-  "Remove all buffers in copilot buffers list."
-  (setf (copilot-chat-buffers copilot-chat--instance) nil))
+(defun copilot-chat--clear-buffers (instance)
+  "Remove all buffers in copilot buffers list.
+Argument INSTANCE is the copilot chat instance to modify."
+  (setf (copilot-chat-buffers instance) nil))
 
-(defun copilot-chat--del-buffer (buffer)
+(defun copilot-chat--del-buffer (instance buffer)
   "Remove a BUFFER from copilot buffers list.
-Argument buffer is the buffer to remove."
+Argument INSTANCE is the copilot chat instance to modify.
+Argument BUFFER is the buffer to remove from the context."
   (setq buffer (get-buffer buffer))
-  (when (memq buffer (copilot-chat-buffers copilot-chat--instance))
-    (setf (copilot-chat-buffers copilot-chat--instance)
-          (delete buffer (copilot-chat-buffers copilot-chat--instance)))))
+  (when (memq buffer (copilot-chat-buffers instance))
+    (setf (copilot-chat-buffers instance)
+      (delete buffer (copilot-chat-buffers instance)))))
 
-(defun copilot-chat--get-buffers ()
-  "Get copilot buffer list."
-  (copilot-chat-buffers copilot-chat--instance))
-
-(defun copilot-chat--ready-p()
-  "Return t if copilot chat is ready."
-  (copilot-chat-ready copilot-chat--instance))
+(defun copilot-chat--get-buffers (instance)
+  "Get copilot buffer list for the given INSTANCE.
+Argument INSTANCE is the copilot chat instance to get the buffers for."
+  (copilot-chat-buffers instance))
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here

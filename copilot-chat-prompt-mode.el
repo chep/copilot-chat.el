@@ -54,14 +54,20 @@
   :lighter " Copilot Chat Prompt"
   :keymap copilot-chat-prompt-mode-map)
 
-(defun copilot-chat--write-buffer(data save &optional buffer)
+(defun copilot-chat--write-buffer( instance
+                                   data
+                                   save
+                                   &optional buffer)
   "Write content to the Copilot Chat BUFFER.
+Argument INSTANCE is the copilot chat instance to use.
 Argument DATA data to be inserted in buffer.
-If SAVE is t and BUFFER is nil, `save-excursion' is called before moving point"
+If argument SAVE is t and BUFFER nil, `save-excursion' is used.
+Optional argument BUFFER is the buffer to write to,
+defaults to instance's chat buffer."
   (if buffer
     (with-current-buffer buffer
       (insert data))
-    (with-current-buffer (copilot-chat--get-buffer)
+    (with-current-buffer (copilot-chat--get-buffer instance)
       (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
         (when write-fn
           (if save
@@ -69,37 +75,42 @@ If SAVE is t and BUFFER is nil, `save-excursion' is called before moving point"
               (funcall write-fn data))
             (funcall write-fn data)))))))
 
-(defun copilot-chat--format-data (content type)
+(defun copilot-chat--format-data (instance content type)
   "Format the CONTENT according to the frontend.
+Argument INSTANCE is the copilot chat instance to use.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((format-fn (copilot-chat-frontend-format-fn (copilot-chat--get-frontend))))
     (if format-fn
-      (funcall format-fn content type)
+      (funcall format-fn instance content type)
       content)))
 
-(defun copilot-chat-prompt-cb (content &optional buffer)
+(defun copilot-chat-prompt-cb (instance content &optional buffer)
   "Function called by backend when data is received.
+Argument INSTANCE is the copilot chat instance to use.
 Argument CONTENT is data received from backend.
 Optional argument BUFFER is the buffer to write data in."
   (if (string= content copilot-chat--magic)
     (progn
       (when (boundp 'copilot-chat--spinner-timer)
-        (copilot-chat--spinner-stop))
+        (copilot-chat--spinner-stop instance))
       (copilot-chat--write-buffer
-        (copilot-chat--format-data "\n\n" 'answer)
+        instance
+        (copilot-chat--format-data instance "\n\n" 'answer)
         (not copilot-chat-follow)
         buffer))
     (copilot-chat--write-buffer
-      (copilot-chat--format-data content 'answer)
+      instance
+      (copilot-chat--format-data instance content 'answer)
       (not copilot-chat-follow)
       buffer)))
 
-(defun copilot-chat--pop-current-prompt()
-  "Get current prompt to send and clean it."
+(defun copilot-chat--pop-current-prompt(instance)
+  "Get current prompt to send and clean it.
+Argument INSTANCE is the copilot chat instance to use."
   (let ((pop-prompt-fn (copilot-chat-frontend-pop-prompt-fn (copilot-chat--get-frontend))))
     (when pop-prompt-fn
-      (funcall pop-prompt-fn))))
+      (funcall pop-prompt-fn instance))))
 
 (provide 'copilot-chat-prompt-mode)
 ;;; copilot-chat-prompt-mode.el ends here

@@ -73,7 +73,7 @@
   :group 'copilot-chat)
 
 ;; GitHub Copilot models: https://api.githubcopilot.com/models
-(defcustom copilot-chat-model "gpt-4o"
+(defcustom copilot-chat-default-model "gpt-4o"
   "The model to use for Copilot chat.
 The list of available models will be updated when fetched from the API.
 Use `copilot-chat-set-model' to interactively select a model."
@@ -96,75 +96,77 @@ is not `true' are not included in the model selection by default."
   :group 'copilot-chat)
 
 ;; structs
-(cl-defstruct (copilot-chat
-               (:constructor copilot-chat--make)
-               (:copier nil))
-  "Struct for Copilot chat state."
+(cl-defstruct (copilot-chat-connection
+                (:constructor copilot-chat-connection--make)
+                (:copier nil))
+  "Struct for Copilot connection information."
   (ready nil :type boolean)
   (github-token nil :type (or null string))
   (token nil)
   (sessionid nil :type (or null string))
   (machineid nil :type (or null string))
-  (history nil :type list)
-  (buffers nil :type list)
   (models nil :type list)
   (last-models-fetch-time 0 :type number))
 
+(cl-defstruct (copilot-chat
+                (:constructor copilot-chat--make)
+                (:copier nil))
+  "Struct for Copilot chat state."
+  (directory nil :type (or null string))
+  (model copilot-chat-default-model :type string)
+  (chat-buffer nil :type (or null buffer))
+  (first-word-answer t :type boolean)
+  (history nil :type list)
+  (buffers nil :type list)
+  (prompt-history nil :type list)
+  (prompt-history-position nil :type (or null int))
+  (yank-index 1 :type int)
+  (last-yank-start nil :type (or null point))
+  (last-yank-end nil :type (or null point))
+  (spinner-timer nil :type timer)
+  (spinner-index 0 :type int)
+  (spinner-status nil :type (or null string))
+  (curl-answer nil :type (or null string))
+  (curl-file nil :type (or null file))
+  (curl-current-data nil :type (or null string))
+  (shell-maker-tmp-buf nil :type buffer)
+  (shell-maker-answer-point nil :type point)
+  (shell-cb-fn nil :type function))
+
 ;; variables
-(defvar copilot-chat--instance
-  (copilot-chat--make
-   :ready nil
-   :github-token nil
-   :token nil
-   :sessionid nil
-   :machineid nil
-   :history nil
-   :buffers nil
-   :models nil
-   :last-models-fetch-time 0)
+(defvar copilot-chat--connection
+  (copilot-chat-connection--make)
+  "Connection information for Copilot chat.")
+
+(defvar copilot-chat--instances (list)
   "Global instance of Copilot chat.")
 
-(defvar copilot-chat--buffer nil)
-
-(defvar copilot-chat--first-word-answer t)
-
-(defvar copilot-chat--yank-index 1
-  "Next index to yank.")
-(defvar copilot-chat--last-yank-start nil
-  "Start position of last yank.")
-(defvar copilot-chat--last-yank-end nil
-  "End position of last yank.")
-
 ;; Functions
-(defun copilot-chat--should-fetch-models-p ()
-  "Return t if models should be fetched."
-  t)
-
 (defun copilot-chat--uuid ()
   "Generate a UUID."
   (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"
-          (random 65536) (random 65536)
-          (random 65536)
-          (logior (random 16384) 16384)
-          (logior (random 4096) 32768)
-          (random 65536) (random 65536) (random 65536)))
+    (random 65536) (random 65536)
+    (random 65536)
+    (logior (random 16384) 16384)
+    (logior (random 4096) 32768)
+    (random 65536) (random 65536) (random 65536)))
 
 (defun copilot-chat--machine-id ()
   "Generate a machine ID."
-  (let ((hex-chars "0123456789abcdef")
-        (length 65)
-        (hex ""))
+  (let ( (hex-chars "0123456789abcdef")
+         (length 65)
+         (hex ""))
     (dotimes (_ length)
       (setq hex (concat hex (string (aref hex-chars (random 16))))))
     hex))
 
-(defun copilot-chat--model-is-o1 ()
-  "Check if the model is o1."
-  (string-prefix-p "o1" copilot-chat-model))
+(defun copilot-chat--model-is-o1 (instance)
+  "Check if the model of INSTANCE is o1."
+  (string-prefix-p "o1" (copilot-chat-model instance)))
 
-(defun copilot-chat--get-buffer-name ()
-  "Get the formatted buffer name including model info."
-  (format "*Copilot Chat [%s]*" copilot-chat-model))
+(defun copilot-chat--get-buffer-name (directory)
+  "Get the corresponding chat buffer name for DIRECTORY."
+  (format "*Copilot Chat [%s]*" directory))
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here

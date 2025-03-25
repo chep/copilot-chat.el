@@ -69,20 +69,21 @@
 
 
 ;;; Functions
-(defun copilot-chat--org-format-data(content type)
+(defun copilot-chat--org-format-data(instance content type)
   "Format data for org frontend.
+INSTANCE is copilot-chat instance to use.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of the data (prompt or answer)."
   (let ((data ""))
     (if (eq type 'prompt)
       (progn
-        (setq copilot-chat--first-word-answer t)
+        (setf (copilot-chat-first-word-answer instance) t)
         (setq data (concat "\n* " (format-time-string "*[%T]* You                 :you:\n") (format "%s\n" content))))
-      (when copilot-chat--first-word-answer
-        (setq copilot-chat--first-word-answer nil)
+      (when (copilot-chat-first-word-answer instance)
+        (setf (copilot-chat-first-word-answer instance) nil)
         (setq data (concat "\n** "
                      (format-time-string "*[%T]* ")
-                     (format "Copilot(%s)                 :copilot:\n" copilot-chat-model))))
+                     (format "Copilot(%s)                 :copilot:\n" (copilot-chat-model instance)))))
       (setq data (concat data content)))
     data))
 
@@ -103,7 +104,7 @@ NO-CONTEXT is an optional flag (unused in current implementation)."
 - Use ~*~ for headers (starting at level 3 with ~***~)
 - Use ~+~ for unordered lists
 - Use ~1.~ for ordered lists
-- Use ~=~ or ~~ for inline code
+- Use ~=~ or ~~~ for inline code
 - Use ~#+BEGIN_QUOTE~ and ~#+END_QUOTE~ for quotes
 - Use ~#+BEGIN_SRC~ and ~#+END_SRC~ for code blocks with language specification
 - Use ~_~ for underlining
@@ -189,27 +190,30 @@ Replace selection if any."
       heading-regex)
     (seq-uniq blocks #'equal)))
 
-(defun copilot-chat--org-yank ()
-  "Insert code block from Copilot Chat's org buffer at point."
+(defun copilot-chat--org-yank(instance)
+  "Insert code block from Copilot Chat's org buffer at point.
+INSTANCE is copilot-chat instance to use."
   (let ((content ""))
-    (with-current-buffer copilot-chat--buffer
+    (with-current-buffer (copilot-chat-chat-buffer instance)
       (let ((blocks (copilot-chat--org-get-code-blocks-under-heading "copilot")))
         (when blocks
-          (while (< copilot-chat--yank-index 1)
-            (setq copilot-chat--yank-index (+ (length blocks)
-                                             copilot-chat--yank-index)))
-          (when (> copilot-chat--yank-index (length blocks))
-            (setq copilot-chat--yank-index (- copilot-chat--yank-index
-                                             (length blocks))))
-          (setq content (plist-get (car (last blocks copilot-chat--yank-index)) :content)))))
+          (while (< (copilot-chat-yank-index instance) 1)
+            (setf (copilot-chat-yank-index instance) (+ (length blocks)
+                                                       (copilot-chat-yank-index instance))))
+          (when (> (copilot-chat-yank-index instance) (length blocks))
+            (setf (copilot-chat-yank-index instance) (- (copilot-chat-yank-index instance)
+                                                       (length blocks))))
+          (setq content (plist-get (car (last blocks
+                                          (copilot-chat-yank-index instance)))
+                          :content)))))
     ;; Delete previous yank if exists
-    (when (and copilot-chat--last-yank-start
-            copilot-chat--last-yank-end)
-      (delete-region copilot-chat--last-yank-start copilot-chat--last-yank-end))
+    (when (and (copilot-chat-last-yank-start instance)
+            (copilot-chat-last-yank-end instance))
+      (delete-region (copilot-chat-last-yank-start instance) (copilot-chat-last-yank-end instance)))
     ;; Insert new content
-    (setq copilot-chat--last-yank-start (point))
+    (setf (copilot-chat-last-yank-start instance) (point))
     (insert content)
-    (setq copilot-chat--last-yank-end (point))))
+    (setf (copilot-chat-last-yank-end instance) (point))))
 
 (defun copilot-chat--org-write (data)
   "Write DATA at the end of the chat part of the buffer."
@@ -234,28 +238,31 @@ The input is created if not found."
         (add-text-properties start (point)
           '(read-only t front-sticky t rear-nonsticky (read-only)))))))
 
-(defun copilot-chat--org-get-buffer()
-  "Create copilot-chat buffers."
-  (unless (buffer-live-p copilot-chat--buffer)
-    (setq copilot-chat--buffer (get-buffer-create (copilot-chat--get-buffer-name)))
-    (with-current-buffer copilot-chat--buffer
+(defun copilot-chat--org-get-buffer(instance)
+  "Create copilot-chat buffers for INSTANCE."
+  (unless (buffer-live-p (copilot-chat-chat-buffer instance))
+    (setf (copilot-chat-chat-buffer instance)
+      (get-buffer-create (copilot-chat--get-buffer-name (copilot-chat-directory instance))))
+    (with-current-buffer (copilot-chat-chat-buffer instance)
       (copilot-chat-org-poly-mode)
+      (setq-local default-directory (copilot-chat-directory instance))
       (copilot-chat--org-goto-input)))
-  copilot-chat--buffer)
+  (copilot-chat-chat-buffer instance))
 
-(defun copilot-chat--org-insert-prompt (prompt)
-  "Insert PROMPT in the chat buffer."
-  (with-current-buffer (copilot-chat--org-get-buffer)
+(defun copilot-chat--org-insert-prompt (instance prompt)
+  "Insert PROMPT in the chat buffer of INSTANCE."
+  (with-current-buffer (copilot-chat--org-get-buffer instance)
     (copilot-chat--org-goto-input)
     (unless (eobp)
       (delete-region (point) (point-max)))
     (insert prompt)))
 
-(defun copilot-chat--org-pop-prompt()
-  "Get current prompt to send and clean it."
-  (with-current-buffer (copilot-chat--org-get-buffer)
+(defun copilot-chat--org-pop-prompt(instance)
+  "Get current prompt to send and clean it.
+INSTANCE is copilot-chat instance to use."
+  (with-current-buffer (copilot-chat--org-get-buffer instance)
     (copilot-chat--org-goto-input)
-    (let ((prompt (buffer-substring (point) (point-max))))
+    (let ((prompt (buffer-substring-no-properties (point) (point-max))))
       (delete-region (point) (point-max))
       prompt)))
 
