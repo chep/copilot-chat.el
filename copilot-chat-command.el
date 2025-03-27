@@ -594,7 +594,7 @@ repository or if there are no staged changes.
           ;; First get list of staged files
           (staged-files (split-string
                           (aio-await
-                            (copilot-chat--exec "git" "diff" "--cached" "--name-only"))
+                            (copilot-chat--exec "git" "--no-pager" "diff" "--cached" "--name-only"))
                           "\n" t))
           (files-to-include
             (cl-remove-if
@@ -609,7 +609,7 @@ repository or if there are no staged changes.
     (when files-to-include
       (aio-await
         (apply #'copilot-chat--exec
-          "git" "diff" "--cached" "--" files-to-include)))))
+          "git" "--no-pager" "diff" "--cached" "--" files-to-include)))))
 
 (defun copilot-chat-goto-input()
   "Go to the input area."
