@@ -576,10 +576,10 @@ Replace selection if any."
          (kill-buffer buf))))
     (aio-await promise)))
 
-(aio-defun copilot-chat--git-toplevel ()
+(aio-defun copilot-chat--git-root ()
   "Get top folder of current git repo."
   (when (executable-find "git")
-    (aio-await (copilot-chat--exec "git" "rev-parse" "--show-toplevel"))))
+    (file-name-directory (aio-await (copilot-chat--exec "git" "rev-parse" "--absolute-git-dir")))))
 
 (aio-defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.
@@ -589,7 +589,7 @@ repository or if there are no staged changes.
 
 +The diff is generated using git and excludes files matching patterns in
 +`copilot-chat-ignored-commit-files', such as lock files and build artifacts."
-  (let* ((default-directory (or (aio-await (copilot-chat--git-toplevel))
+  (let* ((default-directory (or (aio-await (copilot-chat--git-root))
                               (user-error "Not inside a Git repository")))
           ;; First get list of staged files
           (staged-files (split-string
