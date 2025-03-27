@@ -27,7 +27,18 @@
 ;;; Code:
 (require 'copilot-chat-common)
 
-;;;###autoload
+(defun copilot-chat--get-list-buffer-create (instance)
+  "Get or create the Copilot chat list buffer for INSTANCE."
+  (let ((list-buffer (get-buffer-create
+                       (concat copilot-chat-list-buffer
+                         "-"
+                         (copilot-chat-directory instance)
+                         "*"))))
+    (with-current-buffer list-buffer
+      (setq-local default-directory (copilot-chat-directory instance)))
+    list-buffer))
+
+;;;###autoload (autoload 'copilot-chat-kill-instance "copilot-chat" nil t)
 (defun copilot-chat-kill-instance ()
   "Interactively kill a selected copilot chat instance.
 All its associated buffers are killed."

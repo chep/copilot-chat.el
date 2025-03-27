@@ -30,13 +30,7 @@
 
 (require 'copilot-chat-common)
 
-(defcustom copilot-chat-frontend 'org
-  "Frontend to use with `copilot-chat'.  Can be org or markdown."
-  :type '(choice
-           (const :tag "org-mode" org)
-           (const :tag "markdown" markdown)
-           (const :tag "shell-maker" shell-maker))
-  :group 'copilot-chat)
+(defvar copilot-chat-frontend)
 
 (cl-defstruct copilot-chat-frontend
   id

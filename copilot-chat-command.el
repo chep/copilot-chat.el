@@ -26,18 +26,14 @@
 
 ;;; Code:
 
-(require 'magit)
 (require 'polymode)
+(require 'aio)
 
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-curl)
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-prompt-mode)
 (require 'copilot-chat-instance)
-
-(require 'copilot-chat-markdown)
-(require 'copilot-chat-org)
-(require 'copilot-chat-shell-maker)
 
 ;; customs
 (defcustom copilot-chat-list-added-buffers-only nil
@@ -105,8 +101,8 @@ to Copilot for processing."
         (setf (copilot-chat-prompt-history-position instance) nil)
         (copilot-chat--ask instance prompt 'copilot-chat-prompt-cb)))))
 
-;;;###autoload
-(defun copilot-chat-ask-and-insert()
+;;;###autoload (autoload 'copilot-chat-ask-and-insert "copilot-chat" nil t)
+(defun copilot-chat-ask-and-insert ()
   "Send to Copilot a custom prompt and insert answer in current buffer at point."
   (interactive)
   (let* ((instance (copilot-chat--current-instance))
@@ -118,51 +114,51 @@ to Copilot for processing."
       (lambda (instance content)
         (copilot-chat-prompt-cb instance content current-buf)))))
 
-(defun copilot-chat--ask-region(prompt)
+(defun copilot-chat--ask-region(prompt beg end)
   "Send to Copilot a prompt followed by the current selected code.
 Argument PROMPT is the prompt to send to Copilot."
   (let ((instance (copilot-chat--current-instance))
-         (code (buffer-substring-no-properties (region-beginning) (region-end))))
+         (code (buffer-substring-no-properties beg end)))
     (copilot-chat--insert-and-send-prompt
       instance
       (concat (cdr (assoc prompt (copilot-chat--prompts)))
         (copilot-chat--format-code code)))))
 
-;;;###autoload
-(defun copilot-chat-explain()
+;;;###autoload (autoload 'copilot-chat-explain "copilot-chat" nil t)
+(defun copilot-chat-explain (beg end)
   "Ask Copilot to explain the current selected code."
-  (interactive)
-  (copilot-chat--ask-region 'explain))
+  (interactive "r")
+  (copilot-chat--ask-region 'explain beg end))
 
-;;;###autoload
-(defun copilot-chat-review()
+;;;###autoload (autoload 'copilot-chat-review "copilot-chat" nil t)
+(defun copilot-chat-review (beg end)
   "Ask Copilot to review the current selected code."
-  (interactive)
-  (copilot-chat--ask-region 'review))
+  (interactive "r")
+  (copilot-chat--ask-region 'review beg end))
 
-;;;###autoload
-(defun copilot-chat-doc()
+;;;###autoload (autoload 'copilot-chat-doc "copilot-chat" nil t)
+(defun copilot-chat-doc (beg end)
   "Ask Copilot to write documentation for the current selected code."
-  (interactive)
-  (copilot-chat--ask-region 'doc))
+  (interactive "r")
+  (copilot-chat--ask-region 'doc beg end))
 
-;;;###autoload
-(defun copilot-chat-fix()
+;;;###autoload (autoload 'copilot-chat-fix "copilot-chat" nil t)
+(defun copilot-chat-fix (beg end)
   "Ask Copilot to fix the current selected code."
-  (interactive)
-  (copilot-chat--ask-region 'fix))
+  (interactive "r")
+  (copilot-chat--ask-region 'fix beg end))
 
-;;;###autoload
-(defun copilot-chat-optimize()
+;;;###autoload (autoload 'copilot-chat-optimize "copilot-chat" nil t)
+(defun copilot-chat-optimize (beg end)
   "Ask Copilot to optimize the current selected code."
-  (interactive)
-  (copilot-chat--ask-region 'optimize))
+  (interactive "r")
+  (copilot-chat--ask-region 'optimize beg end))
 
-;;;###autoload
-(defun copilot-chat-test ()
+;;;###autoload (autoload 'copilot-chat-test "copilot-chat" nil t)
+(defun copilot-chat-test (beg end)
   "Ask Copilot to generate test for the current selected code."
-  (interactive)
-  (copilot-chat--ask-region 'test))
+  (interactive "r")
+  (copilot-chat--ask-region 'test beg end))
 
 (defun copilot-chat--insert-prompt (instance prompt)
   "Insert PROMPT in the Copilot Chat prompt region.
@@ -196,7 +192,7 @@ Argument CODE is the code to be formatted."
       (funcall format-fn code (copilot-chat--get-language))
       code)))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-explain-symbol-at-line "copilot-chat" nil t)
 (defun copilot-chat-explain-symbol-at-line ()
   "Ask Copilot to explain symbol under point.
 Given the code line as background info."
@@ -210,16 +206,16 @@ Given the code line as background info."
                     symbol (copilot-chat--format-code line))))
     (copilot-chat--insert-and-send-prompt instance prompt)))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-explain-defun "copilot-chat" nil t)
 (defun copilot-chat-explain-defun ()
   "Mark current function definition and ask Copilot to explain it, then unmark."
   (interactive)
   (save-excursion
     (mark-defun)
-    (copilot-chat-explain)
+    (call-interactively 'copilot-chat-explain)
     (deactivate-mark)))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-custom-prompt-function "copilot-chat" nil t)
 (defun copilot-chat-custom-prompt-function ()
   "Mark current function and ask copilot-chat with custom prompt."
   (interactive)
@@ -228,27 +224,26 @@ Given the code line as background info."
     (copilot-chat-custom-prompt-selection)
     (deactivate-mark)))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-review-whole-buffer "copilot-chat" nil t)
 (defun copilot-chat-review-whole-buffer ()
   "Mark whole buffer, ask Copilot to review it, then unmark.
 It can be used to review the magit diff for my change, or other people's"
   (interactive)
   (save-excursion
-    (goto-char (point-min))
-    (push-mark (point-max) nil t)
-    (copilot-chat-review)
-    (deactivate-mark)))
+    (copilot-chat-review (point-min) (point-max))))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-switch-to-buffer "copilot-chat" nil t)
 (defun copilot-chat-switch-to-buffer ()
   "Switch to Copilot Chat buffer.
 Side by side with the current code editing buffer."
   (interactive)
   (let ((instance (copilot-chat--current-instance)))
-    (switch-to-buffer-other-window (copilot-chat--get-buffer instance))))
+    (unless (equal (pm-base-buffer) (copilot-chat--get-buffer instance))
+      (switch-to-buffer-other-window (copilot-chat--get-buffer instance))))
+  (copilot-chat-goto-input))
 
-;;;###autoload
-(defun copilot-chat-custom-prompt-selection(&optional custom-prompt)
+;;;###autoload (autoload 'copilot-chat-custom-prompt-selection "copilot-chat" nil t)
+(defun copilot-chat-custom-prompt-selection (&optional custom-prompt)
   "Send to Copilot a custom prompt followed by the current selected code/buffer.
 If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
   (interactive)
@@ -260,7 +255,7 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
           (formatted-prompt (concat prompt "\n" (copilot-chat--format-code code))))
     (copilot-chat--insert-and-send-prompt instance formatted-prompt)))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-custom-prompt-mini-buffer "copilot-chat" nil t)
 (defun copilot-chat-custom-prompt-mini-buffer ()
   "Read a string with Helm completion, showing historical inputs."
   (interactive)
@@ -269,7 +264,7 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
           (input (read-string prompt nil 'copilot-chat--prompt-history)))
     (copilot-chat--insert-and-send-prompt instance input)))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-list "copilot-chat" nil t)
 (defun copilot-chat-list ()
   "Open Copilot Chat list buffer."
   (interactive)
@@ -304,7 +299,7 @@ Argument INSTANCE is the copilot chat instance to display."
     (unless window-found
       (pop-to-buffer base-buffer))))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-display "copilot-chat" nil t)
 (defun copilot-chat-display (&optional arg)
   "Display copilot chat buffer.
 With prefix argument, explicitly ask for which instance to use.
@@ -315,7 +310,7 @@ Optional argument ARG if non-nil, force instance selection."
                     (copilot-chat--current-instance))))
     (copilot-chat--display instance)))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-hide "copilot-chat" nil t)
 (defun copilot-chat-hide ()
   "Hide copilot chat buffer."
   (interactive)
@@ -566,35 +561,55 @@ Replace selection if any."
     (when copy-fn
       (funcall copy-fn))))
 
-(defun copilot-chat--get-diff ()
+(aio-defun copilot-chat--exec (&rest command)
+  "Asynchronously execute command COMMAND and return its output string."
+  (let ((promise (aio-promise))
+        (buf (generate-new-buffer " *copilot-chat-shell-command*")))
+    (set-process-sentinel
+     (apply #'start-process "copilot-chat-shell-command" buf command)
+     (lambda (proc _signal)
+       (when (memq (process-status proc) '(exit signal))
+         (with-current-buffer buf
+           (let ((data (buffer-string)))
+             (aio-resolve promise
+               (lambda () (if (> (length data) 0) (substring data 0 -1) "")))))
+         (kill-buffer buf))))
+    (aio-await promise)))
+
+(aio-defun copilot-chat--git-toplevel ()
+  "Get top folder of current git repo."
+  (when (executable-find "git")
+    (aio-await (copilot-chat--exec "git" "rev-parse" "--show-toplevel"))))
+
+(aio-defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.
 Returns a string containing the diff, excluding files specified in
 `copilot-chat-ignored-commit-files'.  Returns nil if not in a git
 repository or if there are no staged changes.
 
-The diff is generated using `magit-git-insert' and excludes files
-matching patterns in `copilot-chat-ignored-commit-files', such as
-lock files and build artifacts."
-  (let ((default-directory (or (magit-toplevel)
-                             (user-error "Not inside a Git repository"))))
-    (with-temp-buffer
-      ;; First get list of staged files
-      (magit-git-insert "diff" "--cached" "--name-only")
-      (let* ((staged-files (split-string (buffer-string) "\n" t))
-              (files-to-include
-                (cl-remove-if
-                  (lambda (file)
-                    (cl-some (lambda (pattern)
-                               (or (string-match-p (wildcard-to-regexp pattern) file)
-                                 (and (string-suffix-p "/" pattern)
-                                   (string-prefix-p pattern file))))
-                      copilot-chat-ignored-commit-files))
-                  staged-files)))
-        (erase-buffer)
-        ;; Then get diff only for non-ignored files
-        (when files-to-include
-          (magit-git-insert (append '("diff" "--cached" "--") files-to-include)))
-        (buffer-string)))))
++The diff is generated using git and excludes files matching patterns in
++`copilot-chat-ignored-commit-files', such as lock files and build artifacts."
+  (let* ((default-directory (or (aio-await (copilot-chat--git-toplevel))
+                              (user-error "Not inside a Git repository")))
+          ;; First get list of staged files
+          (staged-files (split-string
+                          (aio-await
+                            (copilot-chat--exec "git" "diff" "--cached" "--name-only"))
+                          "\n" t))
+          (files-to-include
+            (cl-remove-if
+              (lambda (file)
+                (cl-some (lambda (pattern)
+                           (or (string-match-p (wildcard-to-regexp pattern) file)
+                             (and (string-suffix-p "/" pattern)
+                               (string-prefix-p pattern file))))
+                  copilot-chat-ignored-commit-files))
+              staged-files)))
+    ;; Then get diff only for non-ignored files
+    (when files-to-include
+      (aio-await
+        (apply #'copilot-chat--exec
+          "git" "diff" "--cached" "--" files-to-include)))))
 
 (defun copilot-chat-goto-input()
   "Go to the input area."
@@ -627,108 +642,109 @@ No message is printed if `copilot-chat-debug' is nil."
                              (format "Error formatting message with args: %S" args)))))
       (message "[copilot-chat:%s] %s" category formatted-msg))))
 
-;;;###autoload
-(defun copilot-chat-insert-commit-message()
+;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
+(defun copilot-chat-insert-commit-message ()
   "Generate and insert a commit message using Copilot.
 Uses the current staged changes in git
 to generate an appropriate commit message.
 Requires the repository to have staged changes."
   (interactive)
   ;; Get magit staged diff
-  (let* ((instance (copilot-chat--current-instance))
-          (diff (copilot-chat--get-diff))
-          (prompt (concat copilot-chat-commit-prompt diff))
-          (current-buf (current-buffer))
-          (start-pos (point))
-          (accumulated-content "")
-          (error-occurred nil)
-          ;; Store the git commit template comments
-          (template-comments
-            (save-excursion
-              (goto-char (point-min))
-              (let ((comments ""))
-                (while (re-search-forward "^#.*$" nil t)
-                  (setq comments (concat comments (match-string 0) "\n")))
-                comments))))
-
-    ;; Debug messages using structured format
-    (copilot-chat--debug 'commit "Starting commit message generation")
-    (copilot-chat--debug 'commit "Diff size: %d bytes, Model: %s"
-      (length diff) (copilot-chat-model instance))
-
-    (cond
-      ((string-empty-p diff)
-        (copilot-chat--debug 'commit "No changes found in staging area")
-        (user-error "No staged changes found.  Please stage some changes first"))
-
-      (t
-        (message "Generating commit message... Please wait.")
-
-        (insert "# [copilot-chat] Working on generating commit message, please wait... ")
-        (insert "\n\n")
-
-        (goto-char start-pos)
-
-        (when (fboundp 'copilot-chat--spinner-start)
-          (copilot-chat--spinner-start instance))
-
-        ;; Ask Copilot with streaming response
-        (copilot-chat--ask
-          instance
-          prompt
-          (lambda (instance content)
-            (with-current-buffer current-buf
+  (aio-with-async
+    (let* ((instance (copilot-chat--current-instance))
+            (current-buf (current-buffer))
+            (start-pos (point))
+            (accumulated-content "")
+            (error-occurred nil)
+            (diff (aio-await (copilot-chat--get-diff)))
+            (prompt (concat copilot-chat-commit-prompt diff))
+            ;; Store the git commit template comments
+            (template-comments
               (save-excursion
-                (if (string= content copilot-chat--magic)
-                  ;; End of streaming
-                  (progn
-                    (when (fboundp 'copilot-chat--spinner-stop)
-                      (copilot-chat--spinner-stop instance))
-                    (with-current-buffer current-buf
-                      (save-excursion
+                (goto-char (point-min))
+                (let ((comments ""))
+                  (while (re-search-forward "^#.*$" nil t)
+                    (setq comments (concat comments (match-string 0) "\n")))
+                  comments)))
+            (wait-prompt "# [copilot-chat] Working on generating commit message, please wait... "))
+
+      ;; Debug messages using structured format
+      (copilot-chat--debug 'commit "Starting commit message generation")
+      (copilot-chat--debug 'commit "Diff size: %d bytes, Model: %s"
+        (length diff) (copilot-chat-model instance))
+
+      (cond
+        ((string-empty-p diff)
+          (copilot-chat--debug 'commit "No changes found in staging area")
+          (user-error "No staged changes found.  Please stage some changes first"))
+
+        (t
+          (message "Generating commit message... Please wait.")
+
+          (insert wait-prompt)
+          (insert "\n\n")
+
+          (goto-char start-pos)
+
+          (when (fboundp 'copilot-chat--spinner-start)
+            (copilot-chat--spinner-start instance))
+
+          ;; Ask Copilot with streaming response
+          (copilot-chat--ask
+            instance
+            prompt
+            (lambda (instance content)
+              (with-current-buffer current-buf
+                (save-excursion
+                  (if (string= content copilot-chat--magic)
+                    ;; End of streaming
+                    (progn
+                      (when (fboundp 'copilot-chat--spinner-stop)
+                        (copilot-chat--spinner-stop instance))
+                      (with-current-buffer current-buf
                         (goto-char start-pos)
-                        (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
-                          (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... "))))))
-                    (when (not error-occurred)
-                      ;; Move point to end of inserted text for convenience
-                      (goto-char (+ start-pos (length accumulated-content)))
-                      ;; Restore the git commit template comments
-                      (save-excursion
-                        (goto-char (point-max))
-                        (delete-region (point-min) (point-max))
-                        (insert accumulated-content "\n\n" template-comments))
-                      (copilot-chat--debug 'commit "Generation completed successfully"))
-                    (message "Commit message generation completed."))
+                        (when (looking-at wait-prompt)
+                          (delete-region start-pos (+ start-pos (length wait-prompt)))))
+                      (when (not error-occurred)
+                        ;; Move point to end of inserted text for convenience
+                        (goto-char (+ start-pos (length accumulated-content)))
+                        ;; Restore the git commit template comments
+                        (save-excursion
+                          (goto-char (point-max))
+                          (delete-region (point-min) (point-max))
+                          (insert accumulated-content "\n\n" template-comments))
+                        (copilot-chat--debug 'commit "Generation completed successfully"))
+                      (message "Commit message generation completed."))
 
-                  ;; Continue streaming
-                  (progn
-                    ;; If this is the first response chunk, update the UI accordingly
-                    (when (string= accumulated-content "")
-                      (if (fboundp 'copilot-chat--spinner-set-status)
-                        (copilot-chat--spinner-set-status instance "Generating")
-                        (message "Generating commit message...")))
+                    ;; Continue streaming
+                    (progn
+                      ;; If this is the first response chunk, update the UI accordingly
+                      (when (string= accumulated-content "")
+                        (if (fboundp 'copilot-chat--spinner-set-status)
+                          (copilot-chat--spinner-set-status instance "Generating")
+                          (message "Generating commit message...")))
 
-                    ;; Handle error messages
-                    (when (string-prefix-p "Error:" content)
-                      (setq error-occurred t)
-                      (message "%s" content))
+                      ;; Handle error messages
+                      (when (string-prefix-p "Error:" content)
+                        (setq error-occurred t)
+                        (message "%s" content))
 
-                    ;; Append the new content to our accumulator
-                    (setq accumulated-content (concat accumulated-content content))
+                      ;; Append the new content to our accumulator
+                      (setq accumulated-content (concat accumulated-content content))
 
-                    ;; Remove placeholder text on first content chunk
-                    (goto-char start-pos)
-                    (when (looking-at "# [copilot-chat] Working on generating commit message, please wait... ")
-                      (delete-region start-pos (+ start-pos (length "# [copilot-chat] Working on generating commit message, please wait... "))))
+                      ;; Remove placeholder text on first content chunk
+                      (goto-char start-pos)
+                      (when (looking-at wait-prompt)
+                        (delete-region start-pos (+ start-pos (length wait-prompt))))
 
-                    ;; Go to where we need to insert/update content
-                    (goto-char start-pos)
-                    (delete-region start-pos (+ start-pos (length accumulated-content)))
-                    (insert accumulated-content)
+                      ;; Go to where we need to insert/update content
+                      (goto-char start-pos)
+                      (delete-region start-pos (min (+ start-pos (length accumulated-content)) (point-max)))
+                      (insert accumulated-content)
 
-                    (copilot-chat--debug 'commit "Received chunk: %d chars"
-                      (length content)))))))
-          t)))))
+                      (copilot-chat--debug 'commit "Received chunk: %d chars"
+                        (length content)))))))
+            t))))))
 
 (defun copilot-chat--model-picker-enabled (model)
   "Check the `model_picker_enabled` attribute of the MODEL.
@@ -820,7 +836,7 @@ wait for the fetch to complete."
                   (sit-for 0.1)))
               (copilot-chat--get-model-choices-with-wait))))))))
 
-;;;###autoload
+;;;###autoload (autoload 'copilot-chat-set-model "copilot-chat" nil t)
 (defun copilot-chat-set-model (model)
   "Set the Copilot Chat model to MODEL.
 Fetches available models from the API if not already fetched."
@@ -874,12 +890,11 @@ INC is the number to use as increment for index in block ring."
 (defun copilot-chat--yank(instance)
   "Insert at point the code block at the current index in the block ring.
 Argument INSTANCE is the copilot chat instance to use."
-  (let ((yank-fn (copilot-chat-frontend-yank-fn (copilot-chat--get-frontend))))
-    (when yank-fn
-      (funcall yank-fn instance))))
+  (when-let* ((yank-fn (copilot-chat-frontend-yank-fn (copilot-chat--get-frontend))))
+    (funcall yank-fn instance)))
 
-;;;###autoload
-(defun copilot-chat-clear-auth-cache()
+;;;###autoload (autoload 'copilot-chat-clear-auth-cache "copilot-chat" nil t)
+(defun copilot-chat-clear-auth-cache ()
   "Clear the auth cache for Copilot Chat."
   (interactive)
   (copilot-chat-reset)
@@ -893,8 +908,8 @@ Argument INSTANCE is the copilot chat instance to use."
   (message "Auth cache cleared.")
   (setq copilot-chat--connection (copilot-chat-connection--make)))
 
-;;;###autoload
-(defun copilot-chat-reset-models()
+;;;###autoload (autoload 'copilot-chat-reset-models "copilot-chat" nil t)
+(defun copilot-chat-reset-models ()
   "Reset model cache and fetch models again.
 This is useful when GitHub adds new models or updates model capabilities.
 Clears model cache from memory and disk, then triggers background fetch."
@@ -916,17 +931,6 @@ Clears model cache from memory and disk, then triggers background fetch."
 
   ;; Return nil for programmatic usage
   nil)
-
-(defun copilot-chat--get-list-buffer-create (instance)
-  "Get or create the Copilot chat list buffer for INSTANCE."
-  (let ((list-buffer (get-buffer-create
-                       (concat copilot-chat-list-buffer
-                         "-"
-                         (copilot-chat-directory instance)
-                         "*"))))
-    (with-current-buffer list-buffer
-      (setq-local default-directory (copilot-chat-directory instance)))
-    list-buffer))
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
