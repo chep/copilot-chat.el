@@ -642,8 +642,8 @@ No message is printed if `copilot-chat-debug' is nil."
                              (format "Error formatting message with args: %S" args)))))
       (message "[copilot-chat:%s] %s" category formatted-msg))))
 
-;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
-(defun copilot-chat-insert-commit-message ()
+;;;###autoload (autoload 'copilot-chat-insert-commit-message-when-ready "copilot-chat" nil t)
+(defun copilot-chat-insert-commit-message-when-ready ()
   "Generate and insert a commit message using Copilot.
 Uses the current staged changes in git
 to generate an appropriate commit message.
@@ -745,6 +745,20 @@ Requires the repository to have staged changes."
                       (copilot-chat--debug 'commit "Received chunk: %d chars"
                         (length content)))))))
             t))))))
+
+;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
+(defun copilot-chat-insert-commit-message ()
+  "Generate and insert a commit message using Copilot.
+Uses the current staged changes in git
+to generate an appropriate commit message.
+Requires the repository to have staged changes.
+This function is expected to be safe to open via magit
+when added to `git-commit-setup-hook'."
+  (interactive)
+  ;;FIXME: I really don't want to do anything delayed by time,
+  ;; but I had to in order to make it work anyway.
+  ;; In fact, we would like to get rid of this kind of messy control.
+  (run-with-timer 1 nil #'copilot-chat-insert-commit-message-when-ready))
 
 (defun copilot-chat--model-picker-enabled (model)
   "Check the `model_picker_enabled` attribute of the MODEL.
