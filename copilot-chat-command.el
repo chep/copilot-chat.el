@@ -576,10 +576,10 @@ Replace selection if any."
          (kill-buffer buf))))
     (aio-await promise)))
 
-(aio-defun copilot-chat--git-toplevel ()
+(aio-defun copilot-chat--git-root ()
   "Get top folder of current git repo."
   (when (executable-find "git")
-    (aio-await (copilot-chat--exec "git" "rev-parse" "--show-toplevel"))))
+    (file-name-directory (aio-await (copilot-chat--exec "git" "rev-parse" "--absolute-git-dir")))))
 
 (aio-defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.
@@ -589,12 +589,12 @@ repository or if there are no staged changes.
 
 +The diff is generated using git and excludes files matching patterns in
 +`copilot-chat-ignored-commit-files', such as lock files and build artifacts."
-  (let* ((default-directory (or (aio-await (copilot-chat--git-toplevel))
+  (let* ((default-directory (or (aio-await (copilot-chat--git-root))
                               (user-error "Not inside a Git repository")))
           ;; First get list of staged files
           (staged-files (split-string
                           (aio-await
-                            (copilot-chat--exec "git" "diff" "--cached" "--name-only"))
+                            (copilot-chat--exec "git" "--no-pager" "diff" "--cached" "--name-only"))
                           "\n" t))
           (files-to-include
             (cl-remove-if
@@ -609,7 +609,7 @@ repository or if there are no staged changes.
     (when files-to-include
       (aio-await
         (apply #'copilot-chat--exec
-          "git" "diff" "--cached" "--" files-to-include)))))
+          "git" "--no-pager" "diff" "--cached" "--" files-to-include)))))
 
 (defun copilot-chat-goto-input()
   "Go to the input area."
@@ -642,8 +642,8 @@ No message is printed if `copilot-chat-debug' is nil."
                              (format "Error formatting message with args: %S" args)))))
       (message "[copilot-chat:%s] %s" category formatted-msg))))
 
-;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
-(defun copilot-chat-insert-commit-message ()
+;;;###autoload (autoload 'copilot-chat-insert-commit-message-when-ready "copilot-chat" nil t)
+(defun copilot-chat-insert-commit-message-when-ready ()
   "Generate and insert a commit message using Copilot.
 Uses the current staged changes in git
 to generate an appropriate commit message.
@@ -745,6 +745,20 @@ Requires the repository to have staged changes."
                       (copilot-chat--debug 'commit "Received chunk: %d chars"
                         (length content)))))))
             t))))))
+
+;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
+(defun copilot-chat-insert-commit-message ()
+  "Generate and insert a commit message using Copilot.
+Uses the current staged changes in git
+to generate an appropriate commit message.
+Requires the repository to have staged changes.
+This function is expected to be safe to open via magit
+when added to `git-commit-setup-hook'."
+  (interactive)
+  ;;FIXME: I really don't want to do anything delayed by time,
+  ;; but I had to in order to make it work anyway.
+  ;; In fact, we would like to get rid of this kind of messy control.
+  (run-with-timer 1 nil #'copilot-chat-insert-commit-message-when-ready))
 
 (defun copilot-chat--model-picker-enabled (model)
   "Check the `model_picker_enabled` attribute of the MODEL.
