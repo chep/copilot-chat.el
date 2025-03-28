@@ -120,6 +120,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 ** Functions
 *** Basic functions
 - ~(copilot-chat-display)~ (alias ~(copilot-chat)~) display copilot chat buffer. When using ~(copilot-chat-display)~ with a prefix argument, you'll be prompted to select which instance to use.
+- ~(copilot-chat-hide)~ hide copilot chat buffer.
 - ~(copilot-chat-reset)~ reset the current instance including history, frontend and included buffers (default). Use with prefix argument to preserve selected buffers.
 - ~(copilot-chat-switch-to-buffer)~ switch to Copilot Chat buffer, side by side with the current code editing buffer.
 - ~(copilot-chat-set-model)~ Select AI model to use for current instance.
@@ -143,9 +144,11 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-add-current-buffer)~ add current buffer to copilot chat. Its content will be sent with every request.
 - ~(copilot-chat-del-current-buffer)~ remove current buffer.
 - ~(copilot-chat-list)~ open buffer list.
+- ~(copilot-chat-add-workspace)~ add all files in current workspace matching the instance's directory, respecting gitignore patterns if present. Buffer list is cleared before processing.
 - ~(copilot-chat-add-buffers)~ ask for buffers and add them to copilot chat context.
 - ~(copilot-chat-del-buffers)~ ask for buffers and remove them from copilot chat context.
 - ~(copilot-chat-add-buffers-in-current-window)~ add all buffers in current Emacs window to copilot chat.
+- ~(copilot-chat-add-file)~ add a specific file to copilot-chat buffers.
 - ~(copilot-chat-add-files-under-dir)~ Add all files with same suffix as current file under current directory. If there are more than 40 files, refuse to add and show warning message.
 
 *** Code helper functions
