@@ -791,6 +791,16 @@ Clears model cache from memory and disk, then triggers background fetch."
   ;; Return nil for programmatic usage
   nil)
 
+(defun copilot-chat-add-workspace ()
+  "Add all open files matching an instance.
+If a gitignore file is present in the instance directory, it will be used to
+filter files. Buffer list is cleared and all buffer displaying a file in the
+instance directory will be added."
+  (interactive)
+  (let ((instance (copilot-chat--current-instance)))
+    (copilot-chat--add-workspace instance)
+    (copilot-chat-list-refresh instance)))
+
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
 
