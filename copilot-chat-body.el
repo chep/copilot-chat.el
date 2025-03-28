@@ -32,15 +32,53 @@
 (require 'copilot-chat-instance)
 (require 'copilot-chat-prompts)
 
+(defun copilot-chat--format-buffer-for-copilot (buffer instance)
+  "Format BUFFER content for Copilot with metadata to improve understanding.
+INSTANCE is the copilot-chat instance being used."
+  (with-current-buffer buffer
+    (let* ((file-name (buffer-file-name))
+           (relative-path (if file-name
+                              (file-relative-name file-name (copilot-chat-directory instance))
+                            (buffer-name)))
+           (language (if (derived-mode-p 'prog-mode)
+                         (replace-regexp-in-string "\\(?:-ts\\)?-mode$" ""
+                                                   (symbol-name major-mode))
+                       "text"))
+           (content (buffer-substring-no-properties (point-min) (point-max)))
+           (line-count (count-lines (point-min) (point-max)))
+           (formatted-content ""))
+
+      ;; Add line numbers to content
+      (with-temp-buffer
+        (insert content)
+        (goto-char (point-min))
+        (let ((line-num 1))
+          (while (not (eobp))
+            (let ((line (buffer-substring-no-properties
+                         (line-beginning-position)
+                         (line-end-position))))
+              (setq formatted-content
+                    (concat formatted-content
+                            (format "%4d: %s\n" line-num line)))
+              (setq line-num (1+ line-num)))
+            (forward-line 1))))
+
+      ;; Return the formatted string with metadata
+      (format "FILE: %s\nLANGUAGE: %s\nLINES: %d\n\n%s"
+              relative-path
+              language
+              line-count
+              formatted-content))))
+
 (defun copilot-chat--create-req (instance prompt no-context)
   "Create a request for Copilot.
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
-  (let* ((create-req-fn (copilot-chat-frontend-create-req-fn
-                         (copilot-chat--get-frontend)))
-         (messages nil))
+  (let ((create-req-fn (copilot-chat-frontend-create-req-fn
+                        (copilot-chat--get-frontend)))
+        (messages nil))
     ;; Apply create-req-fn if available
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
@@ -55,8 +93,8 @@ The create req function is called first and will return new prompt."
       (setf (copilot-chat-buffers instance)
             (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
       (dolist (buffer (copilot-chat-buffers instance))
-        (with-current-buffer buffer
-          (push (list `(content . ,(buffer-substring-no-properties (point-min) (point-max)))
+        (when (buffer-live-p buffer)
+          (push (list `(content . ,(copilot-chat--format-buffer-for-copilot buffer instance))
                       `(role . "user"))
                 messages))))
     ;; system
