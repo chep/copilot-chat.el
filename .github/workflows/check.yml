@@ -11,3 +11,5 @@ jobs:
         with:
           version: 30.1
       - uses: leotaku/elisp-check@v1.4.1
+        with:
+          warnings_as_errors: true
