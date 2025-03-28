@@ -116,7 +116,8 @@ to Copilot for processing."
 
 (defun copilot-chat--ask-region(prompt beg end)
   "Send to Copilot a prompt followed by the current selected code.
-Argument PROMPT is the prompt to send to Copilot."
+Argument PROMPT is the prompt to send to Copilot.
+BEG and END are the beginning and end positions of the region to explain."
   (let ((instance (copilot-chat--current-instance))
          (code (buffer-substring-no-properties beg end)))
     (copilot-chat--insert-and-send-prompt
@@ -126,37 +127,43 @@ Argument PROMPT is the prompt to send to Copilot."
 
 ;;;###autoload (autoload 'copilot-chat-explain "copilot-chat" nil t)
 (defun copilot-chat-explain (beg end)
-  "Ask Copilot to explain the current selected code."
+  "Ask Copilot to explain the current selected code.
+BEG and END are the beginning and end positions of the region to explain."
   (interactive "r")
   (copilot-chat--ask-region 'explain beg end))
 
 ;;;###autoload (autoload 'copilot-chat-review "copilot-chat" nil t)
 (defun copilot-chat-review (beg end)
-  "Ask Copilot to review the current selected code."
+  "Ask Copilot to review the current selected code.
+BEG and END are the beginning and end positions of the region to review."
   (interactive "r")
   (copilot-chat--ask-region 'review beg end))
 
 ;;;###autoload (autoload 'copilot-chat-doc "copilot-chat" nil t)
 (defun copilot-chat-doc (beg end)
-  "Ask Copilot to write documentation for the current selected code."
+  "Ask Copilot to write documentation for the current selected code.
+BEG and END are the beginning and end positions of the region to document."
   (interactive "r")
   (copilot-chat--ask-region 'doc beg end))
 
 ;;;###autoload (autoload 'copilot-chat-fix "copilot-chat" nil t)
 (defun copilot-chat-fix (beg end)
-  "Ask Copilot to fix the current selected code."
+  "Ask Copilot to fix the current selected code.
+BEG and END are the beginning and end positions of the region to fix."
   (interactive "r")
   (copilot-chat--ask-region 'fix beg end))
 
 ;;;###autoload (autoload 'copilot-chat-optimize "copilot-chat" nil t)
 (defun copilot-chat-optimize (beg end)
-  "Ask Copilot to optimize the current selected code."
+  "Ask Copilot to optimize the current selected code.
+BEG and END are the beginning and end positions of the region to optimize."
   (interactive "r")
   (copilot-chat--ask-region 'optimize beg end))
 
 ;;;###autoload (autoload 'copilot-chat-test "copilot-chat" nil t)
 (defun copilot-chat-test (beg end)
-  "Ask Copilot to generate test for the current selected code."
+  "Ask Copilot to generate test for the current selected code.
+BEG and END are the beginning and end positions of the region to test."
   (interactive "r")
   (copilot-chat--ask-region 'test beg end))
 
@@ -563,17 +570,17 @@ Replace selection if any."
 
 (aio-defun copilot-chat--exec (&rest command)
   "Asynchronously execute command COMMAND and return its output string."
-  (let ((promise (aio-promise))
-        (buf (generate-new-buffer " *copilot-chat-shell-command*")))
+  (let ( (promise (aio-promise))
+         (buf (generate-new-buffer " *copilot-chat-shell-command*")))
     (set-process-sentinel
-     (apply #'start-process "copilot-chat-shell-command" buf command)
-     (lambda (proc _signal)
-       (when (memq (process-status proc) '(exit signal))
-         (with-current-buffer buf
-           (let ((data (buffer-string)))
-             (aio-resolve promise
-               (lambda () (if (> (length data) 0) (substring data 0 -1) "")))))
-         (kill-buffer buf))))
+      (apply #'start-process "copilot-chat-shell-command" buf command)
+      (lambda (proc _signal)
+        (when (memq (process-status proc) '(exit signal))
+          (with-current-buffer buf
+            (let ((data (buffer-string)))
+              (aio-resolve promise
+                (lambda () (if (> (length data) 0) (substring data 0 -1) "")))))
+          (kill-buffer buf))))
     (aio-await promise)))
 
 (aio-defun copilot-chat--git-root ()
