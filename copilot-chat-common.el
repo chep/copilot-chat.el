@@ -54,69 +54,6 @@
   :type 'string
   :group 'copilot-chat)
 
-;; Model cache settings
-(defcustom copilot-chat-models-cache-file "~/.cache/copilot-chat/models.json"
-  "File to cache fetched models."
-  :type 'string
-  :group 'copilot-chat)
-
-(defcustom copilot-chat-models-cache-ttl 86400
-  "Time-to-live for cached models in seconds (default: 24 hours)."
-  :type 'integer
-  :group 'copilot-chat)
-
-(defcustom copilot-chat-models-fetch-cooldown 300
-  "Minimum time between model fetch attempts in seconds (default: 5 minutes)."
-  :type 'integer
-  :group 'copilot-chat)
-
-;; GitHub Copilot models: https://api.githubcopilot.com/models
-(defcustom copilot-chat-default-model "gpt-4o"
-  "The model to use for Copilot chat.
-The list of available models will be updated when fetched from the API.
-Use `copilot-chat-set-model' to interactively select a model."
-  :type 'string
-  :group 'copilot-chat)
-
-(defcustom copilot-chat-model-ignore-picker nil
-  "Include models with the `model_picker_enabled' attribute set to `false'.
-For most people, a model with this attribute not `true' is useless,
-as it is a degraded version or has almost no difference.
-Therefore, to reduce noise,
-models whose `model_picker_enabled' attribute
-is not `true' are not included in the model selection by default."
-  :type 'boolean
-  :group 'copilot-chat)
-
-(cl-defstruct (copilot-chat
-                (:constructor copilot-chat--make)
-                (:copier nil))
-  "Struct for Copilot chat state."
-  (directory nil :type (or null string))
-  (model copilot-chat-default-model :type string)
-  (chat-buffer nil :type (or null buffer))
-  (first-word-answer t :type boolean)
-  (history nil :type list)
-  (buffers nil :type list)
-  (prompt-history nil :type list)
-  (prompt-history-position nil :type (or null int))
-  (yank-index 1 :type int)
-  (last-yank-start nil :type (or null point))
-  (last-yank-end nil :type (or null point))
-  (spinner-timer nil :type timer)
-  (spinner-index 0 :type int)
-  (spinner-status nil :type (or null string))
-  (curl-answer nil :type (or null string))
-  (curl-file nil :type (or null file))
-  (curl-current-data nil :type (or null string))
-  (shell-maker-tmp-buf nil :type buffer)
-  (shell-maker-answer-point nil :type point)
-  (shell-cb-fn nil :type function))
-
-;; variables
-(defvar copilot-chat--instances (list)
-  "Global instance of Copilot chat.")
-
 ;; Functions
 (defun copilot-chat--uuid ()
   "Generate a UUID."
@@ -135,10 +72,6 @@ is not `true' are not included in the model selection by default."
     (dotimes (_ length)
       (setq hex (concat hex (string (aref hex-chars (random 16))))))
     hex))
-
-(defun copilot-chat--model-is-o1 (instance)
-  "Check if the model of INSTANCE is o1."
-  (string-prefix-p "o1" (copilot-chat-model instance)))
 
 (defun copilot-chat--get-buffer-name (directory)
   "Get the corresponding chat buffer name for DIRECTORY."

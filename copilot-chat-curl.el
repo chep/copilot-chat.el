@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'copilot-chat-body)
+(require 'copilot-chat-common)
 (require 'copilot-chat-connection)
 (require 'copilot-chat-spinner)
 

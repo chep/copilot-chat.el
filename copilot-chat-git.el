@@ -28,7 +28,7 @@
 
 (require 'aio)
 
-(require 'copilot-chat-instance)
+(require 'copilot-chat-copilot)
 
 (defcustom copilot-chat-ignored-commit-files
   '("pnpm-lock.yaml" "package-lock.json" "yarn.lock" "poetry.lock"

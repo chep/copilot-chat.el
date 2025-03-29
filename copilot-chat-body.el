@@ -28,8 +28,8 @@
 
 (require 'cl-lib)
 
-(require 'copilot-chat-common)
 (require 'copilot-chat-frontend)
+(require 'copilot-chat-instance)
 (require 'copilot-chat-prompts)
 
 (defun copilot-chat--create-req (instance prompt no-context)

@@ -32,6 +32,7 @@
 (require 'polymode)
 
 (require 'copilot-chat-prompt-mode)
+(require 'copilot-chat-prompts)
 
 ;;; Constants
 (defconst copilot-chat--org-input-tag

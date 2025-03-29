@@ -31,8 +31,7 @@
 (require 'request)
 
 (require 'copilot-chat-body)
-(require 'copilot-chat-connection)
-(require 'copilot-chat-debug)
+(require 'copilot-chat-common)
 
 (cl-defun copilot-chat--request-token-cb ( &key response
                                            &key data
@@ -372,42 +371,6 @@ Optional argument QUIET suppresses user messages when non-nil."
                (lambda (&key error-thrown &allow-other-keys)
                  (when copilot-chat-debug
                    (message "Error fetching models asynchronously: %S" error-thrown)))))))
-
-;; Model cache functions
-(defun copilot-chat--save-models-to-cache (models)
-  "Save MODELS to disk cache."
-  (when models
-    (let ((cache-data `((timestamp . ,(round (float-time)))
-                         (models . ,(vconcat models)))))
-      (with-temp-file copilot-chat-models-cache-file
-        (insert (json-serialize cache-data)))
-      (when copilot-chat-debug
-        (message "Saved %d models to cache %s" (length models) copilot-chat-models-cache-file)))))
-
-(defun copilot-chat--load-models-from-cache ()
-  "Load models from disk cache if available and not expired."
-  (when (file-exists-p copilot-chat-models-cache-file)
-    (with-temp-buffer
-      (insert-file-contents copilot-chat-models-cache-file)
-      (condition-case nil
-        (let* ( (cache-data (json-read-from-string (buffer-string)))
-                (timestamp (alist-get 'timestamp cache-data))
-                (current-time (round (float-time)))
-                (age (- current-time timestamp)))
-          (if (< age copilot-chat-models-cache-ttl)
-            (let ((models (alist-get 'models cache-data)))
-              (when copilot-chat-debug
-                (message "Loaded %d models from cache (age: %d seconds)"
-                  (length models) age))
-              models)
-            (when copilot-chat-debug
-              (message "Cache expired (age: %d seconds, ttl: %d seconds)"
-                age copilot-chat-models-cache-ttl))
-            nil))
-        (error
-          (when copilot-chat-debug
-            (message "Error loading models from cache"))
-          nil)))))
 
 (provide 'copilot-chat-request)
 ;;; copilot-chat-request.el ends here

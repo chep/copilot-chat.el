@@ -29,7 +29,7 @@
 
 (require 'shell-maker)
 
-(require 'copilot-chat-instance)
+(require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
 
 ;; Constants
