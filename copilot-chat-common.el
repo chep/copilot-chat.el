@@ -90,11 +90,6 @@ is not `true' are not included in the model selection by default."
   :type 'boolean
   :group 'copilot-chat)
 
-(defcustom copilot-chat-debug nil
-  "When non-nil, show debug information for API requests."
-  :type 'boolean
-  :group 'copilot-chat)
-
 ;; structs
 (cl-defstruct (copilot-chat-connection
                 (:constructor copilot-chat-connection--make)

@@ -29,6 +29,7 @@
 (require 'polymode)
 
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-debug)
 (require 'copilot-chat-instance)
 (require 'copilot-chat-prompt-mode)
 
@@ -559,28 +560,6 @@ Replace selection if any."
       (let ((goto-fn (copilot-chat-frontend-goto-input-fn (copilot-chat--get-frontend))))
         (when goto-fn
           (funcall goto-fn))))))
-
-(defun copilot-chat--debug (category format-string &rest args)
-  "Print debug message when `copilot-chat-debug' is enabled.
-
-CATEGORY is a symbol indicating the message category.
-For example, `'commit', `'model', `'auth'.
-FORMAT-STRING is the format string passed to `message'.
-ARGS are the arguments to be formatted according to FORMAT-STRING.
-
-The message is prefixed with '[copilot-chat:CATEGORY]' for easy identification.
-No message is printed if `copilot-chat-debug' is nil."
-  (when copilot-chat-debug
-    (unless (symbolp category)
-      (signal 'wrong-type-argument (list 'symbolp category)))
-    (unless (stringp format-string)
-      (signal 'wrong-type-argument (list 'stringp format-string)))
-    (let ((formatted-msg (condition-case err
-                           (apply #'format format-string args)
-                           (error
-                             (message "Error formatting debug message: %S" err)
-                             (format "Error formatting message with args: %S" args)))))
-      (message "[copilot-chat:%s] %s" category formatted-msg))))
 
 (defun copilot-chat--model-picker-enabled (model)
   "Check the `model_picker_enabled` attribute of the MODEL.

@@ -25,7 +25,11 @@
 ;;; Commentary:
 
 ;;; Code:
+
+(require 'polymode)
+
 (require 'copilot-chat-common)
+(require 'copilot-chat-copilot)
 
 (defun copilot-chat--get-list-buffer-create (instance)
   "Get or create the Copilot chat list buffer for INSTANCE."

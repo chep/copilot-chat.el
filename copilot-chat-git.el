@@ -28,8 +28,8 @@
 
 (require 'aio)
 
-(require 'copilot-chat-command)
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-debug)
 (require 'copilot-chat-instance)
 
 (defcustom copilot-chat-ignored-commit-files
