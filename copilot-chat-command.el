@@ -28,6 +28,7 @@
 
 (require 'polymode)
 
+(require 'copilot-chat-common)
 (require 'copilot-chat-debug)
 (require 'copilot-chat-instance)
 (require 'copilot-chat-prompt-mode)

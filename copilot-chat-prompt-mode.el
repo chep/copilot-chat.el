@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+(require 'copilot-chat-common)
 (require 'copilot-chat-spinner)
 
 (defvar copilot-chat-prompt-mode-map

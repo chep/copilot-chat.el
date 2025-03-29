@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+(require 'copilot-chat-common)
 (require 'copilot-chat-frontend)
 
 (defcustom copilot-chat-spinner-frames

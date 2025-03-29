@@ -28,9 +28,6 @@
 
 (require 'cl-lib)
 
-(require 'copilot-chat-common)
-(require 'copilot-chat-prompts)
-
 (defvar copilot-chat-frontend)
 
 (cl-defstruct copilot-chat-frontend
@@ -70,51 +67,6 @@ Argument INSTANCE is the copilot chat instance to get the buffer for."
                          (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn instance))))
-
-(defun copilot-chat--create-req (instance prompt no-context)
-  "Create a request for Copilot.
-Argument INSTANCE is the copilot chat instance to use.
-Argument PROMPT Copilot prompt to send.
-Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
-The create req function is called first and will return new prompt."
-  (let ( (create-req-fn (copilot-chat-frontend-create-req-fn
-                          (copilot-chat--get-frontend)))
-         (messages nil))
-    (when create-req-fn
-      (setq prompt (funcall create-req-fn prompt no-context)))
-
-    ;; user prompt
-    (push (list `(content . ,prompt) `(role . "user")) messages)
-
-    (unless no-context
-      ;; history
-      (dolist (history (copilot-chat-history instance))
-        (push (list `(content . ,(car history)) `(role . ,(cadr history))) messages))
-      ;; buffers
-
-      (setf (copilot-chat-buffers instance) (cl-remove-if (lambda (buf) (not (buffer-live-p buf)))
-                                              (copilot-chat-buffers instance)))
-      (dolist (buffer (copilot-chat-buffers instance))
-        (when (buffer-live-p buffer)
-          (with-current-buffer buffer
-            (push (list `(content . ,(buffer-substring-no-properties (point-min) (point-max))) `(role . "user"))
-              messages)))))
-
-    ;; system
-    (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)
-
-
-    (json-serialize (if (copilot-chat--model-is-o1 instance)
-                      `( (messages . ,(vconcat messages))
-                         (model . ,(copilot-chat-model instance))
-                         (stream . :false))
-                      `( (messages . ,(vconcat messages))
-                         (top_p . 1)
-                         (model . ,(copilot-chat-model instance))
-                         (stream . t)
-                         (n . 1)
-                         (intent . t)
-                         (temperature . 0.1))))))
 
 (provide 'copilot-chat-frontend)
 ;;; copilot-chat-frontend.el ends here

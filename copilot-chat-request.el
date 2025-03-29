@@ -30,9 +30,9 @@
 
 (require 'request)
 
+(require 'copilot-chat-body)
 (require 'copilot-chat-connection)
 (require 'copilot-chat-debug)
-(require 'copilot-chat-frontend)
 
 (cl-defun copilot-chat--request-token-cb ( &key response
                                            &key data

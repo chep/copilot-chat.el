@@ -35,7 +35,7 @@
 
 ;;; Code:
 
-(require 'copilot-chat-command)
+(require 'copilot-chat-body)
 (require 'copilot-chat-common)
 (require 'copilot-chat-connection)
 (require 'copilot-chat-copilot)
