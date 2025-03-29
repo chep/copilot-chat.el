@@ -28,10 +28,9 @@
 ;;; Code:
 
 (require 'shell-maker)
+
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
-(require 'copilot-chat-prompts)
-(require 'copilot-chat-instance)
 
 ;; Constants
 (defconst copilot-chat--shell-maker-temp-buffer-prefix
