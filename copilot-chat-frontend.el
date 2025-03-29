@@ -29,6 +29,7 @@
 (require 'cl-lib)
 
 (require 'copilot-chat-common)
+(require 'copilot-chat-prompts)
 
 (defvar copilot-chat-frontend)
 
@@ -66,14 +67,6 @@ Elements are added in the module that defines each front end.")
   "Get Copilot Chat buffer from the active frontend.
 Argument INSTANCE is the copilot chat instance to get the buffer for."
   (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn
-                         (copilot-chat--get-frontend))))
-    (when get-buffer-fn
-      (funcall get-buffer-fn instance))))
-
-(defun copilot-chat--get-spinner-buffer(instance)
-  "Get Spinner buffer from the active frontend.
-Argument INSTANCE is the copilot chat instance to get the buffer for."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn
                          (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn instance))))

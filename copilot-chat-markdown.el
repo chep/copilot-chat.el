@@ -30,8 +30,6 @@
 (require 'markdown-mode)
 (require 'polymode)
 
-(require 'copilot-chat-common)
-(require 'copilot-chat-frontend)
 (require 'copilot-chat-prompt-mode)
 
 ;;; Constants

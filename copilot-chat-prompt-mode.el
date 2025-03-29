@@ -26,8 +26,7 @@
 
 ;;; Code:
 
-(require 'copilot-chat-curl)
-(require 'copilot-chat-frontend)
+(require 'copilot-chat-spinner)
 
 (defvar copilot-chat-prompt-mode-map
   (let ((map (make-keymap)))

@@ -28,7 +28,7 @@
 ;;; Code:
 
 (require 'copilot-chat-connection)
-(require 'copilot-chat-frontend)
+(require 'copilot-chat-spinner)
 
 ;; customs
 (defcustom copilot-chat-curl-program "curl"
@@ -80,23 +80,6 @@ Specify the username and password <user:password> to use for proxy
 authentication."
   :type 'boolean
   :group 'copilot-chat)
-
-(defcustom copilot-chat-spinner-frames
-  '("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
-  "Frames used for the spinner animation during streaming."
-  :type '(repeat string)
-  :group 'copilot-chat)
-
-(defcustom copilot-chat-spinner-interval 0.1
-  "Interval in seconds between spinner frame updates."
-  :type 'number
-  :group 'copilot-chat)
-
-(defface copilot-chat-spinner-face
-  '((t :inherit font-lock-keyword-face))
-  "Face used for the spinner during streaming."
-  :group 'copilot-chat)
-
 
 ;; functions
 (defun copilot-chat--curl-call-process(address method data &rest args)
@@ -413,66 +396,6 @@ Argument NO-HISTORY is a boolean to indicate
           (copilot-chat--spinner-stop instance)
           (setf (copilot-chat-curl-current-data instance) nil)
           (funcall callback instance (format "GitHub Copilot error: %S\nResponse is %S" err (string-trim string))))))))
-
-(defun copilot-chat--spinner-start (instance)
-  "Start the spinner animation in the Copilot Chat buffer.
-Argument INSTANCE is the copilot chat instance to use."
-  (when (copilot-chat-spinner-timer instance)
-    (cancel-timer (copilot-chat-spinner-timer instance)))
-
-  (setf (copilot-chat-spinner-index instance) 0
-    (copilot-chat-spinner-status instance) "Thinking"
-    (copilot-chat-spinner-timer instance) (run-with-timer 0
-                                            copilot-chat-spinner-interval
-                                            #'copilot-chat--spinner-update
-                                            instance)))
-
-(defun copilot-chat--spinner-update (instance)
-  "Update the spinner animation in the Copilot Chat buffer.
-Argument INSTANCE is the copilot chat instance to use."
-  (let ((buffer (copilot-chat--get-spinner-buffer instance)))
-    (when (and buffer (buffer-live-p buffer))
-      (let ((frame (nth (copilot-chat-spinner-index instance) copilot-chat-spinner-frames))
-             (status-text (if (copilot-chat-spinner-status instance)
-                            (concat (copilot-chat-spinner-status instance) " ")
-                            "")))
-        (with-current-buffer buffer
-          (save-excursion
-            ;; Remove existing spinner overlay if any
-            (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)
-            ;; Create new spinner overlay at the end of buffer
-            (goto-char (point-max))
-            (let ((ov (make-overlay (point) (point))))
-              (overlay-put ov 'copilot-chat-spinner t)
-              (overlay-put ov 'after-string
-                (propertize (concat status-text frame)
-                  'face 'copilot-chat-spinner-face))))))
-
-      ;; Update spinner index
-      (setf (copilot-chat-spinner-index instance)
-        (% (1+ (copilot-chat-spinner-index instance))
-          (length copilot-chat-spinner-frames))))))
-
-(defun copilot-chat--spinner-stop (instance)
-  "Stop the spinner animation.
-Argument INSTANCE is the copilot chat instance to use."
-  (when (copilot-chat-spinner-timer instance)
-    (cancel-timer (copilot-chat-spinner-timer instance))
-    (setf (copilot-chat-spinner-timer instance) nil))
-
-  ;; Remove spinner overlay
-  (let ((buffer (copilot-chat--get-spinner-buffer instance)))
-    (when (and buffer (buffer-live-p buffer))
-      (with-current-buffer buffer
-        (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)))))
-
-(defun copilot-chat--spinner-set-status (instance status)
-  "Set the status message to display with the spinner.
-Argument INSTANCE is the copilot chat instance to use.
-Argument STATUS is the status message to display."
-  (setf (copilot-chat-spinner-status instance) status)
-  (when (copilot-chat-spinner-timer instance)
-    (copilot-chat--spinner-update instance)))
 
 (defun copilot-chat--curl-ask(instance prompt callback out-of-context)
   "Ask a question to Copilot using curl backend.

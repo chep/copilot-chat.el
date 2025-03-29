@@ -42,6 +42,7 @@
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-git)
 (require 'copilot-chat-prompts)
+(require 'copilot-chat-spinner)
 (require 'copilot-chat-transient)
 
 (defcustom copilot-chat-frontend 'org

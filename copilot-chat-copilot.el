@@ -26,9 +26,7 @@
 
 ;;; Code:
 
-(require 'copilot-chat-connection)
 (require 'copilot-chat-curl)
-(require 'copilot-chat-debug)
 (require 'copilot-chat-request)
 
 ;; customs
