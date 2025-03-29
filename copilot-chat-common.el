@@ -90,19 +90,6 @@ is not `true' are not included in the model selection by default."
   :type 'boolean
   :group 'copilot-chat)
 
-;; structs
-(cl-defstruct (copilot-chat-connection
-                (:constructor copilot-chat-connection--make)
-                (:copier nil))
-  "Struct for Copilot connection information."
-  (ready nil :type boolean)
-  (github-token nil :type (or null string))
-  (token nil)
-  (sessionid nil :type (or null string))
-  (machineid nil :type (or null string))
-  (models nil :type list)
-  (last-models-fetch-time 0 :type number))
-
 (cl-defstruct (copilot-chat
                 (:constructor copilot-chat--make)
                 (:copier nil))
@@ -129,10 +116,6 @@ is not `true' are not included in the model selection by default."
   (shell-cb-fn nil :type function))
 
 ;; variables
-(defvar copilot-chat--connection
-  (copilot-chat-connection--make)
-  "Connection information for Copilot chat.")
-
 (defvar copilot-chat--instances (list)
   "Global instance of Copilot chat.")
 

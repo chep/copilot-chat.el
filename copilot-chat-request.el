@@ -30,6 +30,8 @@
 
 (require 'request)
 
+(require 'copilot-chat-common)
+(require 'copilot-chat-connection)
 (require 'copilot-chat-debug)
 (require 'copilot-chat-frontend)
 

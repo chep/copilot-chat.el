@@ -37,6 +37,7 @@
 
 (require 'copilot-chat-command)
 (require 'copilot-chat-common)
+(require 'copilot-chat-connection)
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-git)

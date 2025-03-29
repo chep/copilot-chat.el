@@ -28,7 +28,6 @@
 
 (require 'polymode)
 
-(require 'copilot-chat-common)
 (require 'copilot-chat-copilot)
 
 (defun copilot-chat--get-list-buffer-create (instance)

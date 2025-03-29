@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'copilot-chat-connection)
 (require 'copilot-chat-frontend)
 
 ;; customs
