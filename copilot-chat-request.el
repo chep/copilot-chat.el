@@ -32,6 +32,7 @@
 
 (require 'copilot-chat-body)
 (require 'copilot-chat-common)
+(require 'copilot-chat-connection)
 
 (cl-defun copilot-chat--request-token-cb ( &key response
                                            &key data
