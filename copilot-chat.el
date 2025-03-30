@@ -35,11 +35,22 @@
 
 ;;; Code:
 
+;; All modules are loaded at the top level except those that are loaded lazily or for development.
+;; Lazy-loaded stuff is `copilot-chat-markdown', `copilot-chat-org', `copilot-chat-shell-maker'.
+(require 'copilot-chat-body)
 (require 'copilot-chat-command)
 (require 'copilot-chat-common)
+(require 'copilot-chat-connection)
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-curl)
 (require 'copilot-chat-frontend)
+(require 'copilot-chat-git)
+(require 'copilot-chat-instance)
+(require 'copilot-chat-model)
 (require 'copilot-chat-prompts)
+(require 'copilot-chat-prompt-mode)
+(require 'copilot-chat-request)
+(require 'copilot-chat-spinner)
 (require 'copilot-chat-transient)
 
 (defcustom copilot-chat-frontend 'org
