@@ -150,7 +150,7 @@ Argument SHELL is the `shell-maker' instance."
   "Start a Copilot Chat shell for INSTANCE."
   (let ((buf (shell-maker-start
                (make-shell-maker-config
-                 :name (format "Copilot-Chat %s" (copilot-chat-directory instance))
+                 :name (format "Copilot-Chat%s" (copilot-chat-directory instance))
                  :execute-command (lambda (command shell)
                                     (copilot-chat--shell-cb instance command shell)))
                t nil t
