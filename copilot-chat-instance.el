@@ -37,8 +37,8 @@ Use `copilot-chat-set-model' to interactively select a model."
   :group 'copilot-chat)
 
 (cl-defstruct (copilot-chat
-                (:constructor copilot-chat--make)
-                (:copier nil))
+               (:constructor copilot-chat--make)
+               (:copier nil))
   "Struct for Copilot chat state."
   (directory nil :type (or null string))
   (model copilot-chat-default-model :type string)
@@ -76,10 +76,10 @@ Use `copilot-chat-set-model' to interactively select a model."
 (defun copilot-chat--get-list-buffer-create (instance)
   "Get or create the Copilot chat list buffer for INSTANCE."
   (let ((list-buffer (get-buffer-create
-                       (concat copilot-chat-list-buffer
-                         "-"
-                         (copilot-chat-directory instance)
-                         "*"))))
+                      (concat copilot-chat-list-buffer
+                              "-"
+                              (copilot-chat-directory instance)
+                              "*"))))
     (with-current-buffer list-buffer
       (setq-local default-directory (copilot-chat-directory instance)))
     list-buffer))
@@ -89,6 +89,5 @@ Use `copilot-chat-set-model' to interactively select a model."
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil
-;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
 ;; End:

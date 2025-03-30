@@ -60,11 +60,13 @@ is not `true' are not included in the model selection by default."
   "Save MODELS to disk cache."
   (when models
     (let ((cache-data `((timestamp . ,(round (float-time)))
-                         (models . ,(vconcat models)))))
+                        (models . ,(vconcat models)))))
       (with-temp-file copilot-chat-models-cache-file
         (insert (json-serialize cache-data)))
       (when copilot-chat-debug
-        (message "Saved %d models to cache %s" (length models) copilot-chat-models-cache-file)))))
+        (message "Saved %d models to cache %s"
+                 (length models)
+                 copilot-chat-models-cache-file)))))
 
 (defun copilot-chat--load-models-from-cache ()
   "Load models from disk cache if available and not expired."
@@ -72,30 +74,29 @@ is not `true' are not included in the model selection by default."
     (with-temp-buffer
       (insert-file-contents copilot-chat-models-cache-file)
       (condition-case nil
-        (let* ( (cache-data (json-read-from-string (buffer-string)))
-                (timestamp (alist-get 'timestamp cache-data))
-                (current-time (round (float-time)))
-                (age (- current-time timestamp)))
-          (if (< age copilot-chat-models-cache-ttl)
-            (let ((models (alist-get 'models cache-data)))
+          (let* ((cache-data (json-read-from-string (buffer-string)))
+                 (timestamp (alist-get 'timestamp cache-data))
+                 (current-time (round (float-time)))
+                 (age (- current-time timestamp)))
+            (if (< age copilot-chat-models-cache-ttl)
+                (let ((models (alist-get 'models cache-data)))
+                  (when copilot-chat-debug
+                    (message "Loaded %d models from cache (age: %d seconds)"
+                             (length models) age))
+                  models)
               (when copilot-chat-debug
-                (message "Loaded %d models from cache (age: %d seconds)"
-                  (length models) age))
-              models)
-            (when copilot-chat-debug
-              (message "Cache expired (age: %d seconds, ttl: %d seconds)"
-                age copilot-chat-models-cache-ttl))
-            nil))
+                (message "Cache expired (age: %d seconds, ttl: %d seconds)"
+                         age copilot-chat-models-cache-ttl))
+              nil))
         (error
-          (when copilot-chat-debug
-            (message "Error loading models from cache"))
-          nil)))))
+         (when copilot-chat-debug
+           (message "Error loading models from cache"))
+         nil)))))
 
 (provide 'copilot-chat-model)
 ;;; copilot-chat-model.el ends here
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil
-;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
 ;; End:

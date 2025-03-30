@@ -57,14 +57,14 @@ Elements are added in the module that defines each front end.")
 (defun copilot-chat--get-frontend ()
   "Get frontend from custom."
   (cl-find copilot-chat-frontend copilot-chat--frontend-list
-    :key #'copilot-chat-frontend-id
-    :test #'eq))
+           :key #'copilot-chat-frontend-id
+           :test #'eq))
 
 (defun copilot-chat--get-buffer(instance)
   "Get Copilot Chat buffer from the active frontend.
 Argument INSTANCE is the copilot chat instance to get the buffer for."
   (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn
-                         (copilot-chat--get-frontend))))
+                        (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn instance))))
 
@@ -73,6 +73,5 @@ Argument INSTANCE is the copilot chat instance to get the buffer for."
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil
-;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
 ;; End:

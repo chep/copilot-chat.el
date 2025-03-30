@@ -41,10 +41,12 @@
   "The delimiter used to identify copilot chat input.")
 
 ;;; Polymode
-(define-derived-mode copilot-chat-markdown-prompt-mode markdown-mode "Copilot Chat markdown Prompt"
+(define-derived-mode copilot-chat-markdown-prompt-mode
+  markdown-mode
+  "Copilot Chat markdown Prompt"
   "Major mode for the Copilot Chat Prompt region."
   (setq major-mode 'copilot-chat-markdown-prompt-mode
-    mode-name "Copilot Chat markdown prompt")
+        mode-name "Copilot Chat markdown prompt")
   (copilot-chat-prompt-mode))
 
 (define-hostmode poly-copilot-markdown-hostmode
@@ -58,7 +60,7 @@
   :tail-mode 'host)
 
 (declare-function copilot-chat-markdown-poly-mode "copilot-chat-markdown"
-  "Polymode for Copilot Chat Markdown.")
+                  "Polymode for Copilot Chat Markdown.")
 
 (define-polymode copilot-chat-markdown-poly-mode
   :hostmode 'poly-copilot-markdown-hostmode
@@ -72,12 +74,17 @@ INSTANCE is copilot-chat instance to use.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
   (let ((data ""))
     (if (eq type 'prompt)
-      (progn
-        (setf (copilot-chat-first-word-answer instance) t)
-        (setq data (concat "\n# " (format-time-string "*[%T]* You\n") (format "%s\n" content))))
+        (progn
+          (setf (copilot-chat-first-word-answer instance) t)
+          (setq data (concat "\n# "
+                             (format-time-string "*[%T]* You\n")
+                             (format "%s\n" content))))
       (when (copilot-chat-first-word-answer instance)
         (setf (copilot-chat-first-word-answer instance) nil)
-        (setq data (concat "\n## " (concat (format-time-string "*[%T]* ") (format "Copilot(%s):\n" (copilot-chat-model instance))))))
+        (setq data (concat "\n## "
+                           (concat (format-time-string "*[%T]* ")
+                                   (format "Copilot(%s):\n"
+                                           (copilot-chat-model instance))))))
       (setq data (concat data content)))
     data))
 
@@ -86,7 +93,7 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
 Argument CODE is the code to format.
 Argument LANGUAGE is the language of the code."
   (if language
-    (format "\n```%s\n%s\n```\n" language code)
+      (format "\n```%s\n%s\n```\n" language code)
     code))
 
 (defun copilot-chat--markdown-clean()
@@ -95,32 +102,32 @@ Argument LANGUAGE is the language of the code."
 (defun copilot-chat--get-markdown-block-content-at-point ()
   "Get the content of the markdown block at point."
   (let* ((props (text-properties-at (point)))
-          (face (plist-get props 'face)))
+         (face (plist-get props 'face)))
     (when (and (listp face)
-            (or (memq 'markdown-pre-face face)
-              (memq 'markdown-code-face face)))
+               (or (memq 'markdown-pre-face face)
+                   (memq 'markdown-code-face face)))
       (let* ((begin-block (previous-single-property-change (point) 'face))
-              (end-block (next-single-property-change (point) 'face))
-              (content (when (and begin-block end-block)
-                         (buffer-substring-no-properties begin-block end-block)))
-              ;; Try to get language from previous text properties
-              (lang-props (text-properties-at (max (- begin-block 1) (point-min))))
-              (lang (plist-get lang-props 'markdown-language)))
+             (end-block (next-single-property-change (point) 'face))
+             (content (when (and begin-block end-block)
+                        (buffer-substring-no-properties begin-block end-block)))
+             ;; Try to get language from previous text properties
+             (lang-props (text-properties-at (max (- begin-block 1) (point-min))))
+             (lang (plist-get lang-props 'markdown-language)))
         (when content
           (list :content content
-            :language lang))))))
+                :language lang))))))
 
 (defun copilot-chat--markdown-send-to-buffer()
   "Send the code block at point to buffer.
 Replace selection if any."
   (let ((buffer (completing-read "Choose buffer: "
-                  (mapcar #'buffer-name (buffer-list))
-                  nil  ; PREDICATE
-                  t    ; REQUIRE-MATCH
-                  nil  ; INITIAL-INPUT
-                  'buffer-name-history
-                  (buffer-name (current-buffer))))
-         (content (copilot-chat--get-markdown-block-content-at-point)))
+                                 (mapcar #'buffer-name (buffer-list))
+                                 nil  ; PREDICATE
+                                 t    ; REQUIRE-MATCH
+                                 nil  ; INITIAL-INPUT
+                                 'buffer-name-history
+                                 (buffer-name (current-buffer))))
+        (content (copilot-chat--get-markdown-block-content-at-point)))
     (when content
       (with-current-buffer buffer
         (when (use-region-p)
@@ -136,11 +143,11 @@ Replace selection if any."
 (defun copilot-chat--markdown-write (data)
   "Write DATA at the end of the chat part of the buffer."
   (if copilot-chat-follow
-    (save-excursion
-      (copilot-chat--markdown-goto-input)
-      (forward-line -3)
-      (end-of-line)
-      (insert data))
+      (save-excursion
+        (copilot-chat--markdown-goto-input)
+        (forward-line -3)
+        (end-of-line)
+        (insert data))
     (copilot-chat--markdown-goto-input)
     (forward-line -3)
     (end-of-line)
@@ -151,10 +158,10 @@ Replace selection if any."
 The input is created if not found."
   (goto-char (point-max))
   (if (re-search-backward copilot-chat--markdown-delimiter nil t)
-    (forward-line 1)
+      (forward-line 1)
     (insert "\n\n")
     (let ((start (point))
-           (inhibit-read-only t))
+          (inhibit-read-only t))
       (insert copilot-chat--markdown-delimiter "\n\n")
       ;; Create overlay for read-only section
       (let ((overlay (make-overlay start (1- (point)))))
@@ -165,7 +172,8 @@ The input is created if not found."
   "Create copilot-chat buffers for INSTANCE."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
-      (get-buffer-create (copilot-chat--get-buffer-name (copilot-chat-directory instance))))
+          (get-buffer-create (copilot-chat--get-buffer-name
+                              (copilot-chat-directory instance))))
     (with-current-buffer (copilot-chat-chat-buffer instance)
       (copilot-chat-markdown-poly-mode)
       (copilot-chat--markdown-goto-input)
@@ -177,7 +185,7 @@ The input is created if not found."
   "Get markdown spinner buffer for INSTANCE."
   (let ((buffer (copilot-chat--markdown-get-buffer instance)))
     (if copilot-chat-follow
-      buffer
+        buffer
       (with-current-buffer buffer
         (pm-get-buffer-of-mode 'markdown-view-mode)))))
 
@@ -205,24 +213,24 @@ INSTANCE is copilot-chat instance to use."
 ;; Top-level execute code.
 
 (cl-pushnew
-  (make-copilot-chat-frontend
-    :id 'markdown
-    :init-fn #'copilot-chat--markdown-init
-    :clean-fn #'copilot-chat--markdown-clean
-    :format-fn #'copilot-chat--markdown-format-data
-    :format-code-fn #'copilot-chat--markdown-format-code
-    :create-req-fn nil
-    :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
-    :copy-fn #'copilot-chat--markdown-copy
-    :yank-fn nil
-    :write-fn #'copilot-chat--markdown-write
-    :get-buffer-fn #'copilot-chat--markdown-get-buffer
-    :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
-    :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
-    :goto-input-fn #'copilot-chat--markdown-goto-input
-    :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
-  copilot-chat--frontend-list
-  :test #'equal)
+ (make-copilot-chat-frontend
+  :id 'markdown
+  :init-fn #'copilot-chat--markdown-init
+  :clean-fn #'copilot-chat--markdown-clean
+  :format-fn #'copilot-chat--markdown-format-data
+  :format-code-fn #'copilot-chat--markdown-format-code
+  :create-req-fn nil
+  :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
+  :copy-fn #'copilot-chat--markdown-copy
+  :yank-fn nil
+  :write-fn #'copilot-chat--markdown-write
+  :get-buffer-fn #'copilot-chat--markdown-get-buffer
+  :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
+  :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
+  :goto-input-fn #'copilot-chat--markdown-goto-input
+  :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
+ copilot-chat--frontend-list
+ :test #'equal)
 
 (provide 'copilot-chat-markdown)
 ;;; copilot-chat-markdown.el ends here
@@ -230,6 +238,5 @@ INSTANCE is copilot-chat instance to use."
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
 ;; indent-tabs-mode: nil
-;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
 ;; End:

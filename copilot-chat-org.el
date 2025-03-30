@@ -46,7 +46,7 @@
 (define-derived-mode copilot-chat-org-prompt-mode org-mode "Copilot Chat org Prompt"
   "Major mode for the Copilot Chat Prompt region."
   (setq major-mode 'copilot-chat-org-prompt-mode
-    mode-name "Copilot Chat org prompt")
+        mode-name "Copilot Chat org prompt")
   (copilot-chat-prompt-mode))
 
 (define-hostmode poly-copilot-org-hostmode
@@ -60,7 +60,7 @@
   :tail-mode 'host)
 
 (declare-function copilot-chat-org-poly-mode "copilot-chat-org"
-  "Polymode for Copilot Chat Org.")
+                  "Polymode for Copilot Chat Org.")
 
 (define-polymode copilot-chat-org-poly-mode
   :hostmode 'poly-copilot-org-hostmode
@@ -75,14 +75,17 @@ Argument CONTENT is the data to format.
 Argument TYPE is the type of the data (prompt or answer)."
   (let ((data ""))
     (if (eq type 'prompt)
-      (progn
-        (setf (copilot-chat-first-word-answer instance) t)
-        (setq data (concat "\n* " (format-time-string "*[%T]* You                 :you:\n") (format "%s\n" content))))
+        (progn
+          (setf (copilot-chat-first-word-answer instance) t)
+          (setq data (concat "\n* "
+                             (format-time-string "*[%T]* You                 :you:\n")
+                             (format "%s\n" content))))
       (when (copilot-chat-first-word-answer instance)
         (setf (copilot-chat-first-word-answer instance) nil)
         (setq data (concat "\n** "
-                     (format-time-string "*[%T]* ")
-                     (format "Copilot(%s)                 :copilot:\n" (copilot-chat-model instance)))))
+                           (format-time-string "*[%T]* ")
+                           (format "Copilot(%s)                 :copilot:\n"
+                                   (copilot-chat-model instance)))))
       (setq data (concat data content)))
     data))
 
@@ -91,7 +94,7 @@ Argument TYPE is the type of the data (prompt or answer)."
 Argument CODE is the code to format.
 Argument LANGUAGE is the language of the code."
   (if language
-    (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
+      (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
     code))
 
 (defun copilot-chat--org-create-req (prompt &optional _no-context)
@@ -116,7 +119,7 @@ NO-CONTEXT is an optional flag (unused in current implementation)."
 (defun copilot-chat--get-org-block-content-at-point ()
   "Get the content of the org block at point."
   (let* ((element (org-element-at-point))
-          (type (org-element-type element)))
+         (type (org-element-type element)))
     (when (memq type '(src-block quote-block example-block))
       (let ((content (org-element-property :value element)))
         content))))
@@ -133,23 +136,23 @@ When ELEMENT is a source block (`src-block`), extracts its language property."
   (seq-find (lambda (buf)
               (with-current-buffer buf
                 (eq major-mode mode)))
-    (buffer-list)))
+            (buffer-list)))
 
 (defun copilot-chat--org-send-to-buffer ()
   "Send the code block at point to buffer.
 Replace selection if any."
   (let* ((element (org-element-at-point))
-          (mode (copilot-chat--get-language-mode element))
-          (matching-buffer (when mode (copilot-chat--find-matching-buffer mode)))
-          (default-buffer (or matching-buffer (current-buffer)))
-          (buffer (completing-read "Choose buffer: "
-                    (mapcar #'buffer-name (buffer-list))
-                    nil  ; PREDICATE
-                    t    ; REQUIRE-MATCH
-                    nil  ; INITIAL-INPUT
-                    'buffer-name-history
-                    (buffer-name default-buffer)))
-          (content (copilot-chat--get-org-block-content-at-point)))
+         (mode (copilot-chat--get-language-mode element))
+         (matching-buffer (when mode (copilot-chat--find-matching-buffer mode)))
+         (default-buffer (or matching-buffer (current-buffer)))
+         (buffer (completing-read "Choose buffer: "
+                                  (mapcar #'buffer-name (buffer-list))
+                                  nil  ; PREDICATE
+                                  t    ; REQUIRE-MATCH
+                                  nil  ; INITIAL-INPUT
+                                  'buffer-name-history
+                                  (buffer-name default-buffer)))
+         (content (copilot-chat--get-org-block-content-at-point)))
     (when content
       (with-current-buffer buffer
         (when (use-region-p)
@@ -157,7 +160,7 @@ Replace selection if any."
         (insert content))
       (let ((window (get-buffer-window buffer)))
         (if window
-          (select-window window)
+            (select-window window)
           (switch-to-buffer buffer))))))
 
 (defun copilot-chat--org-copy ()
@@ -171,22 +174,24 @@ Replace selection if any."
   "Get source blocks under headings matching HEADING-REGEX."
   (let ((blocks))
     (org-map-entries
-      (lambda ()
-        (let* ((heading-end (save-excursion (org-end-of-subtree t)))
-                (element-start (point)))
-          (setq blocks
-            (append blocks
-              (org-element-map
-                (org-element-parse-buffer 'element)
-                'src-block
-                (lambda (src-block)
-                  (when (and (>= (org-element-property :begin src-block) element-start)
-                          (<= (org-element-property :begin src-block) heading-end))
-                    (list :language (org-element-property :language src-block)
-                      :content (org-element-property :value src-block)
-                      :begin (org-element-property :begin src-block)
-                      :end (org-element-property :end src-block)))))))))
-      heading-regex)
+     (lambda ()
+       (let* ((heading-end (save-excursion (org-end-of-subtree t)))
+              (element-start (point)))
+         (setq blocks
+               (append blocks
+                       (org-element-map
+                           (org-element-parse-buffer 'element)
+                           'src-block
+                         (lambda (src-block)
+                           (when (and (>= (org-element-property :begin src-block)
+                                          element-start)
+                                      (<= (org-element-property :begin src-block)
+                                          heading-end))
+                             (list :language (org-element-property :language src-block)
+                                   :content (org-element-property :value src-block)
+                                   :begin (org-element-property :begin src-block)
+                                   :end (org-element-property :end src-block)))))))))
+     heading-regex)
     (seq-uniq blocks #'equal)))
 
 (defun copilot-chat--org-yank(instance)
@@ -198,17 +203,18 @@ INSTANCE is copilot-chat instance to use."
         (when blocks
           (while (< (copilot-chat-yank-index instance) 1)
             (setf (copilot-chat-yank-index instance) (+ (length blocks)
-                                                       (copilot-chat-yank-index instance))))
+                                                        (copilot-chat-yank-index instance))))
           (when (> (copilot-chat-yank-index instance) (length blocks))
             (setf (copilot-chat-yank-index instance) (- (copilot-chat-yank-index instance)
-                                                       (length blocks))))
+                                                        (length blocks))))
           (setq content (plist-get (car (last blocks
-                                          (copilot-chat-yank-index instance)))
-                          :content)))))
+                                              (copilot-chat-yank-index instance)))
+                                   :content)))))
     ;; Delete previous yank if exists
     (when (and (copilot-chat-last-yank-start instance)
-            (copilot-chat-last-yank-end instance))
-      (delete-region (copilot-chat-last-yank-start instance) (copilot-chat-last-yank-end instance)))
+               (copilot-chat-last-yank-end instance))
+      (delete-region (copilot-chat-last-yank-start instance)
+                     (copilot-chat-last-yank-end instance)))
     ;; Insert new content
     (setf (copilot-chat-last-yank-start instance) (point))
     (insert content)
@@ -228,20 +234,21 @@ The input is created if not found."
   (goto-char (point-max))
   (let ((span (pm-innermost-span (point))))
     (if (and span
-          (not (eq (car span) nil)))  ; nil span-type means host mode
-      (goto-char (+ 1 (car (pm-innermost-range (point)))))
+             (not (eq (car span) nil)))  ; nil span-type means host mode
+        (goto-char (+ 1 (car (pm-innermost-range (point)))))
       (insert "\n\n")
       (let ((start (point))
-             (inhibit-read-only t))
+            (inhibit-read-only t))
         (insert copilot-chat--org-delimiter "\n\n")
         (add-text-properties start (point)
-          '(read-only t front-sticky t rear-nonsticky (read-only)))))))
+                             '(read-only t front-sticky t rear-nonsticky (read-only)))))))
 
 (defun copilot-chat--org-get-buffer(instance)
   "Create copilot-chat buffers for INSTANCE."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
-      (get-buffer-create (copilot-chat--get-buffer-name (copilot-chat-directory instance))))
+          (get-buffer-create (copilot-chat--get-buffer-name
+                              (copilot-chat-directory instance))))
     (with-current-buffer (copilot-chat-chat-buffer instance)
       (copilot-chat-org-poly-mode)
       (setq-local default-directory (copilot-chat-directory instance))
@@ -272,24 +279,24 @@ INSTANCE is copilot-chat instance to use."
 ;; Top-level execute code.
 
 (cl-pushnew
-  (make-copilot-chat-frontend
-    :id 'org
-    :init-fn #'copilot-chat--org-init
-    :clean-fn #'copilot-chat--org-clean
-    :format-fn #'copilot-chat--org-format-data
-    :format-code-fn #'copilot-chat--org-format-code
-    :create-req-fn #'copilot-chat--org-create-req
-    :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
-    :copy-fn #'copilot-chat--org-copy
-    :yank-fn #'copilot-chat--org-yank
-    :write-fn #'copilot-chat--org-write
-    :get-buffer-fn #'copilot-chat--org-get-buffer
-    :insert-prompt-fn #'copilot-chat--org-insert-prompt
-    :pop-prompt-fn #'copilot-chat--org-pop-prompt
-    :goto-input-fn #'copilot-chat--org-goto-input
-    :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
-  copilot-chat--frontend-list
-  :test #'equal)
+ (make-copilot-chat-frontend
+  :id 'org
+  :init-fn #'copilot-chat--org-init
+  :clean-fn #'copilot-chat--org-clean
+  :format-fn #'copilot-chat--org-format-data
+  :format-code-fn #'copilot-chat--org-format-code
+  :create-req-fn #'copilot-chat--org-create-req
+  :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
+  :copy-fn #'copilot-chat--org-copy
+  :yank-fn #'copilot-chat--org-yank
+  :write-fn #'copilot-chat--org-write
+  :get-buffer-fn #'copilot-chat--org-get-buffer
+  :insert-prompt-fn #'copilot-chat--org-insert-prompt
+  :pop-prompt-fn #'copilot-chat--org-pop-prompt
+  :goto-input-fn #'copilot-chat--org-goto-input
+  :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
+ copilot-chat--frontend-list
+ :test #'equal)
 
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here
@@ -297,6 +304,5 @@ INSTANCE is copilot-chat instance to use."
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
 ;; indent-tabs-mode: nil
-;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
 ;; End:

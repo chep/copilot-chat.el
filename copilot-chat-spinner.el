@@ -49,7 +49,7 @@
   "Get Spinner buffer from the active frontend.
 Argument INSTANCE is the copilot chat instance to get the buffer for."
   (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn
-                         (copilot-chat--get-frontend))))
+                        (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn instance))))
 
@@ -60,21 +60,23 @@ Argument INSTANCE is the copilot chat instance to use."
     (cancel-timer (copilot-chat-spinner-timer instance)))
 
   (setf (copilot-chat-spinner-index instance) 0
-    (copilot-chat-spinner-status instance) "Thinking"
-    (copilot-chat-spinner-timer instance) (run-with-timer 0
-                                            copilot-chat-spinner-interval
-                                            #'copilot-chat--spinner-update
-                                            instance)))
+        (copilot-chat-spinner-status instance) "Thinking"
+        (copilot-chat-spinner-timer instance) (run-with-timer
+                                               0
+                                               copilot-chat-spinner-interval
+                                               #'copilot-chat--spinner-update
+                                               instance)))
 
 (defun copilot-chat--spinner-update (instance)
   "Update the spinner animation in the Copilot Chat buffer.
 Argument INSTANCE is the copilot chat instance to use."
   (let ((buffer (copilot-chat--get-spinner-buffer instance)))
     (when (and buffer (buffer-live-p buffer))
-      (let ((frame (nth (copilot-chat-spinner-index instance) copilot-chat-spinner-frames))
-             (status-text (if (copilot-chat-spinner-status instance)
-                            (concat (copilot-chat-spinner-status instance) " ")
-                            "")))
+      (let ((frame (nth (copilot-chat-spinner-index instance)
+                        copilot-chat-spinner-frames))
+            (status-text (if (copilot-chat-spinner-status instance)
+                             (concat (copilot-chat-spinner-status instance) " ")
+                           "")))
         (with-current-buffer buffer
           (save-excursion
             ;; Remove existing spinner overlay if any
@@ -84,13 +86,13 @@ Argument INSTANCE is the copilot chat instance to use."
             (let ((ov (make-overlay (point) (point))))
               (overlay-put ov 'copilot-chat-spinner t)
               (overlay-put ov 'after-string
-                (propertize (concat status-text frame)
-                  'face 'copilot-chat-spinner-face))))))
+                           (propertize (concat status-text frame)
+                                       'face 'copilot-chat-spinner-face))))))
 
       ;; Update spinner index
       (setf (copilot-chat-spinner-index instance)
-        (% (1+ (copilot-chat-spinner-index instance))
-          (length copilot-chat-spinner-frames))))))
+            (% (1+ (copilot-chat-spinner-index instance))
+               (length copilot-chat-spinner-frames))))))
 
 (defun copilot-chat--spinner-stop (instance)
   "Stop the spinner animation.
@@ -118,6 +120,5 @@ Argument STATUS is the status message to display."
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil
-;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
 ;; End:

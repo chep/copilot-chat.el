@@ -39,8 +39,8 @@ Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
 The create req function is called first and will return new prompt."
   (let* ((create-req-fn (copilot-chat-frontend-create-req-fn
-                          (copilot-chat--get-frontend)))
-          (messages nil))
+                         (copilot-chat--get-frontend)))
+         (messages nil))
     ;; Apply create-req-fn if available
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
@@ -53,33 +53,32 @@ The create req function is called first and will return new prompt."
         (push (list `(content . ,(car history)) `(role . ,(cadr history))) messages))
       ;; Clean buffer list once and add buffer contents
       (setf (copilot-chat-buffers instance)
-        (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
+            (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
       (dolist (buffer (copilot-chat-buffers instance))
         (with-current-buffer buffer
           (push (list `(content . ,(buffer-substring-no-properties (point-min) (point-max)))
-                  `(role . "user"))
-            messages))))
+                      `(role . "user"))
+                messages))))
     ;; system
     (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)
     ;; Create the appropriate payload based on model type
     (json-serialize
-      (if (copilot-chat--model-is-o1 instance)
-        `((messages . ,(vconcat messages))
+     (if (copilot-chat--model-is-o1 instance)
+         `((messages . ,(vconcat messages))
            (model . ,(copilot-chat-model instance))
            (stream . :false))
-        `((messages . ,(vconcat messages))
-           (top_p . 1)
-           (model . ,(copilot-chat-model instance))
-           (stream . t)
-           (n . 1)
-           (intent . t)
-           (temperature . 0.1))))))
+       `((messages . ,(vconcat messages))
+         (top_p . 1)
+         (model . ,(copilot-chat-model instance))
+         (stream . t)
+         (n . 1)
+         (intent . t)
+         (temperature . 0.1))))))
 
 (provide 'copilot-chat-body)
 ;;; copilot-chat-body.el ends here
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil
-;; lisp-indent-offset: 2
 ;; package-lint-main-file: "copilot-chat.el"
 ;; End:
