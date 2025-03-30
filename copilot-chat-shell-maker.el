@@ -47,7 +47,7 @@
 
 (defun copilot-chat--shell-maker-temp-buffer-name (instance)
   "Return the temporary buffer name for the Copilot Chat shell-maker.
-kINSTANCE is used to get directory"
+INSTANCE is used to get directory"
   (concat copilot-chat--shell-maker-temp-buffer-prefix
           (copilot-chat-directory instance)
           "*"))
