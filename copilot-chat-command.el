@@ -410,6 +410,8 @@ Optional argument INSTANCE specifies which instance to refresh the list for."
   (interactive)
   (unless instance
     (setq instance (copilot-chat--current-instance)))
+  (setf (copilot-chat-buffers instance)
+        (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
   (with-current-buffer (copilot-chat--get-list-buffer-create instance)
     (let* ((pt (point))
            (inhibit-read-only t)
