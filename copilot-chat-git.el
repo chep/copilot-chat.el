@@ -29,6 +29,7 @@
 (require 'aio)
 
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-spinner)
 
 (defcustom copilot-chat-ignored-commit-files
   '("pnpm-lock.yaml" "package-lock.json" "yarn.lock" "poetry.lock"
@@ -111,111 +112,130 @@ repository or if there are no staged changes.
        (apply #'copilot-chat--exec
               "git" "--no-pager" "diff" "--cached" "--" files-to-include)))))
 
+(defun copilot-chat--create-commit-instance ()
+  "Create a temporary, lightweight instance for commit message generation.
+This instance is specifically designed for generating commit messages
+without creating a chat buffer or setting up a full chat environment."
+  (let ((current-dir (file-name-directory (or (buffer-file-name) default-directory))))
+    (let ((instance (copilot-chat--make
+                     :directory current-dir
+                     :model copilot-chat-default-model
+                     :chat-buffer nil
+                     :first-word-answer t
+                     :history nil
+                     :buffers nil
+                     :prompt-history nil
+                     :prompt-history-position nil
+                     :yank-index 1
+                     :last-yank-start nil
+                     :last-yank-end nil
+                     :spinner-timer nil
+                     :spinner-index 0
+                     :spinner-status nil
+                     :curl-answer nil
+                     :curl-file nil
+                     :curl-current-data nil)))
+      ;; Store instance in our instances list to prevent GC issues with timers
+      (push instance copilot-chat--instances)
+      instance)))
+
+(defun copilot-chat--get-git-commit-template-comments ()
+  "Extract comments (lines starting with #) from the commit buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((comments ""))
+      (while (re-search-forward "^#.*$" nil t)
+        (setq comments (concat comments (match-string 0) "\n")))
+      comments)))
+
+(defun copilot-chat--commit-callback (instance current-buf start-pos accumulated-content template-comments wait-prompt)
+  "Callback function for handling commit message generation stream.
+INSTANCE is the copilot chat instance receiving data.
+CURRENT-BUF is the buffer where commit message will be inserted.
+START-POS is the position where commit message insertion begins.
+ACCUMULATED-CONTENT stores the progressively built message.
+TEMPLATE-COMMENTS contains the original Git commit template comments.
+WAIT-PROMPT is the temporary waiting message shown during generation."
+  (lambda (cb-instance content)
+    (with-current-buffer current-buf
+      (save-excursion
+        (if (string= content copilot-chat--magic)
+            (progn
+              ;; Make sure to stop the spinner timer
+              (when (copilot-chat-spinner-timer instance)
+                (cancel-timer (copilot-chat-spinner-timer instance))
+                (setf (copilot-chat-spinner-timer instance) nil))
+
+              (with-current-buffer current-buf
+                (goto-char start-pos)
+                (when (looking-at wait-prompt)
+                  (delete-region start-pos (+ start-pos (length wait-prompt))))
+                ;; Restore the git commit template comments and insert generated message
+                (goto-char (point-max))
+                (delete-region (point-min) (point-max))
+                (insert accumulated-content "\n\n" template-comments))
+              (message "Commit message generation completed.")
+              (copilot-chat--debug 'commit "Generation completed successfully")
+
+              ;; Remove the temporary instance from instances list to avoid memory leaks
+              (setq copilot-chat--instances (delq instance copilot-chat--instances)))
+
+          (progn
+            (when (string= accumulated-content "")
+              (goto-char start-pos)
+              (when (looking-at wait-prompt)
+                (delete-region start-pos (+ start-pos (length wait-prompt)))))
+
+            (setq accumulated-content (concat accumulated-content content))
+
+            (goto-char start-pos)
+            (delete-region start-pos (min (+ start-pos (length accumulated-content)) (point-max)))
+            (insert accumulated-content)
+            (copilot-chat--debug 'commit "Received chunk: %d chars" (length content))))))))
+
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message-when-ready "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message-when-ready ()
-  "Generate and insert a commit message using Copilot.
-Uses the current staged changes in git
-to generate an appropriate commit message.
-Requires the repository to have staged changes."
+  "Generate and insert a commit message using GitHub Copilot.
+Uses the current staged changes in git to generate an appropriate commit message.
+Requires the repository to have staged changes ready for commit."
   (interactive)
-  ;; Get magit staged diff
   (aio-with-async
-    (let* ((instance (copilot-chat--current-instance))
+    (let* ((instance (copilot-chat--create-commit-instance))
            (current-buf (current-buffer))
            (start-pos (point))
-           (accumulated-content "")
-           (error-occurred nil)
            (diff (aio-await (copilot-chat--get-diff)))
-           (prompt (concat copilot-chat-commit-prompt diff))
-           ;; Store the git commit template comments
-           (template-comments
-            (save-excursion
-              (goto-char (point-min))
-              (let ((comments ""))
-                (while (re-search-forward "^#.*$" nil t)
-                  (setq comments (concat comments (match-string 0) "\n")))
-                comments)))
-           (wait-prompt "# [copilot-chat] Working on generating commit message, please wait... "))
+           (template-comments (copilot-chat--get-git-commit-template-comments))
+           (wait-prompt (format "# [copilot:%s] Generating commit message..." (copilot-chat-model instance)))
+           (accumulated-content ""))
 
-      ;; Debug messages using structured format
-      (copilot-chat--debug 'commit "Starting commit message generation")
+      (copilot-chat--debug 'commit "Starting direct commit message generation")
       (copilot-chat--debug 'commit "Diff size: %d bytes, Model: %s"
                            (length diff) (copilot-chat-model instance))
 
       (cond
        ((string-empty-p diff)
         (copilot-chat--debug 'commit "No changes found in staging area")
-        (user-error "No staged changes found.  Please stage some changes first"))
+        (setq copilot-chat--instances (delq instance copilot-chat--instances)) ; Clean up instance
+        (user-error "No staged changes found. Please stage some changes first"))
 
        (t
         (message "Generating commit message... Please wait.")
-
-        (insert wait-prompt)
-        (insert "\n\n")
-
+        (insert wait-prompt "\n\n")
         (goto-char start-pos)
 
-        (when (fboundp 'copilot-chat--spinner-start)
-          (copilot-chat--spinner-start instance))
-
-        ;; Ask Copilot with streaming response
-        (copilot-chat--ask
-         instance
-         prompt
-         (lambda (instance content)
-           (with-current-buffer current-buf
-             (save-excursion
-               (if (string= content copilot-chat--magic)
-                   ;; End of streaming
-                   (progn
-                     (when (fboundp 'copilot-chat--spinner-stop)
-                       (copilot-chat--spinner-stop instance))
-                     (with-current-buffer current-buf
-                       (goto-char start-pos)
-                       (when (looking-at wait-prompt)
-                         (delete-region start-pos (+ start-pos (length wait-prompt)))))
-                     (when (not error-occurred)
-                       ;; Move point to end of inserted text for convenience
-                       (goto-char (+ start-pos (length accumulated-content)))
-                       ;; Restore the git commit template comments
-                       (save-excursion
-                         (goto-char (point-max))
-                         (delete-region (point-min) (point-max))
-                         (insert accumulated-content "\n\n" template-comments))
-                       (copilot-chat--debug 'commit "Generation completed successfully"))
-                     (message "Commit message generation completed."))
-
-                 ;; Continue streaming
-                 (progn
-                   ;; If this is the first response chunk, update the UI accordingly
-                   (when (string= accumulated-content "")
-                     (if (fboundp 'copilot-chat--spinner-set-status)
-                         (copilot-chat--spinner-set-status instance "Generating")
-                       (message "Generating commit message...")))
-
-                   ;; Handle error messages
-                   (when (string-prefix-p "Error:" content)
-                     (setq error-occurred t)
-                     (message "%s" content))
-
-                   ;; Append the new content to our accumulator
-                   (setq accumulated-content (concat accumulated-content content))
-
-                   ;; Remove placeholder text on first content chunk
-                   (goto-char start-pos)
-                   (when (looking-at wait-prompt)
-                     (delete-region start-pos (+ start-pos (length wait-prompt))))
-
-                   ;; Go to where we need to insert/update content
-                   (goto-char start-pos)
-                   (delete-region start-pos (min (+ start-pos
-                                                    (length accumulated-content))
-                                                 (point-max)))
-                   (insert accumulated-content)
-
-                   (copilot-chat--debug 'commit "Received chunk: %d chars"
-                                        (length content)))))))
-         t))))))
+        (condition-case err
+            (copilot-chat--ask
+             instance
+             (concat copilot-chat-commit-prompt diff)
+             (copilot-chat--commit-callback instance current-buf start-pos accumulated-content template-comments wait-prompt)
+             t) ; out-of-context = t
+          (error
+           ;; Ensure the instance is cleaned up if an error occurs
+           (when (copilot-chat-spinner-timer instance)
+             (cancel-timer (copilot-chat-spinner-timer instance))
+             (setf (copilot-chat-spinner-timer instance) nil))
+           (setq copilot-chat--instances (delq instance copilot-chat--instances))
+           (signal (car err) (cdr err)))))))))
 
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message ()
