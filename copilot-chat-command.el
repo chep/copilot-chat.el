@@ -709,9 +709,8 @@ Fetches available models from the API if not already fetched."
   ;; Set the model value
   (let ((instance (copilot-chat--current-instance)))
     (setf (copilot-chat-model instance) model)
-    ;; Also update the default model setting
-    (setq-default copilot-chat-default-model model)
-    (message "Copilot Chat model set to %s (and updated default)" model)))
+    (setq copilot-chat-user-set-model model)
+    (message "Copilot Chat model set to %s" model)))
 
 (defun copilot-chat-yank()
   "Insert last code block given by `copilot-chat'."

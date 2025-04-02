@@ -29,7 +29,6 @@
 (require 'aio)
 
 (require 'copilot-chat-copilot)
-(require 'copilot-chat-spinner)
 
 (defcustom copilot-chat-ignored-commit-files
   '("pnpm-lock.yaml" "package-lock.json" "yarn.lock" "poetry.lock"
@@ -119,7 +118,7 @@ without creating a chat buffer or setting up a full chat environment."
   (let ((current-dir (file-name-directory (or (buffer-file-name) default-directory))))
     (let ((instance (copilot-chat--make
                      :directory current-dir
-                     :model copilot-chat-default-model
+                     :model (or copilot-chat-user-set-model copilot-chat-default-model)
                      :chat-buffer nil
                      :first-word-answer t
                      :history nil
@@ -215,11 +214,11 @@ Requires the repository to have staged changes ready for commit."
       (cond
        ((string-empty-p diff)
         (copilot-chat--debug 'commit "No changes found in staging area")
-        (setq copilot-chat--instances (delq instance copilot-chat--instances)) ; Clean up instance
+        (setq copilot-chat--instances (delq instance copilot-chat--instances))
         (user-error "No staged changes found. Please stage some changes first"))
 
        (t
-        (message "Generating commit message... Please wait.")
+        (message "Generating commit message...")
         (insert wait-prompt "\n\n")
         (goto-char start-pos)
 
