@@ -164,8 +164,9 @@ Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT is a boolean to indicate
 if the prompt is out of context."
-  ;; Start spinner if available
-  (when (fboundp 'copilot-chat--spinner-start)
+  ;; Start spinner if available (only for instances with chat buffers)
+  (when (and (fboundp 'copilot-chat--spinner-start)
+             (buffer-live-p (copilot-chat-chat-buffer instance)))
     (copilot-chat--spinner-start instance))
 
   ;; Initialize answer accumulator
@@ -210,11 +211,11 @@ if the prompt is out of context."
                    ;; Update full response and call callback with final magic token
                    (setq full-response (concat full-response data))
                    (funcall callback instance data)
+                   (funcall callback instance copilot-chat--magic)
                    (unless out-of-context
                      (setf (copilot-chat-history instance)
                            (cons (list prompt "assistant")
-                                 (copilot-chat-history instance))))
-                   (funcall callback instance copilot-chat--magic)))
+                                 (copilot-chat-history instance))))))
       :status-code '((400 . (lambda (&rest _)
                               (when (fboundp 'copilot-chat--spinner-stop)
                                 (copilot-chat--spinner-stop instance))
