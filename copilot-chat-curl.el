@@ -422,9 +422,9 @@ if the prompt is out of context."
   (setf (copilot-chat-curl-current-data instance) nil
         (copilot-chat-curl-answer instance) nil)
 
-  ;; Start the spinner animation
-  (copilot-chat--spinner-start instance)
-
+  ;; Start the spinner animation only for instances with chat buffers
+  (when (buffer-live-p (copilot-chat-chat-buffer instance))
+    (copilot-chat--spinner-start instance))
 
   (when (copilot-chat-curl-file instance)
     (delete-file (copilot-chat-curl-file instance)))
