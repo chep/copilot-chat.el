@@ -61,12 +61,21 @@ Supports glob patterns like `*.lock' or `node_modules/'."
          (kill-buffer buf))))
     (aio-await promise)))
 
-(aio-defun copilot-chat--git-root ()
+(aio-defun copilot-chat--git-top-level ()
   "Get top folder of current git repo."
   (when (executable-find "git")
-    (file-name-directory (aio-await (copilot-chat--exec "git"
-                                                        "rev-parse"
-                                                        "--absolute-git-dir")))))
+    (let* ((git-dir (aio-await (copilot-chat--exec "git" "rev-parse" "--absolute-git-dir")))
+           (default-directory git-dir)
+           cdup)
+      (cond
+       ((file-exists-p "gitdir")      ; worktree case
+        (with-temp-buffer
+          (insert-file-contents "gitdir")
+          (file-name-directory (buffer-string))))
+       ((and (setq cdup (aio-await (copilot-chat--exec "git" "rev-parse" "--show-cdup")))
+             (not (string-empty-p cdup))) ; submodule case
+        cdup)
+       (t (file-name-directory git-dir))))))
 
 (aio-defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.
@@ -76,7 +85,7 @@ repository or if there are no staged changes.
 
 +The diff is generated using git and excludes files matching patterns in
 +`copilot-chat-ignored-commit-files', such as lock files and build artifacts."
-  (let* ((default-directory (or (aio-await (copilot-chat--git-root))
+  (let* ((default-directory (or (aio-await (copilot-chat--git-top-level))
                                 (user-error "Not inside a Git repository")))
          ;; First get list of staged files
          (staged-files (split-string
