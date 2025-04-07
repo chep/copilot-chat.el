@@ -189,6 +189,7 @@ Argument SHELL is the `shell-maker' instance."
   :clean-fn #'copilot-chat--shell-maker-clean
   :format-fn nil
   :format-code-fn #'copilot-chat--markdown-format-code
+  :format-buffer-fn #'copilot-chat--markdown-format-buffer
   :create-req-fn nil
   :send-to-buffer-fn nil
   :copy-fn nil

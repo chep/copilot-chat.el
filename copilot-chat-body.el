@@ -35,40 +35,11 @@
 (defun copilot-chat--format-buffer-for-copilot (buffer instance)
   "Format BUFFER content for Copilot with metadata to improve understanding.
 INSTANCE is the copilot-chat instance being used."
-  (with-current-buffer buffer
-    (let* ((file-name (buffer-file-name))
-           (relative-path (if file-name
-                              (file-relative-name file-name (copilot-chat-directory instance))
-                            (buffer-name)))
-           (language (if (derived-mode-p 'prog-mode)
-                         (replace-regexp-in-string "\\(?:-ts\\)?-mode\\'" ""
-                                                   (symbol-name major-mode))
-                       "text"))
-           (content (buffer-substring-no-properties (point-min) (point-max)))
-           (line-count (count-lines (point-min) (point-max)))
-           (formatted-content ""))
-
-      ;; Add line numbers to content
-      (with-temp-buffer
-        (insert content)
-        (goto-char (point-min))
-        (let ((line-num 1))
-          (while (not (eobp))
-            (let ((line (buffer-substring-no-properties
-                         (line-beginning-position)
-                         (line-end-position))))
-              (setq formatted-content
-                    (concat formatted-content
-                            (format "%4d: %s\n" line-num line)))
-              (setq line-num (1+ line-num)))
-            (forward-line 1))))
-
-      ;; Return the formatted string with metadata
-      (format "FILE: %s\nLANGUAGE: %s\nLINES: %d\n\n%s"
-              relative-path
-              language
-              line-count
-              formatted-content))))
+  (let ((format-buffer-fn (copilot-chat-frontend-format-buffer-fn
+                           (copilot-chat--get-frontend))))
+    (if format-buffer-fn
+        (funcall format-buffer-fn buffer instance)
+      (buffer-substring-no-properties (point-min) (point-max)))))
 
 (defun copilot-chat--create-req (instance prompt no-context)
   "Create a request for Copilot.
