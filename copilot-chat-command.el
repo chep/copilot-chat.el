@@ -29,6 +29,7 @@
 (require 'polymode)
 
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-git)
 (require 'copilot-chat-prompt-mode)
 
 ;; customs

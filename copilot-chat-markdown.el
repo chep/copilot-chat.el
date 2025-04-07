@@ -97,6 +97,11 @@ Argument LANGUAGE is the language of the code."
     code))
 
 (defun copilot-chat--markdown-format-buffer(buffer instance)
+  "Format the content of a buffer into a Markdown-compatible string.
+This function extracts the content of the specified BUFFER, determines
+its file name, relative path, and programming language, and formats the
+content as a Markdown code block.
+INSTANCE is copilot-chat instance, used to retrieve relative file path."
   (with-current-buffer buffer
     (let* ((file-name (buffer-file-name))
            (relative-path (if file-name
