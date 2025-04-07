@@ -155,7 +155,7 @@ START-POS is the position where commit message insertion begins.
 ACCUMULATED-CONTENT stores the progressively built message.
 TEMPLATE-COMMENTS contains the original Git commit template comments.
 WAIT-PROMPT is the temporary waiting message shown during generation."
-  (lambda (cb-instance content)
+  (lambda (_cb-instance content)
     (with-current-buffer current-buf
       (save-excursion
         (if (string= content copilot-chat--magic)
@@ -194,8 +194,8 @@ WAIT-PROMPT is the temporary waiting message shown during generation."
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message-when-ready "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message-when-ready ()
   "Generate and insert a commit message using GitHub Copilot.
-Uses the current staged changes in git to generate an appropriate commit message.
-Requires the repository to have staged changes ready for commit."
+Uses the current staged changes in git to generate an appropriate commit
+message.  Requires the repository to have staged changes ready for commit."
   (interactive)
   (aio-with-async
     (let* ((instance (copilot-chat--create-commit-instance))
@@ -214,7 +214,7 @@ Requires the repository to have staged changes ready for commit."
        ((string-empty-p diff)
         (copilot-chat--debug 'commit "No changes found in staging area")
         (setq copilot-chat--instances (delq instance copilot-chat--instances))
-        (user-error "No staged changes found. Please stage some changes first"))
+        (user-error "No staged changes found.  Please stage some changes first"))
 
        (t
         (message "Generating commit message...")
@@ -225,7 +225,9 @@ Requires the repository to have staged changes ready for commit."
             (copilot-chat--ask
              instance
              (concat copilot-chat-commit-prompt diff)
-             (copilot-chat--commit-callback instance current-buf start-pos accumulated-content template-comments wait-prompt)
+             (copilot-chat--commit-callback
+              instance current-buf start-pos accumulated-content
+              template-comments wait-prompt)
              t) ; out-of-context = t
           (error
            ;; Ensure the instance is cleaned up if an error occurs
@@ -238,11 +240,10 @@ Requires the repository to have staged changes ready for commit."
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message ()
   "Generate and insert a commit message using Copilot.
-Uses the current staged changes in git
-to generate an appropriate commit message.
-Requires the repository to have staged changes.
-This function is expected to be safe to open via magit
-when added to `git-commit-setup-hook'."
+Uses the current staged changes in git to generate an appropriate commit
+message.  Requires the repository to have staged changes.
+This function is expected to be safe to open via magit when added to
+`git-commit-setup-hook'."
   (interactive)
   ;;FIXME: I really don't want to do anything delayed by time,
   ;; but I had to in order to make it work anyway.

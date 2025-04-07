@@ -39,7 +39,7 @@ Use `copilot-chat-set-model' to interactively select a model."
 (defcustom copilot-chat-user-set-model nil
   "User explicitly set model that overrides the default.
 When non-nil, this value will be used instead of `copilot-chat-default-model'
-when creating new instances. Set via `copilot-chat-set-model'."
+when creating new instances.  Set via `copilot-chat-set-model'."
   :type 'string
   :group 'copilot-chat)
 
