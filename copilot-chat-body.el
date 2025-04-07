@@ -41,7 +41,7 @@ INSTANCE is the copilot-chat instance being used."
                               (file-relative-name file-name (copilot-chat-directory instance))
                             (buffer-name)))
            (language (if (derived-mode-p 'prog-mode)
-                         (replace-regexp-in-string "\\(?:-ts\\)?-mode$" ""
+                         (replace-regexp-in-string "\\(?:-ts\\)?-mode\\'" ""
                                                    (symbol-name major-mode))
                        "text"))
            (content (buffer-substring-no-properties (point-min) (point-max)))
