@@ -185,10 +185,9 @@ WAIT-PROMPT is the temporary waiting message shown during generation."
               (when (looking-at wait-prompt)
                 (delete-region start-pos (+ start-pos (length wait-prompt)))))
 
-            (setq accumulated-content (concat accumulated-content content))
-
             (goto-char start-pos)
             (delete-region start-pos (min (+ start-pos (length accumulated-content)) (point-max)))
+            (setq accumulated-content (concat accumulated-content content))
             (insert accumulated-content)
             (copilot-chat--debug 'commit "Received chunk: %d chars" (length content))))))))
 
