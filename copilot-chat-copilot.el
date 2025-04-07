@@ -324,41 +324,6 @@ Argument DIRECTORY is the path to search for matching instance."
     (copilot-chat--find-instance choice)))
 
 
-(defun copilot-chat--file-ignored-p (file ignore-files instance)
-  "Return non-nil if FILE should be ignored.
-Filter is based on IGNORE-FILES and the INSTANCE directory."
-  (let* ((dir (copilot-chat-directory instance))
-         ;; We use relative path so everything is expanded from the instance directory
-         (relative-file (file-relative-name file dir)))
-    (cl-some
-     (lambda (pat)
-       (cond
-        ;; Check if pattern is a directory (ends with slash)
-        ((string-suffix-p "/" pat)
-         (string-prefix-p pat relative-file))
-        ;; Otherwise interpret it as a globbing pattern or single filename
-        (t (string-match-p (wildcard-to-regexp pat) relative-file))))
-     ignore-files)))
-
-(defun copilot-chat--add-workspace (instance)
-  "Add all open files matching an instance to buffer list.
-INSTANCE is the copilot chat instance to use."
-  (copilot-chat--clear-buffers instance)
-  ;; search for `.gitignore' in the directory of the instance
-  ;; if found, use it to ignore files
-  (let ( (gitignore (expand-file-name ".gitignore" (copilot-chat-directory instance)))
-         (ignore-files '()))
-    (when (file-exists-p gitignore)
-      (with-temp-buffer
-        (insert-file-contents gitignore)
-        (setq ignore-files (split-string (buffer-string) "\n" t))))
-    (dolist (buf (buffer-list))
-      (let ((file (buffer-file-name buf)))
-        (when (and file
-                   (string-prefix-p (copilot-chat-directory instance)
-                                    (file-name-directory file))
-                   (not (copilot-chat--file-ignored-p file ignore-files instance)))
-          (copilot-chat--add-buffer instance buf))))))
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
