@@ -80,6 +80,8 @@ to Copilot for processing."
         (copilot-chat--write-buffer
          instance
          (copilot-chat--format-data instance prompt 'prompt) nil)
+        (with-current-buffer (copilot-chat--get-buffer instance)
+          (recenter-top-bottom))
         (push prompt (copilot-chat-prompt-history instance))
         (setf (copilot-chat-prompt-history-position instance) nil)
         (copilot-chat--ask instance prompt 'copilot-chat-prompt-cb)))))
