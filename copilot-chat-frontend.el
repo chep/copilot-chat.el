@@ -36,6 +36,7 @@
   clean-fn
   format-fn
   format-code-fn
+  format-buffer-fn
   create-req-fn
   send-to-buffer-fn
   copy-fn

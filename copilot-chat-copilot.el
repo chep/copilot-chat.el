@@ -323,6 +323,8 @@ Argument DIRECTORY is the path to search for matching instance."
                                   nil t)))
     (copilot-chat--find-instance choice)))
 
+
+
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
 

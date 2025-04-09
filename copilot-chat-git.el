@@ -77,6 +77,30 @@ Supports glob patterns like `*.lock' or `node_modules/'."
         cdup)
        (t (file-name-directory git-dir))))))
 
+
+(defun copilot-chat--git-ls-files (directory)
+  "Return a list of files not ignored by .gitignore in DIRECTORY \(recursively\).
+Uses `git ls-files` to retrieve files that are tracked or not ignored by Git,
+in the top-level repository.  Falls back to listing all files in DIRECTORY
+\(recursively\) if DIRECTORY is not in a git repo.
+ The result is a list of relative paths from the specified DIRECTORY."
+  (aio-wait-for
+   (aio-with-async
+     (let ((repo-root (aio-await (copilot-chat--git-top-level))))
+       (if (null repo-root)
+           ;; Not in a git repository, return all files under DIRECTORY
+           (directory-files-recursively directory ".*" nil)
+         ;; In a git repository
+         (let* ((default-directory repo-root)
+                (ls-output (aio-await
+                            (copilot-chat--exec
+                             "git" "--no-pager" "ls-files" "--full-name")))
+                (all-files (split-string ls-output "\n" t)))
+           (mapcar
+            (lambda (file)
+              (expand-file-name file repo-root))
+            all-files)))))))
+
 (aio-defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.
 Returns a string containing the diff, excluding files specified in
@@ -230,6 +254,22 @@ when added to `git-commit-setup-hook'."
   ;; but I had to in order to make it work anyway.
   ;; In fact, we would like to get rid of this kind of messy control.
   (run-with-timer 1 nil #'copilot-chat-insert-commit-message-when-ready))
+
+
+(defun copilot-chat--add-workspace (instance)
+  "Add all open files matching an instance to buffer list.
+INSTANCE is the copilot chat instance to use."
+  (copilot-chat--clear-buffers instance)
+  (let ((git-files (copilot-chat--git-ls-files (copilot-chat-directory instance)))
+        (buffers (buffer-list)))
+    (mapcar
+     (lambda (buffer)
+       (let ((file (buffer-file-name buffer)))
+         (when (and file
+                    (member (expand-file-name file) git-files))
+           (copilot-chat--add-buffer instance buffer))))
+     buffers)))
+
 
 (provide 'copilot-chat-git)
 ;;; copilot-chat-git.el ends here
