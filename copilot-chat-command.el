@@ -303,6 +303,9 @@ Optional argument ARG if non-nil, force instance selection."
                     (copilot-chat--current-instance))))
     (copilot-chat--display instance)))
 
+;;;###autoload (autoload 'copilot-chat "copilot-chat" nil t)
+(defalias 'copilot-chat 'copilot-chat-display)
+
 ;;;###autoload (autoload 'copilot-chat-hide "copilot-chat" nil t)
 (defun copilot-chat-hide ()
   "Hide copilot chat buffer."

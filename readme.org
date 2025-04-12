@@ -21,7 +21,7 @@ You can now work with multiple chat instances at once. Copilot-chat instances ar
 - Model selection
 - Buffer list
 
-~Copilot-chat-display~ will try to guess the appropriate instance based on the current buffer's file location. If it fails, it will ask you to choose an instance. With a prefix argument (~C-u M-x copilot-chat-display~), it will always prompt you to select an instance.
+~copilot-chat-display~ (alias ~(copilot-chat)~) will try to guess the appropriate instance based on the current buffer's file location. If it fails, it will ask you to choose an instance. With a prefix argument (~C-u M-x copilot-chat-display~), it will always prompt you to select an instance.
 
 ** Help wanted
 Bug reports and new ideas are very welcome.
@@ -107,7 +107,7 @@ Proxies have not been thoroughly tested yet, so there may be bugs. Many options 
 
 * Usage
 ** Basic
-Start chatting with ~(copilot-chat-display)~. Type your question in prompt, then press ~C-c C-c~ or ~C-c RET~.
+Start chatting with ~(copilot-chat-display)~ (alias ~(copilot-chat)~). Type your question in prompt, then press ~C-c C-c~ or ~C-c RET~.
 You may need to authenticate to GitHub. Follow instructions.
 
 You can select buffers that will be added as context in your prompt. Use ~copilot-chat-add-current-buffer~ and ~copilot-chat-del-current-buffer~. You can also manage buffers by using ~(copilot-chat-list)~. In the list, selected buffer will be highlighted using ~copilot-chat-list-selected-buffer-face~ which inherit from ~font-lock-keyword-face~.
@@ -119,7 +119,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 ** Functions
 *** Basic functions
-- ~(copilot-chat-display)~ display copilot chat buffer. When using ~(copilot-chat-display)~ with a prefix argument, you'll be prompted to select which instance to use.
+- ~(copilot-chat-display)~ (alias ~(copilot-chat)~) display copilot chat buffer. When using ~(copilot-chat-display)~ with a prefix argument, you'll be prompted to select which instance to use.
 - ~(copilot-chat-reset)~ reset the current instance including history, frontend and included buffers (default). Use with prefix argument to preserve selected buffers.
 - ~(copilot-chat-switch-to-buffer)~ switch to Copilot Chat buffer, side by side with the current code editing buffer.
 - ~(copilot-chat-set-model)~ Select AI model to use for current instance.
