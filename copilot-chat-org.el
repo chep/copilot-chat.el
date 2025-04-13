@@ -97,11 +97,13 @@ Argument LANGUAGE is the language of the code."
       (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
     code))
 
-(defun copilot-chat--org-create-req (prompt &optional _no-context)
+(defun copilot-chat--org-create-req (prompt no-context)
   "Create a request with `org-mode' syntax reminder.
-PROMPT is the input text.
-NO-CONTEXT is an optional flag (unused in current implementation)."
-  (format "%s\n\nUse only Emacs org-mode formatting in your answers:
+PROMPT is the input text.  If NO-CONTEXT is t, do nothing because we are
+asking for a commit message."
+  (if no-context
+      prompt
+    (format "%s\n\nUse only Emacs org-mode formatting in your answers:
 - Use ~~~ for inline code
 - Use ~*~ for headers (starting at level 3 with ~***~)
 - Use ~+~ for unordered lists
@@ -111,7 +113,7 @@ NO-CONTEXT is an optional flag (unused in current implementation)."
 - Use ~#+BEGIN_SRC~ and ~#+END_SRC~ for code blocks with language specification
 - Use ~_~ for underlining
 - Use ~*~ for bold
-- Use ~/~ for italics" prompt))
+- Use ~/~ for italics" prompt)))
 
 (defun copilot-chat--org-clean()
   "Clean the copilot chat org frontend.")
