@@ -30,6 +30,14 @@
 
 (require 'copilot-chat-copilot)
 
+(defcustom copilot-chat-commit-model nil
+  "The model to use specifically for commit message generation.
+When nil, falls back to `copilot-chat-default-model`.
+Set via `copilot-chat-set-commit-model'."
+  :type '(choice (const :tag "Use default model" nil)
+          (string :tag "Specific model"))
+  :group 'copilot-chat)
+
 (defcustom copilot-chat-ignored-commit-files
   '("pnpm-lock.yaml" "package-lock.json" "yarn.lock" "poetry.lock"
     "Cargo.lock" "go.sum" "composer.lock" "Gemfile.lock"
@@ -118,7 +126,7 @@ without creating a chat buffer or setting up a full chat environment."
   (let ((current-dir (file-name-directory (or (buffer-file-name) default-directory))))
     (let ((instance (copilot-chat--make
                      :directory current-dir
-                     :model (or copilot-chat-user-set-model copilot-chat-default-model)
+                     :model (or copilot-chat-commit-model copilot-chat-default-model)
                      :chat-buffer nil
                      :first-word-answer t
                      :history nil
@@ -249,6 +257,39 @@ This function is expected to be safe to open via magit when added to
   ;; but I had to in order to make it work anyway.
   ;; In fact, we would like to get rid of this kind of messy control.
   (run-with-timer 1 nil #'copilot-chat-insert-commit-message-when-ready))
+
+;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
+(defun copilot-chat-set-commit-model (model)
+  "Set the model to use specifically for commit message generation to MODEL.
+When called interactively, prompts for available models from the API."
+  (interactive
+   (let* ((choices (copilot-chat--get-model-choices-with-wait))
+          (max-id-width
+           (apply #'max
+                  (mapcar (lambda (choics)
+                            (length (cdr choics))) choices)))
+          ;; Create completion list with ID as prefix for unique identification
+          (completion-choices
+           (mapcar (lambda (choice)
+                     (let ((name (car choice))
+                           (id (cdr choice)))
+                       (cons (format (format "[%%-%ds] %%s" max-id-width)
+                                     id name)
+                             id)))
+                   choices))
+          (choice
+           (completing-read "Select commit message model: "
+                            (mapcar 'car completion-choices)
+                            nil t)))
+     ;; Extract model ID from the selected choice
+     (let ((model-value (cdr (assoc choice completion-choices))))
+       (when copilot-chat-debug
+         (message "Setting commit model to: %s" model-value))
+       (list model-value))))
+
+  ;; Set the commit model value
+  (setq copilot-chat-commit-model model)
+  (message "Commit message model set to %s" model))
 
 (provide 'copilot-chat-git)
 ;;; copilot-chat-git.el ends here

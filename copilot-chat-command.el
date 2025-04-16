@@ -679,7 +679,7 @@ wait for the fetch to complete."
 
 ;;;###autoload (autoload 'copilot-chat-set-model "copilot-chat" nil t)
 (defun copilot-chat-set-model (model)
-  "Set the Copilot Chat model to MODEL.
+  "Set the Copilot Chat model to MODEL for the current instance.
 Fetches available models from the API if not already fetched."
   (interactive
    (let* ((choices (copilot-chat--get-model-choices-with-wait))
@@ -706,11 +706,10 @@ Fetches available models from the API if not already fetched."
          (message "Setting model to: %s" model-value))
        (list model-value))))
 
-  ;; Set the model value
+  ;; Set the model value only for current instance
   (let ((instance (copilot-chat--current-instance)))
     (setf (copilot-chat-model instance) model)
-    (setq copilot-chat-user-set-model model)
-    (message "Copilot Chat model set to %s" model)))
+    (message "Copilot Chat model set to %s for current instance" model)))
 
 (defun copilot-chat-yank()
   "Insert last code block given by `copilot-chat'."

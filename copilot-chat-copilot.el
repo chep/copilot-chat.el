@@ -89,7 +89,7 @@
   ;; Load models from cache if available
   (let ((instance (copilot-chat--make
                    :directory directory
-                   :model (or copilot-chat-user-set-model copilot-chat-default-model)
+                   :model copilot-chat-default-model
                    :chat-buffer nil
                    :first-word-answer t
                    :history nil
