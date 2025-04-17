@@ -107,18 +107,10 @@ INSTANCE is copilot-chat instance, used to retrieve relative file path."
            (relative-path (if file-name
                               (file-relative-name file-name (copilot-chat-directory instance))
                             (buffer-name)))
-           (language (if (derived-mode-p 'prog-mode)
-                         (replace-regexp-in-string "\\(?:-ts\\)?-mode\\'" ""
-                                                   (symbol-name major-mode))
-                       "text"))
            (content (copilot-chat--markdown-format-code
                      (buffer-substring-no-properties (point-min) (point-max))
-                     language)))
-
-      ;; Return the formatted string with metadata
-      (format "# FILE %s\n%s"
-              relative-path
-              content))))
+                     relative-path)))
+      content)))
 
 (defun copilot-chat--markdown-clean()
   "Clean the copilot chat markdown frontend.")
