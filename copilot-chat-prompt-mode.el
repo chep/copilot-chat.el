@@ -46,7 +46,7 @@
 (defvar copilot-chat--prompt-history nil
   "Copilot-chat prompt history.")
 (defvar copilot-chat--prompt-history-position nil
-  "Current position in copilot-chat prompt history.")
+  "Current position in `copilot-chat' prompt history.")
 
 (define-minor-mode copilot-chat-prompt-mode
   "Minor mode for the Copilot Chat Prompt region."

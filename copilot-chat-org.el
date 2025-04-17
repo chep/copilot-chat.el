@@ -70,7 +70,7 @@
 ;;; Functions
 (defun copilot-chat--org-format-data(instance content type)
   "Format data for org frontend.
-INSTANCE is copilot-chat instance to use.
+INSTANCE is `copilot-chat' instance to use.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of the data (prompt or answer)."
   (let ((data ""))
@@ -198,7 +198,7 @@ Replace selection if any."
 
 (defun copilot-chat--org-yank(instance)
   "Insert code block from Copilot Chat's org buffer at point.
-INSTANCE is copilot-chat instance to use."
+INSTANCE is `copilot-chat' instance to use."
   (let ((content ""))
     (with-current-buffer (copilot-chat-chat-buffer instance)
       (let ((blocks (copilot-chat--org-get-code-blocks-under-heading "copilot")))
@@ -246,7 +246,7 @@ The input is created if not found."
                              '(read-only t front-sticky t rear-nonsticky (read-only)))))))
 
 (defun copilot-chat--org-get-buffer(instance)
-  "Create copilot-chat buffers for INSTANCE."
+  "Create `copilot-chat' buffers for INSTANCE."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
           (get-buffer-create (copilot-chat--get-buffer-name
@@ -267,7 +267,7 @@ The input is created if not found."
 
 (defun copilot-chat--org-pop-prompt(instance)
   "Get current prompt to send and clean it.
-INSTANCE is copilot-chat instance to use."
+INSTANCE is `copilot-chat' instance to use."
   (with-current-buffer (copilot-chat--org-get-buffer instance)
     (copilot-chat--org-goto-input)
     (let ((prompt (buffer-substring-no-properties (point) (point-max))))
