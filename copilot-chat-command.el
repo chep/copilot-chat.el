@@ -40,11 +40,11 @@
 ;; Faces
 (defface copilot-chat-list-selected-buffer-face
   '((t :inherit font-lock-keyword-face))
-  "Face used for selected buffers in copilot-chat buffer list."
+  "Face used for selected buffers in `copilot-chat' buffer list."
   :group 'copilot-chat)
 (defface copilot-chat-list-default-face
   '((t :inherit default))
-  "Face used for unselected buffers in copilot-chat buffer list."
+  "Face used for unselected buffers in `copilot-chat' buffer list."
   :group 'copilot-chat)
 
 ;; Variables
@@ -210,7 +210,7 @@ Given the code line as background info."
 
 ;;;###autoload (autoload 'copilot-chat-custom-prompt-function "copilot-chat" nil t)
 (defun copilot-chat-custom-prompt-function ()
-  "Mark current function and ask copilot-chat with custom prompt."
+  "Mark current function and ask `copilot-chat' with custom prompt."
   (interactive)
   (save-excursion
     (mark-defun)
@@ -358,7 +358,7 @@ Optional argument ARG if non-nil, force instance selection."
     (copilot-chat-list-refresh instance)))
 
 (defun copilot-chat-add-file (file-path)
-  "Add FILE-PATH to copilot-chat buffers without changing current window layout."
+  "Add FILE-PATH to `copilot-chat' buffers without changing current window layout."
   (interactive "fFile to add: ")
   (save-window-excursion
     (let ((current-buf (current-buffer)))
@@ -712,7 +712,7 @@ Fetches available models from the API if not already fetched."
     (message "Copilot Chat model set to %s" model)))
 
 (defun copilot-chat-yank()
-  "Insert last code block given by copilot-chat."
+  "Insert last code block given by `copilot-chat'."
   (interactive)
   (let ((instance (copilot-chat--current-instance)))
     (setf

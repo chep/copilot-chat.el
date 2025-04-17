@@ -99,7 +99,7 @@ INSTANCE is used to get directory"
 
 (defun copilot-chat--shell-cb-prompt (instance shell content)
   "Callback for Copilot Chat `shell-maker'.
-Argument INSTANCE is copilot-chat instance.
+Argument INSTANCE is `copilot-chat' instance.
 Argument SHELL is the `shell-maker' instance.
 Argument CONTENT is copilot chat answer."
   (with-current-buffer (copilot-chat--shell-maker-get-buffer instance)
@@ -128,7 +128,7 @@ Argument CONTENT is copilot chat answer."
 (defun copilot-chat--shell-cb-prompt-wrapper (shell instance content)
   "Wrapper around `copilot-chat--shell-cb-prompt'.
 Argument SHELL is the `shell-maker' instance.
-Argument INSTANCE is copilot-chat instance.
+Argument INSTANCE is `copilot-chat' instance.
 Argument CONTENT is copilot chat answer."
   (if copilot-chat-follow
       (copilot-chat--shell-cb-prompt instance shell content)
@@ -137,7 +137,7 @@ Argument CONTENT is copilot chat answer."
 
 (defun copilot-chat--shell-cb (instance command shell)
   "Callback for Copilot Chat `shell-maker'.
-Argument INSTANCE is copilot-chat instance.
+Argument INSTANCE is `copilot-chat' instance.
 Argument COMMAND is the command to send to Copilot.
 Argument SHELL is the `shell-maker' instance."
   (setf

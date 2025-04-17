@@ -36,7 +36,7 @@
   "Create a request for Copilot.
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT Copilot prompt to send.
-Argument NO-CONTEXT tells copilot-chat to not send history and buffers.
+Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
   (let* ((create-req-fn (copilot-chat-frontend-create-req-fn
                          (copilot-chat--get-frontend)))
