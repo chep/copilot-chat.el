@@ -172,6 +172,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 *** Troubleshooting
 - ~(copilot-chat-clear-auth-cache)~ clears the auth cache for Copilot Chat. You will have to login again.
 - ~(copilot-chat-reset-models)~: Resets the model cache and fetches models again. Useful when GitHub adds new models or updates model capabilities.
+- If you cannot see your expected models in the set-model menu, visit https://github.com/copilot and check if the model is enabled for your account.
 
 
 ** Customizable variables

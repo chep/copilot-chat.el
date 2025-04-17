@@ -48,10 +48,14 @@
 (defun copilot-chat--get-spinner-buffer(instance)
   "Get Spinner buffer from the active frontend.
 Argument INSTANCE is the copilot chat instance to get the buffer for."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn
-                        (copilot-chat--get-frontend))))
-    (when get-buffer-fn
-      (funcall get-buffer-fn instance))))
+  (condition-case err
+      (let ((get-buffer-fn (copilot-chat-frontend-get-spinner-buffer-fn
+                            (copilot-chat--get-frontend))))
+        (when (and get-buffer-fn
+                   (buffer-live-p (copilot-chat-chat-buffer instance)))
+          (funcall get-buffer-fn instance)))
+    (error
+     (when copilot-chat-debug (message "Error getting spinner buffer: %S" err)) nil)))
 
 (defun copilot-chat--spinner-start (instance)
   "Start the spinner animation in the Copilot Chat buffer.
@@ -101,11 +105,13 @@ Argument INSTANCE is the copilot chat instance to use."
     (cancel-timer (copilot-chat-spinner-timer instance))
     (setf (copilot-chat-spinner-timer instance) nil))
 
-  ;; Remove spinner overlay
-  (let ((buffer (copilot-chat--get-spinner-buffer instance)))
-    (when (and buffer (buffer-live-p buffer))
-      (with-current-buffer buffer
-        (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)))))
+  ;; Remove spinner overlay - with robust error handling
+  (condition-case err
+      (let ((buffer (copilot-chat--get-spinner-buffer instance)))
+        (when (and buffer (buffer-live-p buffer))
+          (with-current-buffer buffer
+            (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t))))
+    (error (when copilot-chat-debug (message "Error stopping spinner: %S" err)))))
 
 (defun copilot-chat--spinner-set-status (instance status)
   "Set the status message to display with the spinner.
