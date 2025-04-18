@@ -278,7 +278,7 @@ if the response should be added to history."
   ;;
   ;;     data: [DONE]
   ;;
-  ;; We recieve this piecewise, with this function called with `string' as any substring, completely
+  ;; We receive this piecewise, with this function called with `string' as any substring, completely
   ;; ignoring the lines and other rules of the protocol. Thus, this function processes line-by-line
   ;; but needs to be careful to handle partial input any point. We do this by saving a left-over
   ;; line that failed processing to `curl-current-data' and reading it on the next call.
