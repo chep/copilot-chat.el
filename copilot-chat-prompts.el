@@ -205,7 +205,7 @@ Don't forget the most important rule when you are formatting your response: use 
   :type 'string
   :group 'copilot-chat)
 
-(defvar copilot-chat-prompt copilot-chat-org-prompt
+(defvar copilot-chat-prompt ""
   "The prompt to use for Copilot chat.")
 
 (provide 'copilot-chat-prompts)
