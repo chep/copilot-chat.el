@@ -29,6 +29,7 @@
 (require 'polymode)
 
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-git)
 (require 'copilot-chat-prompt-mode)
 
 ;; customs
@@ -790,6 +791,58 @@ Clears model cache from memory and disk, then triggers background fetch."
 
   ;; Return nil for programmatic usage
   nil)
+
+(aio-defun copilot-chat--add-workspace (instance only-open)
+  "Add all files matching an instance to buffer list.
+INSTANCE is the copilot chat instance to use.  If ONLY-OPEN is non-nil,
+add only files already visited by a buffer."
+  (copilot-chat--clear-buffers instance)
+  (let* ((default-directory (copilot-chat-directory instance))
+         (repo-root (aio-await (copilot-chat--git-top-level)))
+         (files (if (null repo-root)
+                    (directory-files-recursively default-directory ".*" nil)
+                  (aio-await (copilot-chat--git-ls-files repo-root))))
+         (file-count (length files)))
+    (if (and (> file-count 50)
+             (not only-open)
+             (not (yes-or-no-p (format "Found %d files, add them all? "
+                                       file-count))))
+        (message "Workspace file addition cancelled.")
+      (if only-open
+          (mapcar
+           (lambda (buffer)
+             (let ((file (buffer-file-name buffer)))
+               (when (and file
+                          (member (expand-file-name file) files))
+                 (copilot-chat--add-buffer instance buffer))))
+           (buffer-list))
+        (mapcar
+         (lambda (file)
+           (copilot-chat-add-file file))
+         files)))))
+
+(defun copilot-chat-add-workspace-buffers ()
+  "Add all open files matching an instance.
+If a gitignore file is present in the instance directory, it will be used to
+filter files.  Buffer list is cleared and all buffer displaying a file in the
+instance directory will be added."
+  (interactive)
+  (let ((instance (copilot-chat--current-instance)))
+    (aio-with-async
+      (aio-await (copilot-chat--add-workspace instance t))
+      (copilot-chat-list-refresh instance))))
+
+(defun copilot-chat-add-workspace ()
+  "Add all files in instance's directory.
+All files in instance's directory and its subdirectories are added to
+context.  If a gitignore file is present in the instance directory, it
+will be used to filter files.  Buffer list is cleared and all buffer
+displaying a file in the instance directory will be added."
+  (interactive)
+  (let ((instance (copilot-chat--current-instance)))
+    (aio-with-async
+      (aio-await (copilot-chat--add-workspace instance nil))
+      (copilot-chat-list-refresh instance))))
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here

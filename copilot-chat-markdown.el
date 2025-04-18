@@ -96,6 +96,22 @@ Argument LANGUAGE is the language of the code."
       (format "\n```%s\n%s\n```\n" language code)
     code))
 
+(defun copilot-chat--markdown-format-buffer(buffer instance)
+  "Format the content of a buffer into a Markdown-compatible string.
+This function extracts the content of the specified BUFFER, determines
+its file name, relative path, and programming language, and formats the
+content as a Markdown code block.
+INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
+  (with-current-buffer buffer
+    (let* ((file-name (buffer-file-name))
+           (relative-path (if file-name
+                              (file-relative-name file-name (copilot-chat-directory instance))
+                            (buffer-name)))
+           (content (copilot-chat--markdown-format-code
+                     (buffer-substring-no-properties (point-min) (point-max))
+                     relative-path)))
+      content)))
+
 (defun copilot-chat--markdown-clean()
   "Clean the copilot chat markdown frontend.")
 
@@ -219,6 +235,7 @@ INSTANCE is `copilot-chat' instance to use."
   :clean-fn #'copilot-chat--markdown-clean
   :format-fn #'copilot-chat--markdown-format-data
   :format-code-fn #'copilot-chat--markdown-format-code
+  :format-buffer-fn #'copilot-chat--markdown-format-buffer
   :create-req-fn nil
   :send-to-buffer-fn #'copilot-chat--markdown-send-to-buffer
   :copy-fn #'copilot-chat--markdown-copy

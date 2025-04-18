@@ -32,15 +32,24 @@
 (require 'copilot-chat-instance)
 (require 'copilot-chat-prompts)
 
+(defun copilot-chat--format-buffer-for-copilot (buffer instance)
+  "Format BUFFER content for Copilot with metadata to improve understanding.
+INSTANCE is the `copilot-chat' instance being used."
+  (let ((format-buffer-fn (copilot-chat-frontend-format-buffer-fn
+                           (copilot-chat--get-frontend))))
+    (if format-buffer-fn
+        (funcall format-buffer-fn buffer instance)
+      (buffer-substring-no-properties (point-min) (point-max)))))
+
 (defun copilot-chat--create-req (instance prompt no-context)
   "Create a request for Copilot.
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
-  (let* ((create-req-fn (copilot-chat-frontend-create-req-fn
-                         (copilot-chat--get-frontend)))
-         (messages nil))
+  (let ((create-req-fn (copilot-chat-frontend-create-req-fn
+                        (copilot-chat--get-frontend)))
+        (messages nil))
     ;; Apply create-req-fn if available
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
@@ -55,8 +64,8 @@ The create req function is called first and will return new prompt."
       (setf (copilot-chat-buffers instance)
             (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
       (dolist (buffer (copilot-chat-buffers instance))
-        (with-current-buffer buffer
-          (push (list `(content . ,(buffer-substring-no-properties (point-min) (point-max)))
+        (when (buffer-live-p buffer)
+          (push (list `(content . ,(copilot-chat--format-buffer-for-copilot buffer instance))
                       `(role . "user"))
                 messages))))
     ;; system

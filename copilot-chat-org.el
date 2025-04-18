@@ -97,6 +97,30 @@ Argument LANGUAGE is the language of the code."
       (format "\n#+BEGIN_SRC %s\n%s\n#+END_SRC\n" language code)
     code))
 
+(defun copilot-chat--org-format-buffer(buffer instance)
+  "Format the content of a buffer into an org compatible string.
+This function extracts the content of the specified BUFFER, determines
+its file name, relative path, and programming language, and formats the
+content as a org mode code block.
+INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
+  (with-current-buffer buffer
+    (let* ((file-name (buffer-file-name))
+           (relative-path (if file-name
+                              (file-relative-name file-name (copilot-chat-directory instance))
+                            (buffer-name)))
+           (language (if (derived-mode-p 'prog-mode)
+                         (replace-regexp-in-string "\\(?:-ts\\)?-mode\\'" ""
+                                                   (symbol-name major-mode))
+                       "text"))
+           (content (copilot-chat--org-format-code
+                     (buffer-substring-no-properties (point-min) (point-max))
+                     language)))
+
+      ;; Return the formatted string with metadata
+      (format "* FILE %s\n%s"
+              relative-path
+              content))))
+
 (defun copilot-chat--org-create-req (prompt no-context)
   "Create a request with `org-mode' syntax reminder.
 PROMPT is the input text.  If NO-CONTEXT is t, do nothing because we are
@@ -104,16 +128,16 @@ asking for a commit message."
   (if no-context
       prompt
     (format "%s\n\nUse only Emacs org-mode formatting in your answers:
-- Use ~~~ for inline code
-- Use ~*~ for headers (starting at level 3 with ~***~)
-- Use ~+~ for unordered lists
-- Use ~1.~ for ordered lists
-- Use ~=~ or ~~~ for inline code
-- Use ~#+BEGIN_QUOTE~ and ~#+END_QUOTE~ for quotes
-- Use ~#+BEGIN_SRC~ and ~#+END_SRC~ for code blocks with language specification
-- Use ~_~ for underlining
-- Use ~*~ for bold
-- Use ~/~ for italics" prompt)))
+- Use ~ for inline code
+- Use * for headers (starting at level 3 with ~***~)
+- Use + for unordered lists
+- Use 1. for ordered lists
+- Use = or ~ for inline code
+- Use #+BEGIN_QUOTE and #+END_QUOTE for quotes
+- Use #+BEGIN_SRC and #+END_SRC for code blocks with language specification
+- Use _ for underlining
+- Use * for bold
+- Use / for italics" prompt)))
 
 (defun copilot-chat--org-clean()
   "Clean the copilot chat org frontend.")
@@ -287,6 +311,7 @@ INSTANCE is `copilot-chat' instance to use."
   :clean-fn #'copilot-chat--org-clean
   :format-fn #'copilot-chat--org-format-data
   :format-code-fn #'copilot-chat--org-format-code
+  :format-buffer-fn #'copilot-chat--org-format-buffer
   :create-req-fn #'copilot-chat--org-create-req
   :send-to-buffer-fn #'copilot-chat--org-send-to-buffer
   :copy-fn #'copilot-chat--org-copy

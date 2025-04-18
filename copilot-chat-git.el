@@ -35,7 +35,7 @@
 When nil, falls back to `copilot-chat-default-model`.
 Set via `copilot-chat-set-commit-model'."
   :type '(choice (const :tag "Use default model" nil)
-          (string :tag "Specific model"))
+                 (string :tag "Specific model"))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-ignored-commit-files
@@ -84,6 +84,21 @@ Supports glob patterns like `*.lock' or `node_modules/'."
              (not (string-empty-p cdup))) ; submodule case
         cdup)
        (t (file-name-directory git-dir))))))
+
+
+(aio-defun copilot-chat--git-ls-files (repo-root)
+  "Return a list of git managed files in REPO-ROOT.
+Uses `git ls-files` to retrieve files that are tracked or not ignored by
+Git.  REPO-ROOT must be git top directory."
+  (let* ((default-directory repo-root)
+         (ls-output
+          (aio-await (copilot-chat--exec
+                      "git" "--no-pager" "ls-files" "--full-name")))
+         (all-files (split-string ls-output "\n" t)))
+    (mapcar
+     (lambda (file)
+       (expand-file-name file repo-root))
+     all-files)))
 
 (aio-defun copilot-chat--get-diff ()
   "Get the diff of staged change in the current git repository.
