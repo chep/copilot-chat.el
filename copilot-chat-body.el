@@ -34,7 +34,7 @@
 
 (defun copilot-chat--format-buffer-for-copilot (buffer instance)
   "Format BUFFER content for Copilot with metadata to improve understanding.
-INSTANCE is the copilot-chat instance being used."
+INSTANCE is the `copilot-chat' instance being used."
   (let ((format-buffer-fn (copilot-chat-frontend-format-buffer-fn
                            (copilot-chat--get-frontend))))
     (if format-buffer-fn
