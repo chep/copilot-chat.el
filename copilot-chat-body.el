@@ -50,10 +50,10 @@ If the file is larger than `copilot-chat-max-instruction-size',
 ignore it and emit a message."
   (let* ((dir (or (and buffer-file-name (file-name-directory buffer-file-name))
                   default-directory))
-         (root (locate-dominating-file dir ".github"))
+         (github-dir (locate-dominating-file dir ".github"))
          (instruction-file
-          (and root
-               (expand-file-name ".github/copilot-instructions.md" root))))
+          (and github-dir
+               (expand-file-name ".github/copilot-instructions.md" github-dir))))
     (when (and instruction-file (file-readable-p instruction-file))
       ;; Skip the file if it exceeds the configured size limit.
       (when (and copilot-chat-max-instruction-size
