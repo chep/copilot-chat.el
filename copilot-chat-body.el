@@ -48,9 +48,8 @@
   "Return the content of `.github/copilot-instructions.md' or nil.
 If the file is larger than `copilot-chat-max-instruction-size',
 ignore it and emit a message."
-  (let* ((dir (or (and buffer-file-name (file-name-directory buffer-file-name))
-                  default-directory))
-         (github-dir (locate-dominating-file dir ".github"))
+  (let* ((starting-path (or buffer-file-name default-directory))
+         (github-dir (locate-dominating-file starting-path ".github"))
          (instruction-file
           (and github-dir
                (expand-file-name ".github/copilot-instructions.md" github-dir))))
