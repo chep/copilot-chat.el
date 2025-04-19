@@ -32,6 +32,49 @@
 (require 'copilot-chat-instance)
 (require 'copilot-chat-prompts)
 
+(defcustom copilot-chat-use-instruction-files t
+  "Use custom instructions from `.github/copilot-instructions.md'."
+  :type 'boolean
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-max-instruction-size 65536
+  "Maximum size in bytes of `.github/copilot-instructions.md'."
+  :type '(choice
+          (const :tag "Unlimited" nil)
+          integer)
+  :group 'copilot-chat)
+
+(defun copilot-chat--read-instructions-file ()
+  "Return the content of `.github/copilot-instructions.md' or nil.
+If the file is larger than `copilot-chat-max-instruction-size',
+ignore it and emit a message."
+  (let* ((starting-path (or buffer-file-name default-directory))
+         (github-dir (locate-dominating-file starting-path ".github"))
+         (instruction-file
+          (and github-dir
+               (expand-file-name ".github/copilot-instructions.md" github-dir))))
+    (when (and instruction-file (file-readable-p instruction-file))
+      ;; Skip the file if it exceeds the configured size limit.
+      (when (and copilot-chat-max-instruction-size
+                 (> (file-attribute-size (file-attributes instruction-file))
+                    copilot-chat-max-instruction-size))
+        (message "[copilot-chat] `%s` is larger than %d bytes; ignored."
+                 instruction-file copilot-chat-max-instruction-size)
+        (cl-return-from copilot-chat--read-instructions-file nil))
+      (with-temp-buffer
+        (insert-file-contents instruction-file)
+        (buffer-string)))))
+
+(defun copilot-chat--format-instructions (instruction-content)
+  "Format instruction content according to Copilot's expected format.
+INSTRUCTION-CONTENT is the content read from the instructions file."
+  (when instruction-content
+    (concat "When generating code, please follow these user provided coding instructions. "
+            "You can ignore an instruction if it contradicts a system message.\n\n"
+            "<instructions>\n"
+            instruction-content
+            "\n</instructions>")))
+
 (defun copilot-chat--format-buffer-for-copilot (buffer instance)
   "Format BUFFER content for Copilot with metadata to improve understanding.
 INSTANCE is the `copilot-chat' instance being used."
@@ -47,9 +90,12 @@ Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
-  (let ((create-req-fn (copilot-chat-frontend-create-req-fn
-                        (copilot-chat--get-frontend)))
-        (messages nil))
+  (let* ((create-req-fn (copilot-chat-frontend-create-req-fn
+                         (copilot-chat--get-frontend)))
+         (instruction-content (and copilot-chat-use-instruction-files
+                                   (copilot-chat--read-instructions-file)))
+         (formatted-instructions (and instruction-content (copilot-chat--format-instructions instruction-content)))
+         (messages nil))
     ;; Apply create-req-fn if available
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
@@ -68,8 +114,15 @@ The create req function is called first and will return new prompt."
           (push (list `(content . ,(copilot-chat--format-buffer-for-copilot buffer instance))
                       `(role . "user"))
                 messages))))
-    ;; system
+    ;; system.
+    ;; Add custom instruction as a separate message if available.
+    ;; Prefer Global < Project.
+    (when formatted-instructions
+      (push (list `(content . ,formatted-instructions) `(role . "system")) messages))
+
+    ;; Global instruction.
     (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)
+
     ;; Create the appropriate payload based on model type
     (json-serialize
      (if (copilot-chat--model-is-o1 instance)
