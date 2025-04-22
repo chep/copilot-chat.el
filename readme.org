@@ -217,6 +217,12 @@ Default prompts used by various commands:
 - ~copilot-chat-prompt-test~ - Prompt for test generation command.
 - ~copilot-chat-commit-prompt~ - Prompt for generating commit messages.
 
+*** Instruction Files
+Copilot Chat supports custom instructions from GitHub repository:
+- ~copilot-chat-use-copilot-instruction-files~ - Use custom instructions from ~.github/copilot-instructions.md~. Default is ~t~.
+- ~copilot-chat-use-git-commit-instruction-files~ - Use custom git commit instructions from ~.github/git-commit-instructions.md~. Default is ~t~.
+- ~copilot-chat-max-instruction-size~ - Maximum size in bytes of instruction files. Default is 65536 (64KB). Files exceeding this limit will be ignored. Set to ~nil~ for unlimited size.
+
 *** Git
 - ~copilot-chat-ignored-commit-files~ - List of file patterns to ignore when generating commit messages.
 

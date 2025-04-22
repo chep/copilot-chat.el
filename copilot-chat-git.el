@@ -142,6 +142,7 @@ without creating a chat buffer or setting up a full chat environment."
     (let ((instance (copilot-chat--make
                      :directory current-dir
                      :model (or copilot-chat-commit-model copilot-chat-default-model)
+                     :type 'commit
                      :chat-buffer nil
                      :first-word-answer t
                      :history nil

@@ -32,27 +32,32 @@
 (require 'copilot-chat-instance)
 (require 'copilot-chat-prompts)
 
-(defcustom copilot-chat-use-instruction-files t
+(defcustom copilot-chat-use-copilot-instruction-files t
   "Use custom instructions from `.github/copilot-instructions.md'."
   :type 'boolean
   :group 'copilot-chat)
 
+(defcustom copilot-chat-use-git-commit-instruction-files t
+  "Use custom git commit instructions from `.github/git-commit-instructions.md'."
+  :type 'boolean
+  :group 'copilot-chat)
+
 (defcustom copilot-chat-max-instruction-size 65536
-  "Maximum size in bytes of `.github/copilot-instructions.md'."
+  "Maximum size in bytes of instruction files."
   :type '(choice
           (const :tag "Unlimited" nil)
           integer)
   :group 'copilot-chat)
 
-(defun copilot-chat--read-instructions-file ()
-  "Return the content of `.github/copilot-instructions.md' or nil.
+(defun copilot-chat--read-instruction-file (file-name)
+  "Return the content of instruction file FILE-NAME or nil.
 If the file is larger than `copilot-chat-max-instruction-size',
 ignore it and emit a message."
   (let* ((starting-path (or buffer-file-name default-directory))
          (github-dir (locate-dominating-file starting-path ".github"))
          (instruction-file
           (and github-dir
-               (expand-file-name ".github/copilot-instructions.md" github-dir))))
+               (expand-file-name (concat ".github/" file-name) github-dir))))
     (when (and instruction-file (file-readable-p instruction-file))
       ;; Skip the file if it exceeds the configured size limit.
       (when (and copilot-chat-max-instruction-size
@@ -60,12 +65,22 @@ ignore it and emit a message."
                     copilot-chat-max-instruction-size))
         (message "[copilot-chat] `%s` is larger than %d bytes; ignored."
                  instruction-file copilot-chat-max-instruction-size)
-        (cl-return-from copilot-chat--read-instructions-file nil))
+        (cl-return-from copilot-chat--read-instruction-file nil))
       (with-temp-buffer
         (insert-file-contents instruction-file)
         (buffer-string)))))
 
-(defun copilot-chat--format-instructions (instruction-content)
+(defun copilot-chat--read-copilot-instructions-file ()
+  "Return the content of `.github/copilot-instructions.md' or nil."
+  (when copilot-chat-use-copilot-instruction-files
+    (copilot-chat--read-instruction-file "copilot-instructions.md")))
+
+(defun copilot-chat--read-git-commit-instructions-file ()
+  "Return the content of `.github/git-commit-instructions.md' or nil."
+  (when copilot-chat-use-git-commit-instruction-files
+    (copilot-chat--read-instruction-file "git-commit-instructions.md")))
+
+(defun copilot-chat--format-copilot-instructions (instruction-content)
   "Format instruction content according to Copilot's expected format.
 INSTRUCTION-CONTENT is the content read from the instructions file."
   (when instruction-content
@@ -92,9 +107,15 @@ Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
   (let* ((create-req-fn (copilot-chat-frontend-create-req-fn
                          (copilot-chat--get-frontend)))
-         (instruction-content (and copilot-chat-use-instruction-files
-                                   (copilot-chat--read-instructions-file)))
-         (formatted-instructions (and instruction-content (copilot-chat--format-instructions instruction-content)))
+         (copilot-instruction-content
+          (and copilot-chat-use-copilot-instruction-files
+               (copilot-chat--read-copilot-instructions-file)))
+         (formatted-copilot-instructions
+          (and copilot-instruction-content
+               (copilot-chat--format-copilot-instructions copilot-instruction-content)))
+         (git-commit-instruction-content
+          (and copilot-chat-use-git-commit-instruction-files
+               (copilot-chat--read-git-commit-instructions-file)))
          (messages nil))
     ;; Apply create-req-fn if available
     (when create-req-fn
@@ -117,8 +138,11 @@ The create req function is called first and will return new prompt."
     ;; system.
     ;; Add custom instruction as a separate message if available.
     ;; Prefer Global < Project.
-    (when formatted-instructions
-      (push (list `(content . ,formatted-instructions) `(role . "system")) messages))
+    (when formatted-copilot-instructions
+      (push (list `(content . ,formatted-copilot-instructions) `(role . "system")) messages))
+
+    (when (and git-commit-instruction-content (eq (copilot-chat-type instance) 'commit))
+      (push (list `(content . ,git-commit-instruction-content) `(role . "system")) messages))
 
     ;; Global instruction.
     (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)

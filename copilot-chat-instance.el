@@ -42,6 +42,7 @@ Use `copilot-chat-set-model' to interactively select a model."
   "Struct for Copilot chat state."
   (directory nil :type (or null string))
   (model copilot-chat-default-model :type string)
+  (type nil :type (or null symbol))
   (chat-buffer nil :type (or null buffer))
   (first-word-answer t :type boolean)
   (history nil :type list)
