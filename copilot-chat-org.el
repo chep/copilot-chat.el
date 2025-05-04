@@ -35,11 +35,11 @@
 (require 'copilot-chat-prompts)
 
 ;;; Constants
-(defconst copilot-chat--org-input-tag
-  "copilotChatInput"
-  "The tag used to identify copilot chat input.")
+(defconst copilot-chat--org-answer-tag
+  "copilot"
+  "The tag used to identify copilot chat answers.")
 (defconst copilot-chat--org-delimiter
-  (concat "* ╭──── Chat Input ────╮ :" copilot-chat--org-input-tag ":")
+  "* ╭──── Chat Input ────╮"
   "The delimiter used to identify copilot chat input.")
 
 ;;; Polymode
@@ -78,14 +78,15 @@ Argument TYPE is the type of the data (prompt or answer)."
         (progn
           (setf (copilot-chat-first-word-answer instance) t)
           (setq data (concat "\n* "
-                             (format-time-string "*[%T]* You                 :you:\n")
+                             (format-time-string "*[%T]* You\n")
                              (format "%s\n" content))))
       (when (copilot-chat-first-word-answer instance)
         (setf (copilot-chat-first-word-answer instance) nil)
         (setq data (concat "\n** "
                            (format-time-string "*[%T]* ")
-                           (format "Copilot(%s)                 :copilot:\n"
-                                   (copilot-chat-model instance)))))
+                           (format "Copilot(%s)                 :%s:\n"
+                                   (copilot-chat-model instance)
+                                   copilot-chat--org-answer-tag))))
       (setq data (concat data content)))
     data))
 
@@ -106,7 +107,8 @@ INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
   (with-current-buffer buffer
     (let* ((file-name (buffer-file-name))
            (relative-path (if file-name
-                              (file-relative-name file-name (copilot-chat-directory instance))
+                              (file-relative-name file-name
+                                                  (copilot-chat-directory instance))
                             (buffer-name)))
            (language (if (derived-mode-p 'prog-mode)
                          (replace-regexp-in-string "\\(?:-ts\\)?-mode\\'" ""
@@ -225,7 +227,8 @@ Replace selection if any."
 INSTANCE is `copilot-chat' instance to use."
   (let ((content ""))
     (with-current-buffer (copilot-chat-chat-buffer instance)
-      (let ((blocks (copilot-chat--org-get-code-blocks-under-heading "copilot")))
+      (let ((blocks (copilot-chat--org-get-code-blocks-under-heading
+                     copilot-chat--org-answer-tag)))
         (when blocks
           (while (< (copilot-chat-yank-index instance) 1)
             (setf (copilot-chat-yank-index instance) (+ (length blocks)
