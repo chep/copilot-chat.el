@@ -38,6 +38,18 @@
   :type 'boolean
   :group 'copilot-chat)
 
+(defcustom copilot-chat-list-show-path t
+  "If t, show path of files in the Copilot chat list.
+If nil, show only file names."
+  :type 'boolean
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-list-show-relative-path t
+  "If t, show relative path of buffers in the Copilot chat list.
+If nil, show absolute path."
+  :type 'boolean
+  :group 'copilot-chat)
+
 ;; Faces
 (defface copilot-chat-list-selected-buffer-face
   '((t :inherit font-lock-keyword-face))
@@ -430,9 +442,16 @@ Optional argument INSTANCE specifies which instance to refresh the list for."
                     (string< (symbol-name (buffer-local-value 'major-mode a))
                              (symbol-name (buffer-local-value 'major-mode b)))))))
       (erase-buffer)
+      (setq-local header-line-format (concat "Copilot chat " (copilot-chat-directory instance)))
       (dolist (buffer sorted-buffers)
-        (let ((buffer-name (buffer-name buffer))
-              (cop-bufs (copilot-chat--get-buffers instance)))
+        (let* ((file-name (buffer-file-name buffer))
+               (buffer-name (if (and file-name copilot-chat-list-show-path)
+                                (if copilot-chat-list-show-relative-path
+                                    (file-relative-name file-name
+                                                        (copilot-chat-directory instance))
+                                  file-name)
+                              (buffer-name buffer)))
+               (cop-bufs (copilot-chat--get-buffers instance)))
           (when (and (not (string-prefix-p " " buffer-name))
                      (not (string-prefix-p "*" buffer-name)))
             (insert (propertize buffer-name
@@ -595,11 +614,11 @@ If models haven't been fetched yet and no cache exists,
 wait for the fetch to complete."
   (let ((models
          (seq-filter #'copilot-chat--model-enabled-p
-           (if copilot-chat-model-ignore-picker
-               (copilot-chat-connection-models copilot-chat--connection)
-             (seq-filter #'copilot-chat--model-picker-enabled
-                         (copilot-chat-connection-models
-                          copilot-chat--connection))))))
+                     (if copilot-chat-model-ignore-picker
+                         (copilot-chat-connection-models copilot-chat--connection)
+                       (seq-filter #'copilot-chat--model-picker-enabled
+                                   (copilot-chat-connection-models
+                                    copilot-chat--connection))))))
     (if models
         (let* ((model-info-list
                 (mapcar
