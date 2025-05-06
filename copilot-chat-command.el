@@ -468,7 +468,14 @@ Optional argument INSTANCE specifies which instance to refresh the list for."
   (let* ((instance (copilot-chat--current-instance))
          (buffer-name (buffer-substring (line-beginning-position)
                                         (line-end-position)))
-         (buffer (get-buffer buffer-name))
+         (buffer (if copilot-chat-list-show-path
+                     (or (get-file-buffer
+                          (if copilot-chat-list-show-relative-path
+                              (concat (copilot-chat-directory instance)
+                                      "/" buffer-name)
+                            buffer-name))
+                         (get-buffer buffer-name))
+                     (get-buffer buffer-name)))
          (cop-bufs (copilot-chat--get-buffers instance)))
     (when buffer
       (if (member buffer cop-bufs)
