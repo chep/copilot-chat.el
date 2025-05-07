@@ -87,8 +87,3 @@ Use `copilot-chat-set-model' to interactively select a model."
 
 (provide 'copilot-chat-instance)
 ;;; copilot-chat-instance.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

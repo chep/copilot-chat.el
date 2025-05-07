@@ -123,8 +123,3 @@ Argument STATUS is the status message to display."
 
 (provide 'copilot-chat-spinner)
 ;;; copilot-chat-spinner.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

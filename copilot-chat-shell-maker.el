@@ -205,8 +205,3 @@ Argument SHELL is the `shell-maker' instance."
 
 (provide 'copilot-chat-shell-maker)
 ;;; copilot-chat-shell-maker.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

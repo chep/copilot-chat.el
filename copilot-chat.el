@@ -68,7 +68,3 @@
 
 (provide 'copilot-chat)
 ;;; copilot-chat.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; End:

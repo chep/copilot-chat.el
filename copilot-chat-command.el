@@ -872,8 +872,3 @@ displaying a file in the instance directory will be added."
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

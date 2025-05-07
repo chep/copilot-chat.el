@@ -325,8 +325,3 @@ Argument DIRECTORY is the path to search for matching instance."
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

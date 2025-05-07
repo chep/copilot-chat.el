@@ -115,8 +115,3 @@ Argument INSTANCE is the copilot chat instance to use."
 
 (provide 'copilot-chat-prompt-mode)
 ;;; copilot-chat-prompt-mode.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

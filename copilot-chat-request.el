@@ -385,8 +385,3 @@ Optional argument QUIET suppresses user messages when non-nil."
 
 (provide 'copilot-chat-request)
 ;;; copilot-chat-request.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

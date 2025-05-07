@@ -333,6 +333,4 @@ INSTANCE is `copilot-chat' instance to use."
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
 ;; End:

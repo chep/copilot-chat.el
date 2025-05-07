@@ -48,8 +48,3 @@
 
 (provide 'copilot-chat-connection)
 ;;; copilot-chat-connection.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

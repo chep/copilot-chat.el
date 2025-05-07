@@ -462,8 +462,3 @@ if the prompt is out of context."
 
 (provide 'copilot-chat-curl)
 ;;; copilot-chat-curl.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

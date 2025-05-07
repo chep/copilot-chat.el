@@ -88,8 +88,3 @@
 
 (provide 'copilot-chat-transient)
 ;;; copilot-chat-transient.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

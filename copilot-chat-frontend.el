@@ -71,8 +71,3 @@ Argument INSTANCE is the copilot chat instance to get the buffer for."
 
 (provide 'copilot-chat-frontend)
 ;;; copilot-chat-frontend.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

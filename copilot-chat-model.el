@@ -95,8 +95,3 @@ is not `true' are not included in the model selection by default."
 
 (provide 'copilot-chat-model)
 ;;; copilot-chat-model.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

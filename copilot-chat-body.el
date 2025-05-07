@@ -163,8 +163,3 @@ The create req function is called first and will return new prompt."
 
 (provide 'copilot-chat-body)
 ;;; copilot-chat-body.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

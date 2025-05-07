@@ -309,8 +309,3 @@ When called interactively, prompts for available models from the API."
 
 (provide 'copilot-chat-git)
 ;;; copilot-chat-git.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:
