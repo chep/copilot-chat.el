@@ -36,7 +36,8 @@
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat-prompt-review "Please review the following code.\n"
+(defcustom copilot-chat-prompt-review
+  "Please review the following code.\n"
   "The prompt used by `copilot-chat-review'."
   :type 'string
   :group 'copilot-chat)
@@ -78,7 +79,8 @@
 
 (defun copilot-chat--get-cached-token ()
   "Get the cached GitHub token."
-  (let ((token-file (expand-file-name copilot-chat-github-token-file)))
+  (let ((token-file
+         (expand-file-name copilot-chat-github-token-file)))
     (when (file-exists-p token-file)
       (with-temp-buffer
         (insert-file-contents token-file)
@@ -87,29 +89,31 @@
 (defun copilot-chat--create (directory)
   "Create a new Copilot chat instance with DIRECTORY as source directory."
   ;; Load models from cache if available
-  (let ((instance (copilot-chat--make
-                   :directory directory
-                   :model copilot-chat-default-model
-                   :chat-buffer nil
-                   :first-word-answer t
-                   :history nil
-                   :buffers nil
-                   :prompt-history nil
-                   :prompt-history-position nil
-                   :yank-index 1
-                   :last-yank-start nil
-                   :last-yank-end nil
-                   :spinner-timer nil
-                   :spinner-index 0
-                   :spinner-status nil
-                   :curl-answer nil
-                   :curl-file nil
-                   :curl-current-data nil))
+  (let ((instance
+         (copilot-chat--make
+          :directory directory
+          :model copilot-chat-default-model
+          :chat-buffer nil
+          :first-word-answer t
+          :history nil
+          :buffers nil
+          :prompt-history nil
+          :prompt-history-position nil
+          :yank-index 1
+          :last-yank-start nil
+          :last-yank-end nil
+          :spinner-timer nil
+          :spinner-index 0
+          :spinner-status nil
+          :curl-answer nil
+          :curl-file nil
+          :curl-current-data nil))
         (cached-models (copilot-chat--load-models-from-cache)))
     (when cached-models
       (setf (copilot-chat-connection-models copilot-chat--connection)
             cached-models)
-      (message "Loaded models from cache. %d models available." (length cached-models)))
+      (message "Loaded models from cache. %d models available."
+               (length cached-models)))
 
     ;; Schedule background model fetching with slight delay
     (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
@@ -120,17 +124,22 @@
   "Fetch models asynchronously in the background."
   (let ((current-time (round (float-time)))
         (last-fetch-time
-         (copilot-chat-connection-last-models-fetch-time copilot-chat--connection))
+         (copilot-chat-connection-last-models-fetch-time
+          copilot-chat--connection))
         (cooldown-period copilot-chat-models-fetch-cooldown))
 
     (if (< (- current-time last-fetch-time) cooldown-period)
         (when copilot-chat-debug
-          (message "Skipping model fetch - in cooldown period (%d seconds left)"
-                   (- cooldown-period (- current-time last-fetch-time))))
+          (message
+           "Skipping model fetch - in cooldown period (%d seconds left)"
+           (- cooldown-period (- current-time last-fetch-time))))
 
-      (if (not (copilot-chat-connection-github-token copilot-chat--connection))
+      (if (not
+           (copilot-chat-connection-github-token
+            copilot-chat--connection))
           (run-with-timer 5 nil #'copilot-chat--fetch-models-async)
-        (setf (copilot-chat-connection-last-models-fetch-time copilot-chat--connection)
+        (setf (copilot-chat-connection-last-models-fetch-time
+               copilot-chat--connection)
               current-time)
 
         (when copilot-chat-debug
@@ -146,7 +155,7 @@
            (message "Failed to fetch models in background: %s"
                     (error-message-string err))))))))
 
-(defun copilot-chat--login()
+(defun copilot-chat--login ()
   "Login to GitHub Copilot API."
   (cond
    ((eq copilot-chat-backend 'curl)
@@ -157,7 +166,7 @@
     (error "Unknown backend: %s" copilot-chat-backend))))
 
 
-(defun copilot-chat--renew-token()
+(defun copilot-chat--renew-token ()
   "Renew the session token."
   (cond
    ((eq copilot-chat-backend 'curl)
@@ -167,34 +176,44 @@
    (t
     (error "Unknown backend: %s" copilot-chat-backend))))
 
-(defun copilot-chat--auth()
+(defun copilot-chat--auth ()
   "Authenticate with GitHub Copilot API.
 We first need github authorization (github token).
 Then we need a session token."
-  (unless (copilot-chat-connection-github-token copilot-chat--connection)
+  (unless (copilot-chat-connection-github-token
+           copilot-chat--connection)
     (let ((token (copilot-chat--get-cached-token)))
       (if token
-          (setf (copilot-chat-connection-github-token copilot-chat--connection) token)
+          (setf (copilot-chat-connection-github-token
+                 copilot-chat--connection)
+                token)
         (copilot-chat--login))))
 
-  (when (null (copilot-chat-connection-token copilot-chat--connection))
+  (when (null
+         (copilot-chat-connection-token copilot-chat--connection))
     ;; try to load token from ~/.cache/copilot-chat-token
     (let ((token-file (expand-file-name copilot-chat-token-cache)))
       (when (file-exists-p token-file)
         (with-temp-buffer
           (insert-file-contents token-file)
-          (setf (copilot-chat-connection-token copilot-chat--connection)
+          (setf (copilot-chat-connection-token
+                 copilot-chat--connection)
                 (json-read-from-string
-                 (buffer-substring-no-properties (point-min) (point-max))))))))
+                 (buffer-substring-no-properties
+                  (point-min) (point-max))))))))
 
-  (when (or (null (copilot-chat-connection-token copilot-chat--connection))
+  (when (or (null
+             (copilot-chat-connection-token copilot-chat--connection))
             (> (round (float-time (current-time)))
-               (alist-get 'expires_at
-                          (copilot-chat-connection-token copilot-chat--connection))))
+               (alist-get
+                'expires_at
+                (copilot-chat-connection-token
+                 copilot-chat--connection))))
     (copilot-chat--renew-token))
   (setf (copilot-chat-connection-ready copilot-chat--connection) t))
 
-(defun copilot-chat--ask (instance prompt callback &optional out-of-context)
+(defun copilot-chat--ask
+    (instance prompt callback &optional out-of-context)
   "Ask a question to Copilot.
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
@@ -205,9 +224,11 @@ Argument OUT-OF-CONTEXT indicates if prompt is out of context (git commit)."
     (copilot-chat--auth)
     (cond
      ((eq copilot-chat-backend 'curl)
-      (copilot-chat--curl-ask instance prompt callback out-of-context))
+      (copilot-chat--curl-ask
+       instance prompt callback out-of-context))
      ((eq copilot-chat-backend 'request)
-      (copilot-chat--request-ask instance prompt callback out-of-context))
+      (copilot-chat--request-ask
+       instance prompt callback out-of-context))
      (t
       (error "Unknown backend: %s" copilot-chat-backend)))
     (unless out-of-context
@@ -257,18 +278,22 @@ All its associated buffers are killed."
       (kill-buffer lst-buf))
     (when (buffer-live-p tmp-buf)
       (kill-buffer tmp-buf))
-    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
+    (setq copilot-chat--instances
+          (delete instance copilot-chat--instances))))
 
 (defun copilot-chat--create-instance ()
   "Create a new copilot chat instance for a given directory."
-  (let* ((current-dir (file-name-directory (or (buffer-file-name)
-                                               default-directory)))
-         (directory (expand-file-name
-                     (read-directory-name "Choose a directory: " current-dir)))
+  (let* ((current-dir
+          (file-name-directory
+           (or (buffer-file-name) default-directory)))
+         (directory
+          (expand-file-name
+           (read-directory-name "Choose a directory: " current-dir)))
          (found (copilot-chat--find-instance directory))
-         (instance (if found
-                       found
-                     (copilot-chat--create directory))))
+         (instance
+          (if found
+              found
+            (copilot-chat--create directory))))
     (unless found
       (push instance copilot-chat--instances))
     instance))
@@ -276,22 +301,30 @@ All its associated buffers are killed."
 (defun copilot-chat--find-instance (directory)
   "Find the instance corresponding to a path.
 Argument DIRECTORY is the path to search for matching instance."
-  (cl-find-if (lambda (instance)
-                (string-prefix-p (copilot-chat-directory instance) directory))
-              copilot-chat--instances))
+  (cl-find-if
+   (lambda (instance)
+     (string-prefix-p (copilot-chat-directory instance) directory))
+   copilot-chat--instances))
 
 (defun copilot-chat--ask-for-instance ()
   "Ask for an existing instance or create a new one."
   (if (null copilot-chat--instances)
       (copilot-chat--create-instance)
-    (let* ((choice (read-multiple-choice
-                    "Copilot Chat Instance: "
-                    '((?c "Create new instance" "Create a new Copilot chat instance")
-                      (?l "Choose from list" "Choose from existing instances"))))
+    (let* ((choice
+            (read-multiple-choice
+             "Copilot Chat Instance: "
+             '((?c
+                "Create new instance"
+                "Create a new Copilot chat instance")
+               (?l
+                "Choose from list"
+                "Choose from existing instances"))))
            (key (car choice)))
       (cond
-       ((eq key ?l) (copilot-chat--choose-instance))
-       ((eq key ?c) (copilot-chat--create-instance))))))
+       ((eq key ?l)
+        (copilot-chat--choose-instance))
+       ((eq key ?c)
+        (copilot-chat--create-instance))))))
 
 (defun copilot-chat--current-instance ()
   "Return current instance, create a new one if needed."
@@ -301,9 +334,10 @@ Argument DIRECTORY is the path to search for matching instance."
     ;; if no file, ask for an existing instanceor create a new one
     ;; if an instance as a parent path of the file, use it
     ;; else ask for an existing instance or create a new one
-    (let* ((parent (expand-file-name
-                    (file-name-directory (or (buffer-file-name buf)
-                                             default-directory))))
+    (let* ((parent
+            (expand-file-name
+             (file-name-directory
+              (or (buffer-file-name buf) default-directory))))
            (existing-instance (copilot-chat--find-instance parent)))
       (if existing-instance
           existing-instance
@@ -315,12 +349,15 @@ Argument DIRECTORY is the path to search for matching instance."
   ;; the copilot-chat--instances list. Get directory with
   ;; (copilot-chat-directory instance). Use completing-read to get user choice
   ;; and then use copilot-chat--find-instance to get corresponding instance
-  (let* ((choices (mapcar (lambda (instance)
-                            (cons (copilot-chat-directory instance) instance))
-                          copilot-chat--instances))
-         (choice (completing-read "Choose Copilot Chat instance: "
-                                  (mapcar 'car choices)
-                                  nil t)))
+  (let* ((choices
+          (mapcar
+           (lambda (instance)
+             (cons (copilot-chat-directory instance) instance))
+           copilot-chat--instances))
+         (choice
+          (completing-read
+           "Choose Copilot Chat instance: " (mapcar 'car choices)
+           nil t)))
     (copilot-chat--find-instance choice)))
 
 (provide 'copilot-chat-copilot)

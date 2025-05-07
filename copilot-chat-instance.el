@@ -36,31 +36,30 @@ Use `copilot-chat-set-model' to interactively select a model."
   :type 'string
   :group 'copilot-chat)
 
-(cl-defstruct (copilot-chat
-               (:constructor copilot-chat--make)
-               (:copier nil))
-  "Struct for Copilot chat state."
-  (directory nil :type (or null string))
-  (model copilot-chat-default-model :type string)
-  (type nil :type (or null symbol))
-  (chat-buffer nil :type (or null buffer))
-  (first-word-answer t :type boolean)
-  (history nil :type list)
-  (buffers nil :type list)
-  (prompt-history nil :type list)
-  (prompt-history-position nil :type (or null int))
-  (yank-index 1 :type int)
-  (last-yank-start nil :type (or null point))
-  (last-yank-end nil :type (or null point))
-  (spinner-timer nil :type timer)
-  (spinner-index 0 :type int)
-  (spinner-status nil :type (or null string))
-  (curl-answer nil :type (or null string))
-  (curl-file nil :type (or null file))
-  (curl-current-data nil :type (or null string))
-  (shell-maker-tmp-buf nil :type buffer)
-  (shell-maker-answer-point nil :type point)
-  (shell-cb-fn nil :type function))
+(cl-defstruct
+ (copilot-chat (:constructor copilot-chat--make) (:copier nil))
+ "Struct for Copilot chat state."
+ (directory nil :type (or null string))
+ (model copilot-chat-default-model :type string)
+ (type nil :type (or null symbol))
+ (chat-buffer nil :type (or null buffer))
+ (first-word-answer t :type boolean)
+ (history nil :type list)
+ (buffers nil :type list)
+ (prompt-history nil :type list)
+ (prompt-history-position nil :type (or null int))
+ (yank-index 1 :type int)
+ (last-yank-start nil :type (or null point))
+ (last-yank-end nil :type (or null point))
+ (spinner-timer nil :type timer)
+ (spinner-index 0 :type int)
+ (spinner-status nil :type (or null string))
+ (curl-answer nil :type (or null string))
+ (curl-file nil :type (or null file))
+ (curl-current-data nil :type (or null string))
+ (shell-maker-tmp-buf nil :type buffer)
+ (shell-maker-answer-point nil :type point)
+ (shell-cb-fn nil :type function))
 
 (defvar copilot-chat--instances (list)
   "Global instance of Copilot chat.")
@@ -76,13 +75,16 @@ Use `copilot-chat-set-model' to interactively select a model."
 
 (defun copilot-chat--get-list-buffer-create (instance)
   "Get or create the Copilot chat list buffer for INSTANCE."
-  (let ((list-buffer (get-buffer-create
-                      (concat copilot-chat-list-buffer
-                              "-"
-                              (copilot-chat-directory instance)
-                              "*"))))
+  (let ((list-buffer
+         (get-buffer-create
+          (concat
+           copilot-chat-list-buffer
+           "-"
+           (copilot-chat-directory instance)
+           "*"))))
     (with-current-buffer list-buffer
-      (setq-local default-directory (copilot-chat-directory instance)))
+      (setq-local default-directory
+                  (copilot-chat-directory instance)))
     list-buffer))
 
 (provide 'copilot-chat-instance)

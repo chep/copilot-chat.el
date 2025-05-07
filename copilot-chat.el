@@ -55,15 +55,18 @@
 
 (defcustom copilot-chat-frontend 'org
   "Frontend to use with `copilot-chat'.  Can be org or markdown."
-  :type '(choice (const :tag "org-mode" org)
-                 (const :tag "markdown" markdown)
-                 (const :tag "shell-maker" shell-maker))
-  :set (lambda (symbol value)
-         (set-default-toplevel-value symbol value)
-         (pcase value
-           (`org (require 'copilot-chat-org))
-           (`markdown (require 'copilot-chat-markdown))
-           (`shell-maker (require 'copilot-chat-shell-maker))))
+  :type
+  '(choice
+    (const :tag "org-mode" org)
+    (const :tag "markdown" markdown)
+    (const :tag "shell-maker" shell-maker))
+  :set
+  (lambda (symbol value)
+    (set-default-toplevel-value symbol value)
+    (pcase value
+      (`org (require 'copilot-chat-org))
+      (`markdown (require 'copilot-chat-markdown))
+      (`shell-maker (require 'copilot-chat-shell-maker))))
   :group 'copilot-chat)
 
 (provide 'copilot-chat)
