@@ -38,19 +38,21 @@
   "Temporary buffer prefix for Copilot Chat shell-maker.")
 
 ;; Functions
-(defun copilot-chat--shell-maker-prompt-send()
+(defun copilot-chat--shell-maker-prompt-send ()
   "Function to send the prompt content."
   (let ((instance (copilot-chat--current-instance)))
-    (with-current-buffer (copilot-chat--shell-maker-get-buffer instance)
+    (with-current-buffer (copilot-chat--shell-maker-get-buffer
+                          instance)
       (shell-maker-submit)
       (display-buffer (current-buffer)))))
 
 (defun copilot-chat--shell-maker-temp-buffer-name (instance)
   "Return the temporary buffer name for the Copilot Chat shell-maker.
 INSTANCE is used to get directory"
-  (concat copilot-chat--shell-maker-temp-buffer-prefix
-          (copilot-chat-directory instance)
-          "*"))
+  (concat
+   copilot-chat--shell-maker-temp-buffer-prefix
+   (copilot-chat-directory instance)
+   "*"))
 
 
 (defun copilot-chat--shell-maker-get-buffer (instance)
@@ -58,9 +60,11 @@ INSTANCE is used to get directory"
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
           (copilot-chat--shell instance)))
-  (let ((tempb (or (copilot-chat-shell-maker-tmp-buf instance)
-                   (get-buffer-create
-                    (copilot-chat--shell-maker-temp-buffer-name instance)))))
+  (let ((tempb
+         (or (copilot-chat-shell-maker-tmp-buf instance)
+             (get-buffer-create
+              (copilot-chat--shell-maker-temp-buffer-name
+               instance)))))
     (setf (copilot-chat-shell-maker-tmp-buf instance) tempb)
     (with-current-buffer tempb
       (let ((inhibit-read-only t))
@@ -74,16 +78,16 @@ INSTANCE is used to get directory"
       (font-lock-ensure)
       (goto-char (point-min))
       (while (not (eobp))
-        (let ((next-change (or (next-property-change (point)
-                                                     nil
-                                                     (point-max))
-                               (point-max)))
+        (let ((next-change
+               (or (next-property-change (point) nil (point-max))
+                   (point-max)))
               (face (get-text-property (point) 'face)))
           (when face
-            (font-lock-append-text-property (point) next-change 'font-lock-face face))
+            (font-lock-append-text-property
+             (point) next-change 'font-lock-face face))
           (goto-char next-change))))))
 
-(defun copilot-chat--shell-maker-copy-faces(instance)
+(defun copilot-chat--shell-maker-copy-faces (instance)
   "Apply faces to the copilot chat buffer corresponding to INSTANCE."
   (with-current-buffer (copilot-chat-shell-maker-tmp-buf instance)
     (save-restriction
@@ -91,8 +95,10 @@ INSTANCE is used to get directory"
       (font-lock-ensure)
       (copilot-chat--shell-maker-font-lock-faces instance)
       (let ((content (buffer-substring (point-min) (point-max))))
-        (with-current-buffer (copilot-chat--shell-maker-get-buffer instance)
-          (goto-char (1+ (copilot-chat-shell-maker-answer-point instance)))
+        (with-current-buffer (copilot-chat--shell-maker-get-buffer
+                              instance)
+          (goto-char
+           (1+ (copilot-chat-shell-maker-answer-point instance)))
           (insert content)
           (delete-region (point) (+ (point) (1- (length content))))
           (goto-char (point-max)))))))
@@ -106,20 +112,24 @@ Argument CONTENT is copilot chat answer."
     (goto-char (point-max))
     (when (copilot-chat-first-word-answer instance)
       (setf (copilot-chat-first-word-answer instance) nil)
-      (let ((str (concat (format-time-string "# [%T] ")
-                         (format "Copilot(%s):\n"
-                                 (copilot-chat-model instance))))
+      (let ((str
+             (concat
+              (format-time-string "# [%T] ")
+              (format "Copilot(%s):\n"
+                      (copilot-chat-model instance))))
             (inhibit-read-only t))
-        (with-current-buffer (copilot-chat-shell-maker-tmp-buf instance)
+        (with-current-buffer (copilot-chat-shell-maker-tmp-buf
+                              instance)
           (insert str))
         (funcall (map-elt shell :write-output) str)))
     (if (string= content copilot-chat--magic)
         (progn
-          (funcall (map-elt shell :finish-output) t); the end
+          (funcall (map-elt shell :finish-output) t) ; the end
           (copilot-chat--shell-maker-copy-faces instance)
           (setf (copilot-chat-first-word-answer instance) t))
       (progn
-        (with-current-buffer (copilot-chat-shell-maker-tmp-buf instance)
+        (with-current-buffer (copilot-chat-shell-maker-tmp-buf
+                              instance)
           (goto-char (point-max))
           (let ((inhibit-read-only t))
             (insert content)))
@@ -141,44 +151,51 @@ Argument INSTANCE is `copilot-chat' instance.
 Argument COMMAND is the command to send to Copilot.
 Argument SHELL is the `shell-maker' instance."
   (setf
-   (copilot-chat-shell-cb-fn instance) (apply-partially
-                                        #'copilot-chat--shell-cb-prompt-wrapper
-                                        shell)
+   (copilot-chat-shell-cb-fn instance)
+   (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
    (copilot-chat-shell-maker-answer-point instance) (point))
   (let ((inhibit-read-only t))
     (with-current-buffer (copilot-chat-shell-maker-tmp-buf instance)
       (erase-buffer)))
-  (copilot-chat--ask instance command (copilot-chat-shell-cb-fn instance)))
+  (copilot-chat--ask
+   instance command (copilot-chat-shell-cb-fn instance)))
 
 (defun copilot-chat--shell (instance)
   "Start a Copilot Chat shell for INSTANCE."
-  (let ((buf (shell-maker-start
-              (make-shell-maker-config
-               :name (format "Copilot-Chat%s" (copilot-chat-directory instance))
-               :execute-command (lambda (command shell)
-                                  (copilot-chat--shell-cb instance command shell)))
-              t nil t
-              (copilot-chat--get-buffer-name (copilot-chat-directory instance)))))
+  (let ((buf
+         (shell-maker-start
+          (make-shell-maker-config
+           :name
+           (format "Copilot-Chat%s" (copilot-chat-directory instance))
+           :execute-command
+           (lambda
+             (command shell)
+             (copilot-chat--shell-cb instance command shell)))
+          t nil t
+          (copilot-chat--get-buffer-name
+           (copilot-chat-directory instance)))))
     (with-current-buffer buf
-      (setq-local default-directory (copilot-chat-directory instance)))
+      (setq-local default-directory
+                  (copilot-chat-directory instance)))
     buf))
 
-(defun copilot-chat--shell-maker-insert-prompt(instance prompt)
+(defun copilot-chat--shell-maker-insert-prompt (instance prompt)
   "Insert PROMPT in the chat buffer corresponding to INSTANCE."
   (with-current-buffer (copilot-chat--shell-maker-get-buffer instance)
     (goto-char (point-max))
     (insert prompt)))
 
-(defun copilot-chat--shell-maker-clean()
+(defun copilot-chat--shell-maker-clean ()
   "Clean the copilot chat `shell-maker' frontend."
-  (advice-remove 'copilot-chat-prompt-send #'copilot-chat--shell-maker-prompt-send))
+  (advice-remove
+   'copilot-chat-prompt-send #'copilot-chat--shell-maker-prompt-send))
 
-(defun copilot-chat-shell-maker-init()
+(defun copilot-chat-shell-maker-init ()
   "Initialize the copilot chat `shell-maker' frontend."
   (setq copilot-chat-prompt copilot-chat-markdown-prompt)
-  (advice-add 'copilot-chat-prompt-send
-              :override
-              #'copilot-chat--shell-maker-prompt-send))
+  (advice-add
+   'copilot-chat-prompt-send
+   :override #'copilot-chat--shell-maker-prompt-send))
 
 ;; Top-level execute code.
 
@@ -205,8 +222,3 @@ Argument SHELL is the `shell-maker' instance."
 
 (provide 'copilot-chat-shell-maker)
 ;;; copilot-chat-shell-maker.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

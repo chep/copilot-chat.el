@@ -44,7 +44,8 @@
   :type 'boolean
   :group 'copilot-chat)
 
-(defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
+(defcustom copilot-chat-github-token-file
+  "~/.config/copilot-chat/github-token"
   "The file where to find GitHub token."
   :type 'string
   :group 'copilot-chat)
@@ -58,11 +59,14 @@
 (defun copilot-chat--uuid ()
   "Generate a UUID."
   (format "%04x%04x-%04x-4%03x-%04x-%04x%04x%04x"
-          (random 65536) (random 65536)
+          (random 65536)
+          (random 65536)
           (random 65536)
           (logior (random 16384) 16384)
           (logior (random 4096) 32768)
-          (random 65536) (random 65536) (random 65536)))
+          (random 65536)
+          (random 65536)
+          (random 65536)))
 
 (defun copilot-chat--machine-id ()
   "Generate a machine ID."
@@ -79,8 +83,3 @@
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

@@ -210,8 +210,3 @@ Don't forget the most important rule when you are formatting your response: use 
 
 (provide 'copilot-chat-prompts)
 ;;; copilot-chat-prompts.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

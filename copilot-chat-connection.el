@@ -28,28 +28,22 @@
 
 (require 'cl-lib)
 
-(cl-defstruct (copilot-chat-connection
-               (:constructor copilot-chat-connection--make)
-               (:copier nil))
-  "Struct for Copilot connection information."
-  (ready nil :type boolean)
-  (github-token nil :type (or null string))
-  (token nil)
-  (sessionid nil :type (or null string))
-  (machineid nil :type (or null string))
-  (models nil :type list)
-  (last-models-fetch-time 0 :type number))
+(cl-defstruct
+ (copilot-chat-connection
+  (:constructor copilot-chat-connection--make) (:copier nil))
+ "Struct for Copilot connection information."
+ (ready nil :type boolean)
+ (github-token nil :type (or null string))
+ (token nil)
+ (sessionid nil :type (or null string))
+ (machineid nil :type (or null string))
+ (models nil :type list)
+ (last-models-fetch-time 0 :type number))
 
-(defvar copilot-chat--connection
-  (copilot-chat-connection--make)
+(defvar copilot-chat--connection (copilot-chat-connection--make)
   "Connection information for Copilot chat.")
 
 (cl-declaim (type copilot-chat-connection copilot-chat--connection))
 
 (provide 'copilot-chat-connection)
 ;;; copilot-chat-connection.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

@@ -32,64 +32,64 @@
 (require 'copilot-chat-command)
 
 ;;;###autoload (autoload 'copilot-chat-transient "copilot-chat" nil t)
-(transient-define-prefix copilot-chat-transient ()
-  "Copilot chat command menu."
-  [["Commands"
-    ("d" "Display chat" copilot-chat-display)
-    ("h" "Hide chat" copilot-chat-hide)
-    ("r" "Reset & reopen" (lambda ()
-                            (interactive)
-                            (copilot-chat-reset)
-                            (copilot-chat-display)))
-    ("x" "Reset" copilot-chat-reset)
-    ("g" "Go to buffer" copilot-chat-switch-to-buffer)
-    ("M" "Set model" copilot-chat-set-model)
-    ("q" "Quit" transient-quit-one)]
-   ["Actions"
-    ("p" "Custom prompt" copilot-chat-custom-prompt-selection)
-    ("i" "Ask and insert" copilot-chat-ask-and-insert)
-    ("m" "Insert commit message" copilot-chat-insert-commit-message)]
-   ["Data"
-    ("y" "Yank last code block" copilot-chat-yank)
-    ("s" "Send code to buffer" copilot-chat-send-to-buffer)]
-   ["Tools"
-    ("b" "Buffers" copilot-chat-transient-buffers)
-    ("c" "Code helpers" copilot-chat-transient-code)]
-   ])
+(transient-define-prefix
+ copilot-chat-transient () "Copilot chat command menu."
+ [["Commands"
+   ("d" "Display chat" copilot-chat-display)
+   ("h" "Hide chat" copilot-chat-hide)
+   ("r" "Reset & reopen"
+    (lambda ()
+      (interactive)
+      (copilot-chat-reset)
+      (copilot-chat-display)))
+   ("x" "Reset" copilot-chat-reset)
+   ("g" "Go to buffer" copilot-chat-switch-to-buffer)
+   ("M" "Set model" copilot-chat-set-model)
+   ("q" "Quit" transient-quit-one)]
+  ["Actions"
+   ("p" "Custom prompt" copilot-chat-custom-prompt-selection)
+   ("i" "Ask and insert" copilot-chat-ask-and-insert)
+   ("m" "Insert commit message" copilot-chat-insert-commit-message)]
+  ["Data"
+   ("y" "Yank last code block" copilot-chat-yank)
+   ("s" "Send code to buffer" copilot-chat-send-to-buffer)]
+  ["Tools"
+   ("b" "Buffers" copilot-chat-transient-buffers)
+   ("c" "Code helpers" copilot-chat-transient-code)]])
 
 ;;;###autoload (autoload 'copilot-chat-transient-buffers "copilot-chat" nil t)
-(transient-define-prefix copilot-chat-transient-buffers ()
-  "Copilot chat buffers menu."
-  [["Buffers"
-    ("a" "Add buffers" copilot-chat-add-buffers)
-    ("A" "Add all buffers in current frame" copilot-chat-add-buffers-in-current-window)
-    ("d" "Delete buffers" copilot-chat-del-buffers)
-    ("D" "Delete all buffers" copilot-chat-list-clear-buffers)
-    ("f" "Add files under current directory" copilot-chat-add-files-under-dir)
-    ("l" "Display buffer list" copilot-chat-list)
-    ("c" "Clear buffers" copilot-chat-list-clear-buffers)
-    ("q" "Quit" transient-quit-one)]])
+(transient-define-prefix
+ copilot-chat-transient-buffers () "Copilot chat buffers menu."
+ [["Buffers" ("a" "Add buffers" copilot-chat-add-buffers)
+   ("A"
+    "Add all buffers in current frame"
+    copilot-chat-add-buffers-in-current-window)
+   ("d" "Delete buffers" copilot-chat-del-buffers)
+   ("D" "Delete all buffers" copilot-chat-list-clear-buffers)
+   ("f"
+    "Add files under current directory"
+    copilot-chat-add-files-under-dir)
+   ("l" "Display buffer list" copilot-chat-list)
+   ("c"
+    "Clear buffers"
+    copilot-chat-list-clear-buffers)
+   ("q" "Quit" transient-quit-one)]])
 
 ;;;###autoload (autoload 'copilot-chat-transient-code "copilot-chat" nil t)
-(transient-define-prefix copilot-chat-transient-code ()
-  "Copilot chat code helpers menu."
-  [["Code helpers"
-    ("e" "Explain" copilot-chat-explain)
-    ("E" "Explain symbol" copilot-chat-explain-symbol-at-line)
-    ("r" "Review" copilot-chat-review)
-    ("d" "Doc" copilot-chat-doc)
-    ("f" "Fix" copilot-chat-fix)
-    ("o" "Optimize" copilot-chat-optimize)
-    ("t" "Test" copilot-chat-test)
-    ("F" "Explain function" copilot-chat-explain-defun)
-    ("c" "Custom prompt function" copilot-chat-custom-prompt-function)
-    ("R" "Review whole buffer" copilot-chat-review-whole-buffer)
-    ("q" "Quit" transient-quit-one)]])
+(transient-define-prefix
+ copilot-chat-transient-code () "Copilot chat code helpers menu."
+ [["Code helpers"
+   ("e" "Explain" copilot-chat-explain)
+   ("E" "Explain symbol" copilot-chat-explain-symbol-at-line)
+   ("r" "Review" copilot-chat-review)
+   ("d" "Doc" copilot-chat-doc)
+   ("f" "Fix" copilot-chat-fix)
+   ("o" "Optimize" copilot-chat-optimize)
+   ("t" "Test" copilot-chat-test)
+   ("F" "Explain function" copilot-chat-explain-defun)
+   ("c" "Custom prompt function" copilot-chat-custom-prompt-function)
+   ("R" "Review whole buffer" copilot-chat-review-whole-buffer)
+   ("q" "Quit" transient-quit-one)]])
 
 (provide 'copilot-chat-transient)
 ;;; copilot-chat-transient.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

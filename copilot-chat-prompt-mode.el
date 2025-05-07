@@ -33,11 +33,14 @@
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-c") 'copilot-chat-prompt-send)
-    (define-key map (kbd "C-c C-q") (lambda()
-                                      (interactive)
-                                      (bury-buffer)
-                                      (delete-window)))
-    (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
+    (define-key
+     map (kbd "C-c C-q")
+     (lambda ()
+       (interactive)
+       (bury-buffer)
+       (delete-window)))
+    (define-key
+     map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
     (define-key map (kbd "C-c C-t") 'copilot-chat-transient)
     (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
     (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
@@ -54,10 +57,8 @@
   :lighter " Copilot Chat Prompt"
   :keymap copilot-chat-prompt-mode-map)
 
-(defun copilot-chat--write-buffer(instance
-                                  data
-                                  save
-                                  &optional buffer)
+(defun copilot-chat--write-buffer
+    (instance data save &optional buffer)
   "Write content to the Copilot Chat BUFFER.
 Argument INSTANCE is the copilot chat instance to use.
 Argument DATA data to be inserted in buffer.
@@ -68,11 +69,12 @@ defaults to instance's chat buffer."
       (with-current-buffer buffer
         (insert data))
     (with-current-buffer (copilot-chat--get-buffer instance)
-      (let ((write-fn (copilot-chat-frontend-write-fn (copilot-chat--get-frontend))))
+      (let ((write-fn
+             (copilot-chat-frontend-write-fn
+              (copilot-chat--get-frontend))))
         (when write-fn
           (if save
-              (save-excursion
-                (funcall write-fn data))
+              (save-excursion (funcall write-fn data))
             (funcall write-fn data)))))))
 
 (defun copilot-chat--format-data (instance content type)
@@ -80,7 +82,9 @@ defaults to instance's chat buffer."
 Argument INSTANCE is the copilot chat instance to use.
 Argument CONTENT is the data to format.
 Argument TYPE is the type of data to format: `answer` or `prompt`."
-  (let ((format-fn (copilot-chat-frontend-format-fn (copilot-chat--get-frontend))))
+  (let ((format-fn
+         (copilot-chat-frontend-format-fn
+          (copilot-chat--get-frontend))))
     (if format-fn
         (funcall format-fn instance content type)
       content)))
@@ -99,24 +103,20 @@ Optional argument BUFFER is the buffer to write data in."
          (copilot-chat--format-data instance "\n\n" 'answer)
          (not copilot-chat-follow)
          buffer))
-    (copilot-chat--write-buffer
-     instance
-     (copilot-chat--format-data instance content 'answer)
-     (not copilot-chat-follow)
-     buffer)))
+    (copilot-chat--write-buffer instance
+                                (copilot-chat--format-data
+                                 instance content 'answer)
+                                (not copilot-chat-follow)
+                                buffer)))
 
-(defun copilot-chat--pop-current-prompt(instance)
+(defun copilot-chat--pop-current-prompt (instance)
   "Get current prompt to send and clean it.
 Argument INSTANCE is the copilot chat instance to use."
-  (let ((pop-prompt-fn (copilot-chat-frontend-pop-prompt-fn
-                        (copilot-chat--get-frontend))))
+  (let ((pop-prompt-fn
+         (copilot-chat-frontend-pop-prompt-fn
+          (copilot-chat--get-frontend))))
     (when pop-prompt-fn
       (funcall pop-prompt-fn instance))))
 
 (provide 'copilot-chat-prompt-mode)
 ;;; copilot-chat-prompt-mode.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

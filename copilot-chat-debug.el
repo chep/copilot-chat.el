@@ -46,17 +46,14 @@ No message is printed if `copilot-chat-debug' is nil."
       (signal 'wrong-type-argument (list 'symbolp category)))
     (unless (stringp format-string)
       (signal 'wrong-type-argument (list 'stringp format-string)))
-    (let ((formatted-msg (condition-case err
-                             (apply #'format format-string args)
-                           (error
-                            (message "Error formatting debug message: %S" err)
-                            (format "Error formatting message with args: %S" args)))))
+    (let ((formatted-msg
+           (condition-case err
+               (apply #'format format-string args)
+             (error
+              (message "Error formatting debug message: %S" err)
+              (format "Error formatting message with args: %S"
+                      args)))))
       (message "[copilot-chat:%s] %s" category formatted-msg))))
 
 (provide 'copilot-chat-debug)
 ;;; copilot-chat-debug.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:

@@ -30,49 +30,49 @@
 
 (defvar copilot-chat-frontend)
 
-(cl-defstruct copilot-chat-frontend
-  id
-  init-fn
-  clean-fn
-  format-fn
-  format-code-fn
-  format-buffer-fn
-  create-req-fn
-  send-to-buffer-fn
-  copy-fn
-  yank-fn
-  write-fn
-  get-buffer-fn
-  insert-prompt-fn
-  pop-prompt-fn
-  goto-input-fn
-  get-spinner-buffer-fn)
+(cl-defstruct
+ copilot-chat-frontend
+ id
+ init-fn
+ clean-fn
+ format-fn
+ format-code-fn
+ format-buffer-fn
+ create-req-fn
+ send-to-buffer-fn
+ copy-fn
+ yank-fn
+ write-fn
+ get-buffer-fn
+ insert-prompt-fn
+ pop-prompt-fn
+ goto-input-fn
+ get-spinner-buffer-fn)
 
 (defvar copilot-chat--frontend-list '()
   "Copilot-chat frontends and functions list.
 Each element must be a `copilot-chat-frontend' struct instance.
 Elements are added in the module that defines each front end.")
 
-(cl-declaim (type (list-of copilot-chat-frontend) copilot-chat--frontend-list))
+(cl-declaim
+ (type (list-of copilot-chat-frontend) copilot-chat--frontend-list))
 
 (defun copilot-chat--get-frontend ()
   "Get frontend from custom."
-  (cl-find copilot-chat-frontend copilot-chat--frontend-list
-           :key #'copilot-chat-frontend-id
-           :test #'eq))
+  (cl-find
+   copilot-chat-frontend
+   copilot-chat--frontend-list
+   :key #'copilot-chat-frontend-id
+   :test #'eq))
 
-(defun copilot-chat--get-buffer(instance)
+(defun copilot-chat--get-buffer (instance)
   "Get Copilot Chat buffer from the active frontend.
 Argument INSTANCE is the copilot chat instance to get the buffer for."
-  (let ((get-buffer-fn (copilot-chat-frontend-get-buffer-fn
-                        (copilot-chat--get-frontend))))
+  (let ((get-buffer-fn
+         (copilot-chat-frontend-get-buffer-fn
+          (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn instance))))
 
 (provide 'copilot-chat-frontend)
 ;;; copilot-chat-frontend.el ends here
-
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; package-lint-main-file: "copilot-chat.el"
-;; End:
