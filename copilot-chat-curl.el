@@ -154,7 +154,9 @@ Optional argument ARGS are additional arguments to pass to curl."
            "-H"
            "editor-plugin-version: CopilotChat.nvim/2.0.0"
            "-H"
-           "editor-version: Neovim/0.10.0")
+           "editor-version: Neovim/0.10.0"
+           "-H"
+           "Copilot-Vision-Request: true")
           (when data
             (list "-d" data))
           (when copilot-chat-curl-proxy

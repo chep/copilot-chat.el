@@ -99,6 +99,47 @@ INSTANCE is the `copilot-chat' instance being used."
         (funcall format-buffer-fn buffer instance)
       (buffer-substring-no-properties (point-min) (point-max)))))
 
+(defun copilot-chat--image-to-base64 (file)
+  "Convert an image FILE to a base64 encoded string."
+  (with-temp-buffer
+    (insert-file-contents-literally file)
+    (base64-encode-region (point-min) (point-max) t)
+    (buffer-string)))
+
+(defun copilot-chat--add-buffer-to-req (buffer instance messages)
+  "Add BUFFER content to messages.
+INSTANCE is the `copilot-chat' instance being used."
+  (when (buffer-live-p buffer)
+    (let ((filename (buffer-file-name buffer)))
+      (if (and filename
+               (copilot-chat--model-is-gpt-4o instance)
+               (image-supported-file-p filename))
+          (push (list
+                 `(content
+                   .
+                   ,(vconcat
+                     (list
+                      (list
+                       `(type . "text") `(text . ,(concat "FILE " filename)))
+                      (list
+                       `(type . , "image_url")
+                       `(image_url
+                         .
+                         ,(list
+                           `(url
+                             .
+                             ,(concat
+                               "data:image/jpeg;base64,"
+                               (copilot-chat--image-to-base64 filename)))))))))
+                 `(role . "user"))
+                messages)
+        (push (list
+               `(content
+                 . ,(copilot-chat--format-buffer-for-copilot buffer instance))
+               `(role . "user"))
+              messages))))
+  messages)
+
 (defun copilot-chat--create-req (instance prompt no-context)
   "Create a request for Copilot.
 Argument INSTANCE is the copilot chat instance to use.
@@ -133,12 +174,8 @@ The create req function is called first and will return new prompt."
       (setf (copilot-chat-buffers instance)
             (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
       (dolist (buffer (copilot-chat-buffers instance))
-        (when (buffer-live-p buffer)
-          (push (list
-                 `(content
-                   . ,(copilot-chat--format-buffer-for-copilot buffer instance))
-                 `(role . "user"))
-                messages))))
+        (setq messages
+              (copilot-chat--add-buffer-to-req buffer instance messages))))
     ;; system.
     ;; Add custom instruction as a separate message if available.
     ;; Prefer Global < Project.
