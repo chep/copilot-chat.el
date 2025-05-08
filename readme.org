@@ -1,6 +1,10 @@
 #+TITLE: Copilot Chat for Emacs
 #+AUTHOR: Cédric Chépied
 
+[[https://melpa.org/#/copilot-chat][https://melpa.org/packages/copilot-chat-badge.svg]]
+[[https://stable.melpa.org/#/copilot-chat][https://stable.melpa.org/packages/copilot-chat-badge.svg]]
+[[https://github.com/chep/copilot-chat.el/graphs/contributors][https://img.shields.io/github/contributors/chep/copilot-chat.el.svg]]
+
 * Description
 This plugin allows you to chat with GitHub copilot.
 
