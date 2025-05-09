@@ -158,6 +158,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 *** Magit
 - ~(copilot-chat-insert-commit-message)~ Insert in the current buffer a copilot generated commit message.
+- ~(copilot-chat-regenerate-commit-message)~ Regenerate the commit message, optionally providing additional instructions or a custom user prompt. This reuses previous context and history for improved results.
 
 *** Transient
 - ~(copilot-chat-transient)~ display main transient menu to access all functions.
