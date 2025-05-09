@@ -83,9 +83,13 @@ Use `copilot-chat-set-model' to interactively select a model."
            (copilot-chat-directory instance)
            "*"))))
     (with-current-buffer list-buffer
-      (setq-local default-directory
-                  (copilot-chat-directory instance)))
+      (setq-local default-directory (copilot-chat-directory instance)))
     list-buffer))
 
 (provide 'copilot-chat-instance)
 ;;; copilot-chat-instance.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

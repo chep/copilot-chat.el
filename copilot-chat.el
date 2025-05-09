@@ -71,3 +71,8 @@
 
 (provide 'copilot-chat)
 ;;; copilot-chat.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

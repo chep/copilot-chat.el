@@ -55,17 +55,15 @@ ignore it and emit a message."
          (github-dir (locate-dominating-file starting-path ".github"))
          (instruction-file
           (and github-dir
-               (expand-file-name (concat ".github/" file-name)
-                                 github-dir))))
+               (expand-file-name (concat ".github/" file-name) github-dir))))
     (when (and instruction-file (file-readable-p instruction-file))
       ;; Skip the file if it exceeds the configured size limit.
       (when (and copilot-chat-max-instruction-size
-                 (> (file-attribute-size
-                     (file-attributes instruction-file))
+                 (> (file-attribute-size (file-attributes instruction-file))
                     copilot-chat-max-instruction-size))
-        (message
-         "[copilot-chat] `%s` is larger than %d bytes; ignored."
-         instruction-file copilot-chat-max-instruction-size)
+        (message "[copilot-chat] `%s` is larger than %d bytes; ignored."
+                 instruction-file
+                 copilot-chat-max-instruction-size)
         (cl-return-from copilot-chat--read-instruction-file nil))
       (with-temp-buffer
         (insert-file-contents instruction-file)
@@ -79,8 +77,7 @@ ignore it and emit a message."
 (defun copilot-chat--read-git-commit-instructions-file ()
   "Return the content of `.github/git-commit-instructions.md' or nil."
   (when copilot-chat-use-git-commit-instruction-files
-    (copilot-chat--read-instruction-file
-     "git-commit-instructions.md")))
+    (copilot-chat--read-instruction-file "git-commit-instructions.md")))
 
 (defun copilot-chat--format-copilot-instructions (instruction-content)
   "Format instruction content according to Copilot's expected format.
@@ -97,8 +94,7 @@ INSTRUCTION-CONTENT is the content read from the instructions file."
   "Format BUFFER content for Copilot with metadata to improve understanding.
 INSTANCE is the `copilot-chat' instance being used."
   (let ((format-buffer-fn
-         (copilot-chat-frontend-format-buffer-fn
-          (copilot-chat--get-frontend))))
+         (copilot-chat-frontend-format-buffer-fn (copilot-chat--get-frontend))))
     (if format-buffer-fn
         (funcall format-buffer-fn buffer instance)
       (buffer-substring-no-properties (point-min) (point-max)))))
@@ -110,8 +106,7 @@ Argument PROMPT Copilot prompt to send.
 Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
   (let* ((create-req-fn
-          (copilot-chat-frontend-create-req-fn
-           (copilot-chat--get-frontend)))
+          (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
          (copilot-instruction-content
           (and copilot-chat-use-copilot-instruction-files
                (copilot-chat--read-copilot-instructions-file)))
@@ -132,20 +127,16 @@ The create req function is called first and will return new prompt."
     (unless no-context
       ;; history
       (dolist (history (copilot-chat-history instance))
-        (push (list
-               `(content . ,(car history)) `(role . ,(cadr history)))
-              messages))
+        (push
+         (list `(content . ,(car history)) `(role . ,(cadr history))) messages))
       ;; Clean buffer list once and add buffer contents
       (setf (copilot-chat-buffers instance)
-            (cl-remove-if-not
-             #'buffer-live-p (copilot-chat-buffers instance)))
+            (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
       (dolist (buffer (copilot-chat-buffers instance))
         (when (buffer-live-p buffer)
           (push (list
                  `(content
-                   .
-                   ,(copilot-chat--format-buffer-for-copilot
-                     buffer instance))
+                   . ,(copilot-chat--format-buffer-for-copilot buffer instance))
                  `(role . "user"))
                 messages))))
     ;; system.
@@ -153,20 +144,17 @@ The create req function is called first and will return new prompt."
     ;; Prefer Global < Project.
     (when formatted-copilot-instructions
       (push (list
-             `(content . ,formatted-copilot-instructions)
-             `(role . "system"))
+             `(content . ,formatted-copilot-instructions) `(role . "system"))
             messages))
 
     (when (and git-commit-instruction-content
                (eq (copilot-chat-type instance) 'commit))
       (push (list
-             `(content . ,git-commit-instruction-content)
-             `(role . "system"))
+             `(content . ,git-commit-instruction-content) `(role . "system"))
             messages))
 
     ;; Global instruction.
-    (push (list `(content . ,copilot-chat-prompt) `(role . "system"))
-          messages)
+    (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)
 
     ;; Create the appropriate payload based on model type
     (json-serialize
@@ -184,3 +172,8 @@ The create req function is called first and will return new prompt."
 
 (provide 'copilot-chat-body)
 ;;; copilot-chat-body.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

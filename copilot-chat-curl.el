@@ -84,8 +84,7 @@ authentication."
   :group 'copilot-chat)
 
 ;; functions
-(defun copilot-chat--curl-call-process
-    (address method data &rest args)
+(defun copilot-chat--curl-call-process (address method data &rest args)
   "Call curl synchronously.
 Argument ADDRESS is the URL to call.
 Argument METHOD is the HTTP method to use.
@@ -127,11 +126,9 @@ Arguments ARGS are additional arguments to pass to curl."
                   nil
                   curl-args)))
       (when (/= result 0)
-        (error
-         (format "curl returned non-zero result: %d" result))))))
+        (error (format "curl returned non-zero result: %d" result))))))
 
-(defun copilot-chat--curl-make-process
-    (address method data filter &rest args)
+(defun copilot-chat--curl-make-process (address method data filter &rest args)
   "Call curl asynchronously.
 Argument ADDRESS is the URL to call.
 Argument METHOD is the HTTP method to use.
@@ -188,9 +185,7 @@ Optional argument ARGS are additional arguments to pass to curl."
          (token-dir
           (file-name-directory
            (expand-file-name copilot-chat-github-token-file))))
-    (setf (copilot-chat-connection-github-token
-           copilot-chat--connection)
-          token)
+    (setf (copilot-chat-connection-github-token copilot-chat--connection) token)
     (when (not (file-directory-p token-dir))
       (make-directory token-dir t))
     (with-temp-file copilot-chat-github-token-file
@@ -241,10 +236,8 @@ If your browser does not open automatically, browse to %s."
           ;copilot-chat-token format
           ))
         (cache-dir
-         (file-name-directory
-          (expand-file-name copilot-chat-token-cache))))
-    (setf (copilot-chat-connection-token copilot-chat--connection)
-          json-data)
+         (file-name-directory (expand-file-name copilot-chat-token-cache))))
+    (setf (copilot-chat-connection-token copilot-chat--connection) json-data)
     ;; save token in copilot-chat-token-cache file after creating
     ;; folders if needed
     (when (not (file-directory-p cache-dir))
@@ -260,8 +253,7 @@ If your browser does not open automatically, browse to %s."
      "https://api.github.com/copilot_internal/v2/token" 'get nil
      "-H"
      (format "authorization: token %s"
-             (copilot-chat-connection-github-token
-              copilot-chat--connection)))
+             (copilot-chat-connection-github-token copilot-chat--connection)))
     (copilot-chat--curl-parse-renew-token)))
 
 
@@ -300,8 +292,7 @@ Argument SEGMENT is data segment to parse."
       (error 'partial)))))
 
 
-(defun copilot-chat--curl-analyze-response
-    (instance string callback no-history)
+(defun copilot-chat--curl-analyze-response (instance string callback no-history)
   "Analyse curl response.
 Argument INSTANCE is the copilot chat instance to use.
 Argument STRING is the data returned by curl.
@@ -341,8 +332,7 @@ if the response should be added to history."
   ;;    "data: [DONE]\n\n". Thus, `callback' is called with the value of `copilot-chat--magic', and
   ;;    the two trailing empty lines are skipped.
   (when (copilot-chat-curl-current-data instance)
-    (setq string
-          (concat (copilot-chat-curl-current-data instance) string))
+    (setq string (concat (copilot-chat-curl-current-data instance) string))
     (setf (copilot-chat-curl-current-data instance) nil))
 
   (let ((segments (split-string string "\n")))
@@ -362,8 +352,7 @@ if the response should be added to history."
           (unless no-history
             (setf (copilot-chat-history instance)
                   (cons
-                   (list
-                    (copilot-chat-curl-answer instance) "assistant")
+                   (list (copilot-chat-curl-answer instance) "assistant")
                    (copilot-chat-history instance))))
           (setf (copilot-chat-curl-answer instance) nil))
 
@@ -379,12 +368,10 @@ if the response should be added to history."
                    (token (and delta (alist-get 'content delta))))
               (when (and token (not (eq token :null)))
                 (when (not (copilot-chat-curl-answer instance))
-                  (copilot-chat--spinner-set-status
-                   instance "Generating"))
+                  (copilot-chat--spinner-set-status instance "Generating"))
                 (funcall callback instance token)
                 (setf (copilot-chat-curl-answer instance)
-                      (concat
-                       (copilot-chat-curl-answer instance) token)))))
+                      (concat (copilot-chat-curl-answer instance) token)))))
 
            ;; display .error.message in the chat.
            ((alist-get 'error extracted)
@@ -399,13 +386,11 @@ if the response should be added to history."
               ;; the assistant with its own error messages...
               (setf (copilot-chat-history instance)
                     (cons
-                     (list "" "assistant")
-                     (copilot-chat-history instance)))
+                     (list "" "assistant") (copilot-chat-history instance)))
               (setf (copilot-chat-curl-answer instance) nil)))
            ;; Fallback -- nag developers about possibly unhandled payloads
            (t
-            (warn
-             "Unhandled message from copilot: %S" extracted)))))))))
+            (warn "Unhandled message from copilot: %S" extracted)))))))))
 
 (defun copilot-chat--curl-analyze-nonstream-response
     (instance proc string callback no-history)
@@ -418,13 +403,11 @@ Argument CALLBACK is the function to call with analysed data.
 Argument NO-HISTORY is a boolean to indicate
  if the response should be added to history."
   (when (copilot-chat-curl-current-data instance)
-    (setq string
-          (concat (copilot-chat-curl-current-data instance) string))
+    (setq string (concat (copilot-chat-curl-current-data instance) string))
     (setf (copilot-chat-curl-current-data instance) nil))
 
   (condition-case err
-      (let* ((extracted
-              (json-parse-string string :object-type 'alist))
+      (let* ((extracted (json-parse-string string :object-type 'alist))
              (choices (alist-get 'choices extracted))
              (message
               (and (> (length choices) 0)
@@ -439,8 +422,7 @@ Argument NO-HISTORY is a boolean to indicate
           (unless no-history
             (setf (copilot-chat-history instance)
                   (cons
-                   (list
-                    (copilot-chat-curl-answer instance) "assistant")
+                   (list (copilot-chat-curl-answer instance) "assistant")
                    (copilot-chat-history instance))))
           (setf
            (copilot-chat-curl-answer instance) nil
@@ -463,8 +445,7 @@ Argument NO-HISTORY is a boolean to indicate
                           err
                           (string-trim string))))))))
 
-(defun copilot-chat--curl-ask
-    (instance prompt callback out-of-context)
+(defun copilot-chat--curl-ask (instance prompt callback out-of-context)
   "Ask a question to Copilot using curl backend.
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
@@ -481,12 +462,10 @@ if the prompt is out of context."
 
   (when (copilot-chat-curl-file instance)
     (delete-file (copilot-chat-curl-file instance)))
-  (setf (copilot-chat-curl-file instance)
-        (make-temp-file "copilot-chat"))
+  (setf (copilot-chat-curl-file instance) (make-temp-file "copilot-chat"))
   (let ((coding-system-for-write 'raw-text))
     (with-temp-file (copilot-chat-curl-file instance)
-      (insert
-       (copilot-chat--create-req instance prompt out-of-context))))
+      (insert (copilot-chat--create-req instance prompt out-of-context))))
 
   (copilot-chat--curl-make-process
    "https://api.githubcopilot.com/chat/completions"
@@ -503,8 +482,7 @@ if the prompt is out of context."
    "-H"
    (concat
     "authorization: Bearer "
-    (alist-get
-     'token (copilot-chat-connection-token copilot-chat--connection)))
+    (alist-get 'token (copilot-chat-connection-token copilot-chat--connection)))
    "-H"
    (concat "x-request-id: " (copilot-chat--uuid))
    "-H"
@@ -521,3 +499,8 @@ if the prompt is out of context."
 
 (provide 'copilot-chat-curl)
 ;;; copilot-chat-curl.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

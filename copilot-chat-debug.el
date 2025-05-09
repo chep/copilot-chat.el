@@ -51,9 +51,13 @@ No message is printed if `copilot-chat-debug' is nil."
                (apply #'format format-string args)
              (error
               (message "Error formatting debug message: %S" err)
-              (format "Error formatting message with args: %S"
-                      args)))))
+              (format "Error formatting message with args: %S" args)))))
       (message "[copilot-chat:%s] %s" category formatted-msg))))
 
 (provide 'copilot-chat-debug)
 ;;; copilot-chat-debug.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:
