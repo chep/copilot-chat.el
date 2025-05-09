@@ -47,7 +47,7 @@
  insert-prompt-fn
  pop-prompt-fn
  goto-input-fn
- get-spinner-buffer-fn)
+ get-spinner-buffers-fn)
 
 (defvar copilot-chat--frontend-list '()
   "Copilot-chat frontends and functions list.
