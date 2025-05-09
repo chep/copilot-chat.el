@@ -40,8 +40,7 @@
   :type 'number
   :group 'copilot-chat)
 
-(defface copilot-chat-spinner-face
-  '((t :inherit font-lock-keyword-face))
+(defface copilot-chat-spinner-face '((t :inherit font-lock-keyword-face))
   "Face used for the spinner during streaming."
   :group 'copilot-chat)
 
@@ -53,8 +52,7 @@ Argument INSTANCE is the copilot chat instance to get the buffer for."
              (copilot-chat-frontend-get-spinner-buffer-fn
               (copilot-chat--get-frontend))))
         (when (and get-buffer-fn
-                   (buffer-live-p
-                    (copilot-chat-chat-buffer instance)))
+                   (buffer-live-p (copilot-chat-chat-buffer instance)))
           (funcall get-buffer-fn instance)))
     (error
      (when copilot-chat-debug
@@ -91,8 +89,7 @@ Argument INSTANCE is the copilot chat instance to use."
         (with-current-buffer buffer
           (save-excursion
             ;; Remove existing spinner overlay if any
-            (remove-overlays
-             (point-min) (point-max) 'copilot-chat-spinner t)
+            (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t)
             ;; Create new spinner overlay at the end of buffer
             (goto-char (point-max))
             (let ((ov (make-overlay (point) (point))))
@@ -100,7 +97,8 @@ Argument INSTANCE is the copilot chat instance to use."
               (overlay-put
                ov 'after-string
                (propertize (concat status-text frame)
-                           'face 'copilot-chat-spinner-face))))))
+                           'face
+                           'copilot-chat-spinner-face))))))
 
       ;; Update spinner index
       (setf (copilot-chat-spinner-index instance)
@@ -119,8 +117,7 @@ Argument INSTANCE is the copilot chat instance to use."
       (let ((buffer (copilot-chat--get-spinner-buffer instance)))
         (when (and buffer (buffer-live-p buffer))
           (with-current-buffer buffer
-            (remove-overlays
-             (point-min) (point-max) 'copilot-chat-spinner t))))
+            (remove-overlays (point-min) (point-max) 'copilot-chat-spinner t))))
     (error
      (when copilot-chat-debug
        (message "Error stopping spinner: %S" err)))))
@@ -135,3 +132,8 @@ Argument STATUS is the status message to display."
 
 (provide 'copilot-chat-spinner)
 ;;; copilot-chat-spinner.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

@@ -34,10 +34,7 @@
   "The model to use specifically for commit message generation.
 When nil, falls back to `copilot-chat-default-model`.
 Set via `copilot-chat-set-commit-model'."
-  :type
-  '(choice
-    (const :tag "Use default model" nil)
-    (string :tag "Specific model"))
+  :type '(choice (const :tag "Use default model" nil) (string :tag "Specific model"))
   :group 'copilot-chat)
 
 (defcustom copilot-chat-ignored-commit-files
@@ -97,8 +94,7 @@ Supports glob patterns like `*.lock' or `node_modules/'."
  (when (executable-find "git")
    (let* ((git-dir
            (aio-await
-            (copilot-chat--exec
-             "git" "rev-parse" "--absolute-git-dir")))
+            (copilot-chat--exec "git" "rev-parse" "--absolute-git-dir")))
           (default-directory git-dir)
           cdup)
      (cond
@@ -108,8 +104,7 @@ Supports glob patterns like `*.lock' or `node_modules/'."
          (file-name-directory (buffer-string))))
       ((and (setq cdup
                   (aio-await
-                   (copilot-chat--exec
-                    "git" "rev-parse" "--show-cdup")))
+                   (copilot-chat--exec "git" "rev-parse" "--show-cdup")))
             (not (string-empty-p cdup))) ; submodule case
        cdup)
       (t
@@ -124,11 +119,9 @@ Git.  REPO-ROOT must be git top directory."
  (let* ((default-directory repo-root)
         (ls-output
          (aio-await
-          (copilot-chat--exec
-           "git" "--no-pager" "ls-files" "--full-name")))
+          (copilot-chat--exec "git" "--no-pager" "ls-files" "--full-name")))
         (all-files (split-string ls-output "\n" t)))
-   (mapcar
-    (lambda (file) (expand-file-name file repo-root)) all-files)))
+   (mapcar (lambda (file) (expand-file-name file repo-root)) all-files)))
 
 (aio-defun
  copilot-chat--get-diff ()
@@ -146,18 +139,15 @@ repository or if there are no staged changes.
         (staged-files
          (split-string (aio-await
                         (copilot-chat--exec
-                         "git"
-                         "--no-pager"
-                         "diff"
-                         "--cached"
-                         "--name-only"))
+                         "git" "--no-pager" "diff" "--cached" "--name-only"))
                        "\n" t))
         (files-to-include
          (cl-remove-if
           (lambda (file)
             (cl-some
              (lambda (pattern)
-               (or (string-match-p (wildcard-to-regexp pattern) file)
+               (or (string-match-p
+                    (wildcard-to-regexp pattern) file)
                    (and (string-suffix-p "/" pattern)
                         (string-prefix-p pattern file))))
              copilot-chat-ignored-commit-files))
@@ -178,8 +168,7 @@ repository or if there are no staged changes.
 This instance is specifically designed for generating commit messages
 without creating a chat buffer or setting up a full chat environment."
   (let ((current-dir
-         (file-name-directory
-          (or (buffer-file-name) default-directory))))
+         (file-name-directory (or (buffer-file-name) default-directory))))
     (let ((instance
            (copilot-chat--make
             :directory current-dir
@@ -216,11 +205,7 @@ without creating a chat buffer or setting up a full chat environment."
 
 (defun copilot-chat--commit-callback
     (instance
-     current-buf
-     start-pos
-     accumulated-content
-     template-comments
-     wait-prompt)
+     current-buf start-pos accumulated-content template-comments wait-prompt)
   "Callback function for handling commit message generation stream.
 INSTANCE is the copilot chat instance receiving data.
 CURRENT-BUF is the buffer where commit message will be inserted.
@@ -241,15 +226,13 @@ WAIT-PROMPT is the temporary waiting message shown during generation."
               (with-current-buffer current-buf
                 (goto-char start-pos)
                 (when (looking-at wait-prompt)
-                  (delete-region
-                   start-pos (+ start-pos (length wait-prompt))))
+                  (delete-region start-pos (+ start-pos (length wait-prompt))))
                 ;; Restore the git commit template comments and insert generated message
                 (goto-char (point-max))
                 (delete-region (point-min) (point-max))
                 (insert accumulated-content "\n\n" template-comments))
               (message "Commit message generation completed.")
-              (copilot-chat--debug
-               'commit "Generation completed successfully")
+              (copilot-chat--debug 'commit "Generation completed successfully")
 
               ;; Remove the temporary instance from instances list to avoid memory leaks
               (setq copilot-chat--instances
@@ -259,21 +242,16 @@ WAIT-PROMPT is the temporary waiting message shown during generation."
             (when (string= accumulated-content "")
               (goto-char start-pos)
               (when (looking-at wait-prompt)
-                (delete-region
-                 start-pos (+ start-pos (length wait-prompt)))))
+                (delete-region start-pos (+ start-pos (length wait-prompt)))))
 
             (goto-char start-pos)
             (delete-region
              start-pos
-             (min (+ start-pos (length accumulated-content))
-                  (point-max)))
-            (setq accumulated-content
-                  (concat accumulated-content content))
+             (min (+ start-pos (length accumulated-content)) (point-max)))
+            (setq accumulated-content (concat accumulated-content content))
             (insert accumulated-content)
             (copilot-chat--debug
-             'commit
-             "Received chunk: %d chars"
-             (length content))))))))
+             'commit "Received chunk: %d chars" (length content))))))))
 
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message-when-ready "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message-when-ready ()
@@ -286,15 +264,13 @@ message.  Requires the repository to have staged changes ready for commit."
           (current-buf (current-buffer))
           (start-pos (point))
           (diff (aio-await (copilot-chat--get-diff)))
-          (template-comments
-           (copilot-chat--get-git-commit-template-comments))
+          (template-comments (copilot-chat--get-git-commit-template-comments))
           (wait-prompt
            (format "# [copilot:%s] Generating commit message..."
                    (copilot-chat-model instance)))
           (accumulated-content ""))
 
-     (copilot-chat--debug
-      'commit "Starting direct commit message generation")
+     (copilot-chat--debug 'commit "Starting direct commit message generation")
      (copilot-chat--debug
       'commit
       "Diff size: %d bytes, Model: %s"
@@ -303,12 +279,9 @@ message.  Requires the repository to have staged changes ready for commit."
 
      (cond
       ((string-empty-p diff)
-       (copilot-chat--debug
-        'commit "No changes found in staging area")
-       (setq copilot-chat--instances
-             (delq instance copilot-chat--instances))
-       (user-error
-        "No staged changes found.  Please stage some changes first"))
+       (copilot-chat--debug 'commit "No changes found in staging area")
+       (setq copilot-chat--instances (delq instance copilot-chat--instances))
+       (user-error "No staged changes found.  Please stage some changes first"))
 
       (t
        (message "Generating commit message...")
@@ -331,8 +304,7 @@ message.  Requires the repository to have staged changes ready for commit."
           (when (copilot-chat-spinner-timer instance)
             (cancel-timer (copilot-chat-spinner-timer instance))
             (setf (copilot-chat-spinner-timer instance) nil))
-          (setq copilot-chat--instances
-                (delq instance copilot-chat--instances))
+          (setq copilot-chat--instances (delq instance copilot-chat--instances))
           (signal (car err) (cdr err)))))))))
 
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
@@ -346,8 +318,7 @@ This function is expected to be safe to open via magit when added to
   ;;FIXME: I really don't want to do anything delayed by time,
   ;; but I had to in order to make it work anyway.
   ;; In fact, we would like to get rid of this kind of messy control.
-  (run-with-timer
-   1 nil #'copilot-chat-insert-commit-message-when-ready))
+  (run-with-timer 1 nil #'copilot-chat-insert-commit-message-when-ready))
 
 ;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
 (defun copilot-chat-set-commit-model (model)
@@ -357,25 +328,19 @@ When called interactively, prompts for available models from the API."
    (let*
        ((choices (copilot-chat--get-model-choices-with-wait))
         (max-id-width
-         (apply #'max
-                (mapcar
-                 (lambda (choics) (length (cdr choics))) choices)))
+         (apply #'max (mapcar (lambda (choics) (length (cdr choics))) choices)))
         ;; Create completion list with ID as prefix for unique identification
         (completion-choices
          (mapcar
           (lambda (choice)
             (let ((name (car choice))
                   (id (cdr choice)))
-              (cons
-               (format (format "[%%-%ds] %%s" max-id-width)
-                       id name)
-               id)))
+              (cons (format (format "[%%-%ds] %%s" max-id-width) id name) id)))
           choices))
         (choice
-         (completing-read "Select commit message model: "
-                          (mapcar 'car completion-choices)
-                          nil
-                          t)))
+         (completing-read
+          "Select commit message model: " (mapcar 'car completion-choices)
+          nil t)))
      ;; Extract model ID from the selected choice
      (let ((model-value (cdr (assoc choice completion-choices))))
        (when copilot-chat-debug
@@ -388,3 +353,8 @@ When called interactively, prompts for available models from the API."
 
 (provide 'copilot-chat-git)
 ;;; copilot-chat-git.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

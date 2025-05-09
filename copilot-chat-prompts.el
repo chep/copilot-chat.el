@@ -210,3 +210,8 @@ Don't forget the most important rule when you are formatting your response: use 
 
 (provide 'copilot-chat-prompts)
 ;;; copilot-chat-prompts.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

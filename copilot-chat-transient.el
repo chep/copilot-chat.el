@@ -60,19 +60,16 @@
 ;;;###autoload (autoload 'copilot-chat-transient-buffers "copilot-chat" nil t)
 (transient-define-prefix
  copilot-chat-transient-buffers () "Copilot chat buffers menu."
- [["Buffers" ("a" "Add buffers" copilot-chat-add-buffers)
+ [["Buffers"
+   ("a" "Add buffers" copilot-chat-add-buffers)
    ("A"
     "Add all buffers in current frame"
     copilot-chat-add-buffers-in-current-window)
    ("d" "Delete buffers" copilot-chat-del-buffers)
    ("D" "Delete all buffers" copilot-chat-list-clear-buffers)
-   ("f"
-    "Add files under current directory"
-    copilot-chat-add-files-under-dir)
+   ("f" "Add files under current directory" copilot-chat-add-files-under-dir)
    ("l" "Display buffer list" copilot-chat-list)
-   ("c"
-    "Clear buffers"
-    copilot-chat-list-clear-buffers)
+   ("c" "Clear buffers" copilot-chat-list-clear-buffers)
    ("q" "Quit" transient-quit-one)]])
 
 ;;;###autoload (autoload 'copilot-chat-transient-code "copilot-chat" nil t)
@@ -93,3 +90,8 @@
 
 (provide 'copilot-chat-transient)
 ;;; copilot-chat-transient.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

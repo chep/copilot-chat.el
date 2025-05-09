@@ -36,8 +36,7 @@
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat-prompt-review
-  "Please review the following code.\n"
+(defcustom copilot-chat-prompt-review "Please review the following code.\n"
   "The prompt used by `copilot-chat-review'."
   :type 'string
   :group 'copilot-chat)
@@ -79,8 +78,7 @@
 
 (defun copilot-chat--get-cached-token ()
   "Get the cached GitHub token."
-  (let ((token-file
-         (expand-file-name copilot-chat-github-token-file)))
+  (let ((token-file (expand-file-name copilot-chat-github-token-file)))
     (when (file-exists-p token-file)
       (with-temp-buffer
         (insert-file-contents token-file)
@@ -130,13 +128,10 @@
 
     (if (< (- current-time last-fetch-time) cooldown-period)
         (when copilot-chat-debug
-          (message
-           "Skipping model fetch - in cooldown period (%d seconds left)"
-           (- cooldown-period (- current-time last-fetch-time))))
+          (message "Skipping model fetch - in cooldown period (%d seconds left)"
+                   (- cooldown-period (- current-time last-fetch-time))))
 
-      (if (not
-           (copilot-chat-connection-github-token
-            copilot-chat--connection))
+      (if (not (copilot-chat-connection-github-token copilot-chat--connection))
           (run-with-timer 5 nil #'copilot-chat--fetch-models-async)
         (setf (copilot-chat-connection-last-models-fetch-time
                copilot-chat--connection)
@@ -180,40 +175,32 @@
   "Authenticate with GitHub Copilot API.
 We first need github authorization (github token).
 Then we need a session token."
-  (unless (copilot-chat-connection-github-token
-           copilot-chat--connection)
+  (unless (copilot-chat-connection-github-token copilot-chat--connection)
     (let ((token (copilot-chat--get-cached-token)))
       (if token
-          (setf (copilot-chat-connection-github-token
-                 copilot-chat--connection)
+          (setf (copilot-chat-connection-github-token copilot-chat--connection)
                 token)
         (copilot-chat--login))))
 
-  (when (null
-         (copilot-chat-connection-token copilot-chat--connection))
+  (when (null (copilot-chat-connection-token copilot-chat--connection))
     ;; try to load token from ~/.cache/copilot-chat-token
     (let ((token-file (expand-file-name copilot-chat-token-cache)))
       (when (file-exists-p token-file)
         (with-temp-buffer
           (insert-file-contents token-file)
-          (setf (copilot-chat-connection-token
-                 copilot-chat--connection)
+          (setf (copilot-chat-connection-token copilot-chat--connection)
                 (json-read-from-string
-                 (buffer-substring-no-properties
-                  (point-min) (point-max))))))))
+                 (buffer-substring-no-properties (point-min) (point-max))))))))
 
-  (when (or (null
-             (copilot-chat-connection-token copilot-chat--connection))
+  (when (or (null (copilot-chat-connection-token copilot-chat--connection))
             (> (round (float-time (current-time)))
                (alist-get
                 'expires_at
-                (copilot-chat-connection-token
-                 copilot-chat--connection))))
+                (copilot-chat-connection-token copilot-chat--connection))))
     (copilot-chat--renew-token))
   (setf (copilot-chat-connection-ready copilot-chat--connection) t))
 
-(defun copilot-chat--ask
-    (instance prompt callback &optional out-of-context)
+(defun copilot-chat--ask (instance prompt callback &optional out-of-context)
   "Ask a question to Copilot.
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
@@ -224,11 +211,9 @@ Argument OUT-OF-CONTEXT indicates if prompt is out of context (git commit)."
     (copilot-chat--auth)
     (cond
      ((eq copilot-chat-backend 'curl)
-      (copilot-chat--curl-ask
-       instance prompt callback out-of-context))
+      (copilot-chat--curl-ask instance prompt callback out-of-context))
      ((eq copilot-chat-backend 'request)
-      (copilot-chat--request-ask
-       instance prompt callback out-of-context))
+      (copilot-chat--request-ask instance prompt callback out-of-context))
      (t
       (error "Unknown backend: %s" copilot-chat-backend)))
     (unless out-of-context
@@ -278,14 +263,12 @@ All its associated buffers are killed."
       (kill-buffer lst-buf))
     (when (buffer-live-p tmp-buf)
       (kill-buffer tmp-buf))
-    (setq copilot-chat--instances
-          (delete instance copilot-chat--instances))))
+    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
 
 (defun copilot-chat--create-instance ()
   "Create a new copilot chat instance for a given directory."
   (let* ((current-dir
-          (file-name-directory
-           (or (buffer-file-name) default-directory)))
+          (file-name-directory (or (buffer-file-name) default-directory)))
          (directory
           (expand-file-name
            (read-directory-name "Choose a directory: " current-dir)))
@@ -313,12 +296,8 @@ Argument DIRECTORY is the path to search for matching instance."
     (let* ((choice
             (read-multiple-choice
              "Copilot Chat Instance: "
-             '((?c
-                "Create new instance"
-                "Create a new Copilot chat instance")
-               (?l
-                "Choose from list"
-                "Choose from existing instances"))))
+             '((?c "Create new instance" "Create a new Copilot chat instance")
+               (?l "Choose from list" "Choose from existing instances"))))
            (key (car choice)))
       (cond
        ((eq key ?l)
@@ -362,3 +341,8 @@ Argument DIRECTORY is the path to search for matching instance."
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

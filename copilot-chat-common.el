@@ -44,8 +44,7 @@
   :type 'boolean
   :group 'copilot-chat)
 
-(defcustom copilot-chat-github-token-file
-  "~/.config/copilot-chat/github-token"
+(defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
   "The file where to find GitHub token."
   :type 'string
   :group 'copilot-chat)
@@ -83,3 +82,8 @@
 
 (provide 'copilot-chat-common)
 ;;; copilot-chat-common.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

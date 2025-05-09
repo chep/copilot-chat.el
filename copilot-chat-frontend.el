@@ -54,8 +54,7 @@
 Each element must be a `copilot-chat-frontend' struct instance.
 Elements are added in the module that defines each front end.")
 
-(cl-declaim
- (type (list-of copilot-chat-frontend) copilot-chat--frontend-list))
+(cl-declaim (type (list-of copilot-chat-frontend) copilot-chat--frontend-list))
 
 (defun copilot-chat--get-frontend ()
   "Get frontend from custom."
@@ -69,10 +68,14 @@ Elements are added in the module that defines each front end.")
   "Get Copilot Chat buffer from the active frontend.
 Argument INSTANCE is the copilot chat instance to get the buffer for."
   (let ((get-buffer-fn
-         (copilot-chat-frontend-get-buffer-fn
-          (copilot-chat--get-frontend))))
+         (copilot-chat-frontend-get-buffer-fn (copilot-chat--get-frontend))))
     (when get-buffer-fn
       (funcall get-buffer-fn instance))))
 
 (provide 'copilot-chat-frontend)
 ;;; copilot-chat-frontend.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:
