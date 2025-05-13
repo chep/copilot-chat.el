@@ -100,11 +100,13 @@ INSTANCE is the `copilot-chat' instance being used."
       (buffer-substring-no-properties (point-min) (point-max)))))
 
 (defun copilot-chat--image-to-base64 (file)
-  "Convert an image FILE to a base64 encoded string."
-  (with-temp-buffer
-    (insert-file-contents-literally file)
-    (base64-encode-region (point-min) (point-max) t)
-    (buffer-string)))
+  "Convert an image FILE to a base64 encoded string with MIME type."
+  (let ((mime-type
+         (or (mailcap-file-name-to-mime-type file) "application/octet-stream")))
+    (with-temp-buffer
+      (insert-file-contents-literally file)
+      (base64-encode-region (point-min) (point-max) t)
+      (concat "data:" mime-type ";base64," (buffer-string)))))
 
 (defun copilot-chat--add-buffer-to-req (buffer instance messages)
   "Add BUFFER content to messages.
@@ -127,10 +129,7 @@ INSTANCE is the `copilot-chat' instance being used."
                          .
                          ,(list
                            `(url
-                             .
-                             ,(concat
-                               "data:image/jpeg;base64,"
-                               (copilot-chat--image-to-base64 filename)))))))))
+                             . ,(copilot-chat--image-to-base64 filename))))))))
                  `(role . "user"))
                 messages)
         (push (list
