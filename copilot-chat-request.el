@@ -35,8 +35,7 @@
 (require 'copilot-chat-connection)
 
 (cl-defun
- copilot-chat--request-token-cb
- (&key response &key data &allow-other-keys)
+ copilot-chat--request-token-cb (&key response &key data &allow-other-keys)
  "Manage token reception for github auth.
 Argument DATA is whatever PARSER function returns, or nil.
 Argument RESPONSE is request-response object."
@@ -46,17 +45,14 @@ Argument RESPONSE is request-response object."
        (token-dir
         (file-name-directory
          (expand-file-name copilot-chat-github-token-file))))
-   (setf (copilot-chat-connection-github-token
-          copilot-chat--connection)
-         token)
+   (setf (copilot-chat-connection-github-token copilot-chat--connection) token)
    (when (not (file-directory-p token-dir))
      (make-directory token-dir t))
    (with-temp-file copilot-chat-github-token-file
      (insert token))))
 
 (cl-defun
- copilot-chat--request-code-cb
- (&key response &key data &allow-other-keys)
+ copilot-chat--request-code-cb (&key response &key data &allow-other-keys)
  "Manage user code reception for github buth.
 Argument RESPONSE is request-response object.
 Argument DATA is whatever PARSER function returns, or nil."
@@ -121,8 +117,7 @@ Argument DATA is whatever PARSER function returns, or nil."
  ;; save token in copilot-chat-token-cache file after creating
  ;; folders if needed
  (let ((cache-dir
-        (file-name-directory
-         (expand-file-name copilot-chat-token-cache))))
+        (file-name-directory (expand-file-name copilot-chat-token-cache))))
    (when (not (file-directory-p cache-dir))
      (make-directory cache-dir t))
    (with-temp-file copilot-chat-token-cache
@@ -137,8 +132,7 @@ Argument DATA is whatever PARSER function returns, or nil."
    `(("authorization" .
       ,(concat
         "token "
-        (copilot-chat-connection-github-token
-         copilot-chat--connection)))
+        (copilot-chat-connection-github-token copilot-chat--connection)))
      ("accept" . "application/json")
      ("editor-version" . "Neovim/0.10.0")
      ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
@@ -152,18 +146,14 @@ Argument DATA is whatever PARSER function returns, or nil."
   "Parser for copilot chat answer."
   (let ((content ""))
     (while (re-search-forward "^data: " nil t)
-      (let* ((line
-              (buffer-substring-no-properties
-               (point) (line-end-position)))
+      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
              (json-string (and (not (string= "[DONE]" line)) line))
              (json-obj
               (and json-string
-                   (json-parse-string json-string
-                                      :object-type 'alist)))
+                   (json-parse-string json-string :object-type 'alist)))
              (choices (and json-obj (alist-get 'choices json-obj)))
              (delta
-              (and (> (length choices) 0)
-                   (alist-get 'delta (aref choices 0))))
+              (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
              (token (and delta (alist-get 'content delta))))
         (when (and token (not (eq token :null)))
           (setq content (concat content token)))))
@@ -180,15 +170,13 @@ Non-streaming version."
                  (json-parse-string json-string :object-type 'alist)))
            (choices (and json-obj (alist-get 'choices json-obj)))
            (message
-            (and (> (length choices) 0)
-                 (alist-get 'message (aref choices 0))))
+            (and (> (length choices) 0) (alist-get 'message (aref choices 0))))
            (token (and message (alist-get 'content message))))
       (when (and token (not (eq token :null)))
         (setq content (concat content token))))
     content))
 
-(defun copilot-chat--request-ask
-    (instance prompt callback out-of-context)
+(defun copilot-chat--request-ask (instance prompt callback out-of-context)
   "Ask a question to Copilot using request backend.
 Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
@@ -214,8 +202,7 @@ if the prompt is out of context."
         ,(concat
           "Bearer "
           (alist-get
-           'token
-           (copilot-chat-connection-token copilot-chat--connection))))
+           'token (copilot-chat-connection-token copilot-chat--connection))))
        ("x-request-id" . ,(copilot-chat--uuid))
        ("vscode-sessionid"
         .
@@ -240,8 +227,7 @@ if the prompt is out of context."
 
         (unless (= (request-response-status-code response) 200)
           (let ((error-msg
-                 (format "Error: %s"
-                         (request-response-status-code response))))
+                 (format "Error: %s" (request-response-status-code response))))
             (funcall callback instance error-msg)
             (funcall callback instance copilot-chat--magic)
             (error error-msg)))
@@ -253,39 +239,34 @@ if the prompt is out of context."
         (unless out-of-context
           (setf (copilot-chat-history instance)
                 (cons
-                 (list prompt "assistant")
-                 (copilot-chat-history instance))))))
+                 (list prompt "assistant") (copilot-chat-history instance))))))
      :status-code
      '((400 .
             (lambda (&rest _)
               (when (fboundp 'copilot-chat--spinner-stop)
                 (copilot-chat--spinner-stop instance))
-              (let ((error-msg
-                     "Bad request. Please check your input."))
+              (let ((error-msg "Bad request. Please check your input."))
                 (funcall callback instance error-msg)
                 (funcall callback instance copilot-chat--magic))))
        (401 .
             (lambda (&rest _)
               (when (fboundp 'copilot-chat--spinner-stop)
                 (copilot-chat--spinner-stop instance))
-              (let ((error-msg
-                     "Authentication error. Please re-authenticate."))
+              (let ((error-msg "Authentication error. Please re-authenticate."))
                 (funcall callback instance error-msg)
                 (funcall callback instance copilot-chat--magic))))
        (429 .
             (lambda (&rest _)
               (when (fboundp 'copilot-chat--spinner-stop)
                 (copilot-chat--spinner-stop instance))
-              (let ((error-msg
-                     "Rate limit exceeded. Please try again later."))
+              (let ((error-msg "Rate limit exceeded. Please try again later."))
                 (funcall callback instance error-msg)
                 (funcall callback instance copilot-chat--magic))))
        (500 .
             (lambda (&rest _)
               (when (fboundp 'copilot-chat--spinner-stop)
                 (copilot-chat--spinner-stop instance))
-              (let ((error-msg
-                     "Server error. Please try again later."))
+              (let ((error-msg "Server error. Please try again later."))
                 (funcall callback instance error-msg)
                 (funcall callback instance copilot-chat--magic)))))
      :error
@@ -308,8 +289,7 @@ if the prompt is out of context."
      ,(concat
        "Bearer "
        (alist-get
-        'token
-        (copilot-chat-connection-token copilot-chat--connection))))
+        'token (copilot-chat-connection-token copilot-chat--connection))))
     ("x-request-id" . ,(copilot-chat--uuid))
     ("vscode-sessionid"
      .
@@ -322,15 +302,12 @@ if the prompt is out of context."
     ("editor-version" . "Neovim/0.10.0")))
 
 (cl-defun
- copilot-chat--request-models-cb
- (&key response &key data &allow-other-keys)
+ copilot-chat--request-models-cb (&key response &key data &allow-other-keys)
  "Handle models response from Copilot API.
 Argument DATA is the parsed JSON response.
 Argument RESPONSE is request-response object."
  (unless (= (request-response-status-code response) 200)
-   (error
-    "Failed to fetch models: %s"
-    (request-response-status-code response)))
+   (error "Failed to fetch models: %s" (request-response-status-code response)))
 
  (let* ((models-vector (alist-get 'data data))
         (models (append models-vector nil)) ; Convert vector to list
@@ -339,9 +316,7 @@ Argument RESPONSE is request-response object."
    (dolist (model models)
      (when (and (alist-get 'capabilities model)
                 (equal
-                 (alist-get
-                  'type (alist-get 'capabilities model))
-                 "chat"))
+                 (alist-get 'type (alist-get 'capabilities model)) "chat"))
        (push model chat-models)))
 
    (when copilot-chat-debug
@@ -360,19 +335,15 @@ Argument RESPONSE is request-response object."
      (dolist (model sorted-models)
        (when (and (alist-get 'policy model)
                   (equal
-                   (alist-get 'state (alist-get 'policy model))
-                   "unconfigured"))
-         (copilot-chat--request-enable-model-policy
-          (alist-get 'id model))))
+                   (alist-get 'state (alist-get 'policy model)) "unconfigured"))
+         (copilot-chat--request-enable-model-policy (alist-get 'id model))))
 
      ;; Return the models list for immediate use
      sorted-models)))
 
 (defun copilot-chat--request-enable-model-policy (model-id)
   "Enable policy for MODEL-ID."
-  (let ((url
-         (format "https://api.githubcopilot.com/models/%s/policy"
-                 model-id))
+  (let ((url (format "https://api.githubcopilot.com/models/%s/policy" model-id))
         (headers (copilot-chat--get-headers))
         (data (json-serialize '((state . "enabled")))))
     (when copilot-chat-debug
@@ -382,8 +353,7 @@ Argument RESPONSE is request-response object."
      :type "POST"
      :headers headers
      :data data
-     :parser
-     (apply-partially 'json-parse-buffer :object-type 'alist))))
+     :parser (apply-partially 'json-parse-buffer :object-type 'alist))))
 
 (defun copilot-chat--request-models (&optional quiet)
   "Fetch available models from Copilot API.
@@ -421,16 +391,14 @@ Optional argument QUIET suppresses user messages when non-nil."
      (cl-function
       (lambda (&key data &allow-other-keys)
         ;; Process models data
-        (let*
-            ((models-vector (alist-get 'data data))
-             (models (append models-vector nil)) ; Convert vector to list
-             (chat-models nil))
+        (let* ((models-vector (alist-get 'data data))
+               (models (append models-vector nil)) ; Convert vector to list
+               (chat-models nil))
           ;; Filter for chat models
           (dolist (model models)
             (when (and (alist-get 'capabilities model)
                        (equal
-                        (alist-get
-                         'type (alist-get 'capabilities model))
+                        (alist-get 'type (alist-get 'capabilities model))
                         "chat"))
               (push model chat-models)))
 
@@ -440,8 +408,7 @@ Optional argument QUIET suppresses user messages when non-nil."
 
           ;; Store models in instance and cache them
           (let ((sorted-models (nreverse chat-models)))
-            (setf (copilot-chat-connection-models
-                   copilot-chat--connection)
+            (setf (copilot-chat-connection-models copilot-chat--connection)
                   sorted-models)
             (copilot-chat--save-models-to-cache sorted-models)
 
@@ -449,8 +416,7 @@ Optional argument QUIET suppresses user messages when non-nil."
             (dolist (model sorted-models)
               (when (and (alist-get 'policy model)
                          (equal
-                          (alist-get
-                           'state (alist-get 'policy model))
+                          (alist-get 'state (alist-get 'policy model))
                           "unconfigured"))
                 (copilot-chat--request-enable-model-policy
                  (alist-get 'id model))))))))
@@ -463,3 +429,8 @@ Optional argument QUIET suppresses user messages when non-nil."
 
 (provide 'copilot-chat-request)
 ;;; copilot-chat-request.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
+;; End:

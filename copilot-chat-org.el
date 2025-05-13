@@ -114,8 +114,7 @@ INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
     (let* ((file-name (buffer-file-name))
            (relative-path
             (if file-name
-                (file-relative-name file-name
-                                    (copilot-chat-directory instance))
+                (file-relative-name file-name (copilot-chat-directory instance))
               (buffer-name)))
            (language
             (if (derived-mode-p 'prog-mode)
@@ -219,23 +218,21 @@ Replace selection if any."
      (lambda ()
        (let* ((heading-end (save-excursion (org-end-of-subtree t)))
               (element-start (point)))
-         (setq
-          blocks
-          (append
-           blocks
-           (org-element-map
-            (org-element-parse-buffer 'element) 'src-block
-            (lambda (src-block)
-              (when (and (>= (org-element-property :begin src-block)
-                             element-start)
-                         (<= (org-element-property :begin src-block)
-                             heading-end))
-                (list
-                 :language (org-element-property :language src-block)
-                 :content (org-element-property :value src-block)
-                 :begin (org-element-property :begin src-block)
-                 :end
-                 (org-element-property :end src-block)))))))))
+         (setq blocks
+               (append
+                blocks
+                (org-element-map
+                 (org-element-parse-buffer 'element) 'src-block
+                 (lambda (src-block)
+                   (when (and (>= (org-element-property :begin src-block)
+                                  element-start)
+                              (<= (org-element-property :begin src-block)
+                                  heading-end))
+                     (list
+                      :language (org-element-property :language src-block)
+                      :content (org-element-property :value src-block)
+                      :begin (org-element-property :begin src-block)
+                      :end (org-element-property :end src-block)))))))))
      heading-regex)
     (seq-uniq blocks #'equal)))
 
@@ -250,16 +247,13 @@ INSTANCE is `copilot-chat' instance to use."
         (when blocks
           (while (< (copilot-chat-yank-index instance) 1)
             (setf (copilot-chat-yank-index instance)
-                  (+ (length blocks)
-                     (copilot-chat-yank-index instance))))
+                  (+ (length blocks) (copilot-chat-yank-index instance))))
           (when (> (copilot-chat-yank-index instance) (length blocks))
             (setf (copilot-chat-yank-index instance)
-                  (- (copilot-chat-yank-index instance)
-                     (length blocks))))
+                  (- (copilot-chat-yank-index instance) (length blocks))))
           (setq content
                 (plist-get
-                 (car
-                  (last blocks (copilot-chat-yank-index instance)))
+                 (car (last blocks (copilot-chat-yank-index instance)))
                  :content)))))
     ;; Delete previous yank if exists
     (when (and (copilot-chat-last-yank-start instance)
@@ -301,8 +295,7 @@ The input is created if not found."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
           (get-buffer-create
-           (copilot-chat--get-buffer-name
-            (copilot-chat-directory instance))))
+           (copilot-chat--get-buffer-name (copilot-chat-directory instance))))
     (with-current-buffer (copilot-chat-chat-buffer instance)
       (copilot-chat-org-poly-mode)
       (setq-local default-directory (copilot-chat-directory instance))
@@ -322,8 +315,7 @@ The input is created if not found."
 INSTANCE is `copilot-chat' instance to use."
   (with-current-buffer (copilot-chat--org-get-buffer instance)
     (copilot-chat--org-goto-input)
-    (let ((prompt
-           (buffer-substring-no-properties (point) (point-max))))
+    (let ((prompt (buffer-substring-no-properties (point) (point-max))))
       (delete-region (point) (point-max))
       prompt)))
 
@@ -357,6 +349,8 @@ INSTANCE is `copilot-chat' instance to use."
 (provide 'copilot-chat-org)
 ;;; copilot-chat-org.el ends here
 
+
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
 ;; End:

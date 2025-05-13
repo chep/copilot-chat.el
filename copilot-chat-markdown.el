@@ -36,8 +36,7 @@
 (require 'copilot-chat-prompts)
 
 ;;; Constants
-(defconst copilot-chat--markdown-delimiter
-  (concat "# ╭──── Chat Input ────╮")
+(defconst copilot-chat--markdown-delimiter (concat "# ╭──── Chat Input ────╮")
   "The delimiter used to identify copilot chat input.")
 
 ;;; Polymode
@@ -63,8 +62,7 @@
  :head-mode 'inner
  :tail-mode 'host)
 
-(declare-function copilot-chat-markdown-poly-mode
-                  "copilot-chat-markdown"
+(declare-function copilot-chat-markdown-poly-mode "copilot-chat-markdown"
                   "Polymode for Copilot Chat Markdown.")
 
 (define-polymode
@@ -94,8 +92,7 @@ Argument TYPE is the type of data to format: `answer` or `prompt`."
                "\n## "
                (concat
                 (format-time-string "*[%T]* ")
-                (format "Copilot(%s):\n"
-                        (copilot-chat-model instance))))))
+                (format "Copilot(%s):\n" (copilot-chat-model instance))))))
       (setq data (concat data content)))
     data))
 
@@ -117,8 +114,7 @@ INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
     (let* ((file-name (buffer-file-name))
            (relative-path
             (if file-name
-                (file-relative-name file-name
-                                    (copilot-chat-directory instance))
+                (file-relative-name file-name (copilot-chat-directory instance))
               (buffer-name)))
            (content
             (copilot-chat--markdown-format-code
@@ -136,17 +132,14 @@ INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
     (when (and (listp face)
                (or (memq 'markdown-pre-face face)
                    (memq 'markdown-code-face face)))
-      (let* ((begin-block
-              (previous-single-property-change (point) 'face))
+      (let* ((begin-block (previous-single-property-change (point) 'face))
              (end-block (next-single-property-change (point) 'face))
              (content
               (when (and begin-block end-block)
-                (buffer-substring-no-properties
-                 begin-block end-block)))
+                (buffer-substring-no-properties begin-block end-block)))
              ;; Try to get language from previous text properties
              (lang-props
-              (text-properties-at
-               (max (- begin-block 1) (point-min))))
+              (text-properties-at (max (- begin-block 1) (point-min))))
              (lang (plist-get lang-props 'markdown-language)))
         (when content
           (list :content content :language lang))))))
@@ -155,14 +148,11 @@ INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
   "Send the code block at point to buffer.
 Replace selection if any."
   (let ((buffer
-         (completing-read
-          "Choose buffer: "
-          (mapcar #'buffer-name (buffer-list))
-          nil ; PREDICATE
-          t ; REQUIRE-MATCH
-          nil ; INITIAL-INPUT
-          'buffer-name-history
-          (buffer-name (current-buffer))))
+         (completing-read "Choose buffer: " (mapcar #'buffer-name (buffer-list))
+                          nil ; PREDICATE
+                          t ; REQUIRE-MATCH
+                          nil ; INITIAL-INPUT
+                          'buffer-name-history (buffer-name (current-buffer))))
         (content (copilot-chat--get-markdown-block-content-at-point)))
     (when content
       (with-current-buffer buffer
@@ -209,13 +199,11 @@ The input is created if not found."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance)
           (get-buffer-create
-           (copilot-chat--get-buffer-name
-            (copilot-chat-directory instance))))
+           (copilot-chat--get-buffer-name (copilot-chat-directory instance))))
     (with-current-buffer (copilot-chat-chat-buffer instance)
       (copilot-chat-markdown-poly-mode)
       (copilot-chat--markdown-goto-input)
-      (setq-local default-directory
-                  (copilot-chat-directory instance))))
+      (setq-local default-directory (copilot-chat-directory instance))))
   (copilot-chat-chat-buffer instance))
 
 
@@ -240,8 +228,7 @@ The input is created if not found."
 INSTANCE is `copilot-chat' instance to use."
   (with-current-buffer (copilot-chat--markdown-get-buffer instance)
     (copilot-chat--markdown-goto-input)
-    (let ((prompt
-           (buffer-substring-no-properties (point) (point-max))))
+    (let ((prompt (buffer-substring-no-properties (point) (point-max))))
       (delete-region (point) (point-max))
       prompt)))
 
@@ -277,4 +264,5 @@ INSTANCE is `copilot-chat' instance to use."
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
+;; fill-column: 80
 ;; End:
