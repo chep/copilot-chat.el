@@ -27,6 +27,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'image)
 
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-instance)
@@ -109,7 +110,7 @@ INSTANCE is the `copilot-chat' instance being used."
       (concat "data:" mime-type ";base64," (buffer-string)))))
 
 (defun copilot-chat--add-buffer-to-req (buffer instance messages)
-  "Add BUFFER content to messages.
+  "Add BUFFER content to MESSAGES.
 INSTANCE is the `copilot-chat' instance being used."
   (when (buffer-live-p buffer)
     (let ((filename (buffer-file-name buffer)))
