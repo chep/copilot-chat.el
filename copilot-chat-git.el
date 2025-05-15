@@ -180,7 +180,9 @@ USE-DIFFTASTIC is non-nil to use difftastic if available."
 (aio-defun
  copilot-chat--get-diff-content ()
  "Get the diff content of staged changes.
-Returns a string containing the diff content, formatted by `copilot-chat--format-git-context`."
+
+Returns a string containing the diff content, formatted by
+`copilot-chat--format-git-context`."
  (let* ((default-directory
          (or (aio-await (copilot-chat--git-top-level))
              (user-error "Not inside a Git repository")))
@@ -213,7 +215,8 @@ Returns a string containing the diff content, formatted by `copilot-chat--format
        (copilot-chat--format-git-context status diff-output)))))
 
 (defun copilot-chat--ensure-commit-instance (&optional repo-root)
-  "Ensure the commit instance exists, creating it if necessary.
+  "Ensure the commit INSTANCE exists, creating it if necessary.
+
 Optional REPO-ROOT specifies the Git repository's top-level directory."
   (let ((recreate-instance t)
         (instance-dir
@@ -285,8 +288,19 @@ Optional REPO-ROOT specifies the Git repository's top-level directory."
      user-prompt-for-this-turn
      out-of-context-for-ask)
   "Callback function for handling commit message generation stream.
-USER-PROMPT-FOR-THIS-TURN is the user prompt that led to this assistant response.
-OUT-OF-CONTEXT-FOR-ASK indicates if copilot-chat--ask was called with out-of-context=t."
+
+INSTANCE is the commit instance.
+CURRENT-BUF is the buffer where the commit message will be inserted.
+START-POS is the starting position in CURRENT-BUF.
+ACCUMULATED-CONTENT is the content accumulated so far.
+TEMPLATE-COMMENTS are the original commit template comments.
+WAIT-PROMPT is the temporary prompt shown while generating.
+USER-PROMPT-FOR-THIS-TURN is the prompt that led to this assistant response.
+OUT-OF-CONTEXT-FOR-ASK indicates if `copilot-chat--ask` was called with
+out-of-context is true.
+
+This function ensures proper handling of the commit message stream and updates
+the buffer and history accordingly."
   (lambda (_cb-instance content)
     (with-current-buffer current-buf
       (save-excursion
@@ -372,7 +386,7 @@ and temporarily disabling the org frontend's `create-req-fn` if active."
       ((or (null diff-content) (string-empty-p diff-content))
        (copilot-chat--debug 'commit "No changes found in staging area.")
        (user-error
-        "No staged changes found or diff content is empty. Please stage some changes first"))
+        "No staged changes found or diff content is empty.  Please stage some changes first"))
       (t
        (message "Generating commit message...")
        (insert wait-prompt "\n\n")
