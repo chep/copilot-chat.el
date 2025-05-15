@@ -402,7 +402,7 @@ and temporarily disabling the org frontend's `create-req-fn` if active."
 (defun copilot-chat-insert-commit-message ()
   "Generate and insert a commit message using Copilot."
   (interactive)
-  (run-with-timer 0.2 nil #'copilot-chat-insert-commit-message-when-ready))
+  (run-with-timer 0.5 nil #'copilot-chat-insert-commit-message-when-ready))
 
 ;;;###autoload (autoload 'copilot-chat-regenerate-commit-message "copilot-chat" nil t)
 (defun copilot-chat-regenerate-commit-message ()
