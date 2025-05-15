@@ -182,6 +182,11 @@ Argument SHELL is the `shell-maker' instance."
    'copilot-chat-prompt-send
    :override #'copilot-chat--shell-maker-prompt-send))
 
+(defun copilot-chat--shell-maker-get-spinner-buffers (instance)
+  "Get the spinner buffers for the copilot chat `shell-maker' frontend.
+INSTANCE is the copilot chat instance."
+  (list (copilot-chat--shell-maker-get-buffer instance)))
+
 ;; Top-level execute code.
 
 (cl-pushnew
@@ -201,7 +206,7 @@ Argument SHELL is the `shell-maker' instance."
   :insert-prompt-fn #'copilot-chat--shell-maker-insert-prompt
   :pop-prompt-fn nil
   :goto-input-fn #'nil
-  :get-spinner-buffer-fn #'copilot-chat--shell-maker-get-buffer)
+  :get-spinner-buffers-fn #'copilot-chat--shell-maker-get-spinner-buffers)
  copilot-chat--frontend-list
  :test #'equal)
 

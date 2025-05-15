@@ -319,6 +319,20 @@ INSTANCE is `copilot-chat' instance to use."
       (delete-region (point) (point-max))
       prompt)))
 
+(defun copilot-chat--org-get-spinner-buffers (instance)
+  "Get org spinner buffers for INSTANCE."
+  (let* ((buffer (copilot-chat--org-get-buffer instance))
+         (prompt-buffer buffer))
+    (with-current-buffer buffer
+      (pm-map-over-spans
+       (lambda (span)
+         (let ((obj (nth 3 span)))
+           (when (and (eq (car span) 'body)
+                      (object-of-class-p obj 'pm-inner-chunkmode))
+             (setq prompt-buffer (slot-value obj '-buffer)))))
+       (point-min) (point-max)))
+    (list buffer prompt-buffer)))
+
 (defun copilot-chat--org-init ()
   "Initialize the copilot chat org frontend."
   (setq copilot-chat-prompt copilot-chat-org-prompt))
@@ -342,7 +356,7 @@ INSTANCE is `copilot-chat' instance to use."
   :insert-prompt-fn #'copilot-chat--org-insert-prompt
   :pop-prompt-fn #'copilot-chat--org-pop-prompt
   :goto-input-fn #'copilot-chat--org-goto-input
-  :get-spinner-buffer-fn #'copilot-chat--org-get-buffer)
+  :get-spinner-buffers-fn #'copilot-chat--org-get-spinner-buffers)
  copilot-chat--frontend-list
  :test #'equal)
 

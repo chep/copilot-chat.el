@@ -207,13 +207,13 @@ The input is created if not found."
   (copilot-chat-chat-buffer instance))
 
 
-(defun copilot-chat--markdown-get-spinner-buffer (instance)
-  "Get markdown spinner buffer for INSTANCE."
+(defun copilot-chat--markdown-get-spinner-buffers (instance)
+  "Get markdown spinner buffers for INSTANCE."
   (let ((buffer (copilot-chat--markdown-get-buffer instance)))
     (if copilot-chat-follow
         buffer
       (with-current-buffer buffer
-        (pm-get-buffer-of-mode 'markdown-view-mode)))))
+        (list (pm-get-buffer-of-mode 'markdown-view-mode) buffer)))))
 
 (defun copilot-chat--markdown-insert-prompt (instance prompt)
   "Insert PROMPT in the chat buffer corresponding to INSTANCE."
@@ -255,7 +255,7 @@ INSTANCE is `copilot-chat' instance to use."
   :insert-prompt-fn #'copilot-chat--markdown-insert-prompt
   :pop-prompt-fn #'copilot-chat--markdown-pop-prompt
   :goto-input-fn #'copilot-chat--markdown-goto-input
-  :get-spinner-buffer-fn #'copilot-chat--markdown-get-spinner-buffer)
+  :get-spinner-buffers-fn #'copilot-chat--markdown-get-spinner-buffers)
  copilot-chat--frontend-list
  :test #'equal)
 
