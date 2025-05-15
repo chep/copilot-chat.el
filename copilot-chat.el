@@ -5,7 +5,7 @@
 ;; Author: cedric.chepied <cedric.chepied@gmail.com>
 ;; Version: 3.0.0
 ;; URL: https://github.com/chep/copilot-chat.el
-;; Package-Requires: ((emacs "27.1") (aio "1.0") (request "0.3.2") (transient "0.8.3") (polymode "0.2.2") (org "9.4.6") (markdown-mode "2.6") (shell-maker "0.76.2"))
+;; Package-Requires: ((emacs "29.1") (aio "1.0") (request "0.3.2") (transient "0.8.3") (polymode "0.2.2") (org "9.4.6") (markdown-mode "2.6") (shell-maker "0.76.2"))
 ;; Keywords: convenience, tools
 
 

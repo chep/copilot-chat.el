@@ -73,6 +73,10 @@ Use `copilot-chat-set-model' to interactively select a model."
   "Check if the model of INSTANCE is o1."
   (string-prefix-p "o1" (copilot-chat-model instance)))
 
+(defun copilot-chat--model-is-gpt-4o (instance)
+  "Check if the model of INSTANCE is gpt-4o."
+  (string-prefix-p "gpt-4o" (copilot-chat-model instance)))
+
 (defun copilot-chat--get-list-buffer-create (instance)
   "Get or create the Copilot chat list buffer for INSTANCE."
   (let ((list-buffer

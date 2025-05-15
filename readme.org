@@ -13,19 +13,8 @@ This plugin allows you to chat with GitHub copilot.
 Feel free to contribute, report issues or discuss new features.
 
 * News
-** V3
-v3.0.0 is here.
-
-In v3, you can start several chat instances.
-
-** Multiple instances
-You can now work with multiple chat instances at once. Copilot-chat instances are linked to a parent directory, with each instance having dedicated:
-- Chat history
-- Context
-- Model selection
-- Buffer list
-
-~copilot-chat-display~ (alias ~(copilot-chat)~) will try to guess the appropriate instance based on the current buffer's file location. If it fails, it will ask you to choose an instance. With a prefix argument (~C-u M-x copilot-chat-display~), it will always prompt you to select an instance.
+** Copilot-Vision
+When using =gpt-4o= model, you can now send images to Copilot. Open it in emacs and add the buffer to the context like any other one.
 
 ** Help wanted
 Bug reports and new ideas are very welcome.
