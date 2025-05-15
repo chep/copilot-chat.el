@@ -474,11 +474,11 @@ if the prompt is out of context."
    'post
    (concat "@" (copilot-chat-curl-file instance))
    (lambda (proc string)
-     (if (copilot-chat--model-is-o1 instance)
-         (copilot-chat--curl-analyze-nonstream-response
-          instance proc string callback out-of-context)
-       (copilot-chat--curl-analyze-response
-        instance string callback out-of-context)))
+     (if (copilot-chat--instance-support-streaming instance)
+         (copilot-chat--curl-analyze-response
+          instance string callback out-of-context)
+       (copilot-chat--curl-analyze-nonstream-response
+        instance proc string callback out-of-context)))
    "-H"
    "openai-intent: conversation-panel"
    "-H"

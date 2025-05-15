@@ -31,6 +31,7 @@
 
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-instance)
+(require 'copilot-chat-model)
 (require 'copilot-chat-prompts)
 
 (defcustom copilot-chat-use-copilot-instruction-files t
@@ -115,7 +116,7 @@ INSTANCE is the `copilot-chat' instance being used."
   (when (buffer-live-p buffer)
     (let ((filename (buffer-file-name buffer)))
       (if (and filename
-               (copilot-chat--model-is-gpt-4o instance)
+               (copilot-chat--instance-support-vision instance)
                (image-supported-file-p filename))
           (push (list
                  `(content
@@ -195,17 +196,17 @@ The create req function is called first and will return new prompt."
 
     ;; Create the appropriate payload based on model type
     (json-serialize
-     (if (copilot-chat--model-is-o1 instance)
+     (if (copilot-chat--instance-support-streaming instance)
          `((messages . ,(vconcat messages))
+           (top_p . 1)
            (model . ,(copilot-chat-model instance))
-           (stream . :false))
+           (stream . t)
+           (n . 1)
+           (intent . t)
+           (temperature . 0.1))
        `((messages . ,(vconcat messages))
-         (top_p . 1)
          (model . ,(copilot-chat-model instance))
-         (stream . t)
-         (n . 1)
-         (intent . t)
-         (temperature . 0.1))))))
+         (stream . :false))))))
 
 (provide 'copilot-chat-body)
 ;;; copilot-chat-body.el ends here
