@@ -71,7 +71,10 @@ Supports glob patterns like `*.lock' or `node_modules/'."
 (defcustom copilot-chat-use-difftastic nil
   "Whether to use difftastic for generating diffs when available.
 Difftastic provides syntax-aware diffs that are often more readable.
-Requires the `difft` command to be installed."
+Requires the `difft` command to be installed.
+
+Note: Difftastic is experimental here.  It is designed for human reviewers;
+LLMs may understand standard git diff output better."
   :type 'boolean
   :group 'copilot-chat)
 
@@ -278,63 +281,113 @@ Optional REPO-ROOT specifies the Git repository's top-level directory."
         (setq comments (concat comments (match-string 0) "\n")))
       comments)))
 
-(defun copilot-chat--commit-callback
-    (instance
-     current-buf
-     start-pos
-     accumulated-content
-     template-comments
-     wait-prompt
-     user-prompt-for-this-turn
-     out-of-context-for-ask)
+(cl-defstruct
+ copilot-chat--commit-callback-params
+ "Parameters for commit message generation callback.
+All fields are required."
+ instance ; The commit instance
+ current-buf ; Buffer where commit message will be inserted
+ start-pos ; Starting position in current-buf
+ accumulated-content ; Accumulated content so far
+ template-comments ; Original commit template comments
+ wait-prompt ; Temporary prompt shown while generating
+ user-prompt-for-this-turn ; The prompt that led to this assistant response
+ out-of-context-for-ask) ; Whether copilot-chat--ask was called with out-of-context
+
+(defun copilot-chat--commit-callback (params)
   "Callback function for handling commit message generation stream.
-
-INSTANCE is the commit instance.
-CURRENT-BUF is the buffer where the commit message will be inserted.
-START-POS is the starting position in CURRENT-BUF.
-ACCUMULATED-CONTENT is the content accumulated so far.
-TEMPLATE-COMMENTS are the original commit template comments.
-WAIT-PROMPT is the temporary prompt shown while generating.
-USER-PROMPT-FOR-THIS-TURN is the prompt that led to this assistant response.
-OUT-OF-CONTEXT-FOR-ASK indicates if `copilot-chat--ask` was called with
-out-of-context is true.
-
-This function ensures proper handling of the commit message stream and updates
-the buffer and history accordingly."
+PARAMS is a `copilot-chat--commit-callback-params' struct containing:
+- instance: The commit instance
+- current-buf: Buffer where the commit message will be inserted
+- start-pos: Starting position in current-buf
+- accumulated: Content accumulated so far
+- template-comments: Original commit template comments
+- wait-prompt: Temporary prompt shown while generating
+- user-prompt: The prompt that led to this assistant response
+- out-of-context: Whether `copilot-chat--ask' was called with out-of-context"
   (lambda (_cb-instance content)
-    (with-current-buffer current-buf
+    (with-current-buffer (copilot-chat--commit-callback-params-current-buf
+                          params)
       (save-excursion
         (if (string= content copilot-chat--magic)
             (progn
-              (copilot-chat--spinner-stop instance)
-              (with-current-buffer current-buf
-                (goto-char start-pos)
-                (when (looking-at wait-prompt)
-                  (delete-region start-pos (+ start-pos (length wait-prompt)))))
+              (copilot-chat--spinner-stop
+               (copilot-chat--commit-callback-params-instance params))
+              (with-current-buffer
+                  (copilot-chat--commit-callback-params-current-buf params)
+                (goto-char
+                 (copilot-chat--commit-callback-params-start-pos params))
+                (when (looking-at
+                       (copilot-chat--commit-callback-params-wait-prompt
+                        params))
+                  (delete-region
+                   (copilot-chat--commit-callback-params-start-pos params)
+                   (+ (copilot-chat--commit-callback-params-start-pos params)
+                      (length
+                       (copilot-chat--commit-callback-params-wait-prompt
+                        params))))))
               (goto-char (point-max))
               (delete-region (point-min) (point-max))
-              (insert accumulated-content "\n\n" template-comments)
-              (if out-of-context-for-ask
-                  (setf (copilot-chat-history instance)
-                        (list
-                         (list accumulated-content "assistant")
-                         (list user-prompt-for-this-turn "user")))
-                (setf (copilot-chat-history instance)
-                      (cons
-                       (list accumulated-content "assistant")
-                       (copilot-chat-history instance)))))
-
+              (insert
+               (copilot-chat--commit-callback-params-accumulated-content params)
+               "\n\n"
+               (copilot-chat--commit-callback-params-template-comments params))
+              (if (copilot-chat--commit-callback-params-out-of-context-for-ask
+                   params)
+                  (setf
+                   (copilot-chat-history
+                    (copilot-chat--commit-callback-params-instance params))
+                   (list
+                    (list
+                     (copilot-chat--commit-callback-params-accumulated-content
+                      params)
+                     "assistant")
+                    (list
+                     (copilot-chat--commit-callback-params-user-prompt-for-this-turn
+                      params)
+                     "user")))
+                (setf
+                 (copilot-chat-history
+                  (copilot-chat--commit-callback-params-instance params))
+                 (cons
+                  (list
+                   (copilot-chat--commit-callback-params-accumulated-content
+                    params)
+                   "assistant")
+                  (copilot-chat-history
+                   (copilot-chat--commit-callback-params-instance params))))))
           (progn
-            (when (string= accumulated-content "")
-              (goto-char start-pos)
-              (when (looking-at wait-prompt)
-                (delete-region start-pos (+ start-pos (length wait-prompt)))))
-            (goto-char start-pos)
+            (when (string=
+                   (copilot-chat--commit-callback-params-accumulated-content
+                    params)
+                   "")
+              (goto-char
+               (copilot-chat--commit-callback-params-start-pos params))
+              (when (looking-at
+                     (copilot-chat--commit-callback-params-wait-prompt params))
+                (delete-region
+                 (copilot-chat--commit-callback-params-start-pos params)
+                 (+ (copilot-chat--commit-callback-params-start-pos params)
+                    (length
+                     (copilot-chat--commit-callback-params-wait-prompt
+                      params))))))
+            (goto-char (copilot-chat--commit-callback-params-start-pos params))
             (delete-region
-             start-pos
-             (min (+ start-pos (length accumulated-content)) (point-max)))
-            (setq accumulated-content (concat accumulated-content content))
-            (insert accumulated-content)))))))
+             (copilot-chat--commit-callback-params-start-pos params)
+             (min (+ (copilot-chat--commit-callback-params-start-pos params)
+                     (length
+                      (copilot-chat--commit-callback-params-accumulated-content
+                       params)))
+                  (point-max)))
+            (setf (copilot-chat--commit-callback-params-accumulated-content
+                   params)
+                  (concat
+                   (copilot-chat--commit-callback-params-accumulated-content
+                    params)
+                   content))
+            (insert
+             (copilot-chat--commit-callback-params-accumulated-content
+              params))))))))
 
 (defmacro copilot-chat--with-commit-context (&rest body)
   "Execute BODY with commit-specific context.
@@ -399,14 +452,15 @@ and temporarily disabling the org frontend's `create-req-fn` if active."
             (copilot-chat--ask
              instance diff-content
              (copilot-chat--commit-callback
-              instance
-              current-buf
-              start-pos
-              accumulated-content
-              template-comments
-              wait-prompt
-              diff-content
-              t)
+              (make-copilot-chat--commit-callback-params
+               :instance instance
+               :current-buf current-buf
+               :start-pos start-pos
+               :accumulated-content accumulated-content
+               :template-comments template-comments
+               :wait-prompt wait-prompt
+               :user-prompt-for-this-turn diff-content
+               :out-of-context-for-ask t))
              t))
          (error
           (copilot-chat--spinner-stop instance)
@@ -467,14 +521,15 @@ and temporarily disabling the org frontend's `create-req-fn` if active."
           (copilot-chat--ask
            instance additional-instructions
            (copilot-chat--commit-callback
-            instance
-            current-buf
-            start-pos
-            accumulated-content
-            template-comments
-            wait-prompt
-            additional-instructions
-            nil)
+            (make-copilot-chat--commit-callback-params
+             :instance instance
+             :current-buf current-buf
+             :start-pos start-pos
+             :accumulated-content accumulated-content
+             :template-comments template-comments
+             :wait-prompt wait-prompt
+             :user-prompt-for-this-turn additional-instructions
+             :out-of-context-for-ask nil))
            nil))
        (error
         (copilot-chat--spinner-stop instance) (signal (car err) (cdr err)))))))
