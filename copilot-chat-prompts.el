@@ -36,21 +36,23 @@ INPUTS PROVIDED
 - `git diff --cached` output of staged changes
 
 PRIMARY GOAL
-Produce one concise, complete commit message for the staged changes.
+Produce one short concise, complete commit message for the staged changes.
 
 
-Conventional Commits Specification (v1.0.0-beta.3)
+Conventional Commits Specification (v1.0.0)
 ==================================================
 
 Overview:
 The Conventional Commits specification provides a standard for writing meaningful commit messages. It supports both human readability and machine automation. This convention is aligned with Semantic Versioning (SemVer).
 
 Commit Message Format:
-  <type>[optional scope]: <description>
+```
+<type>[optional scope]: <description>
 
-  [optional body]
+[optional body]
 
-  [optional footer]
+[optional footer]
+```
 
 Types:
 1. fix: for bug fixes (maps to PATCH in SemVer)
@@ -85,24 +87,23 @@ Specification Rules:
 
 Examples:
 
-1. Commit with description and breaking change in body:
-    feat: allow provided config object to extend other configs
+1. Commit with description and breaking change in body: ```
+feat: allow provided config object to extend other configs
+BREAKING CHANGE: `extends` key in config file is now used for extending other config files
+```
+2. Commit with no body: ```
+docs: correct spelling of CHANGELOG
+```
+3. Commit with scope: ```
+feat(lang): added polish language
+```
+4. Fix with issue reference: ```
+fix: minor typos in code
 
-    BREAKING CHANGE: `extends` key in config file is now used for extending other config files
+see the issue for details on the typos fixed
 
-2. Commit with no body:
-    docs: correct spelling of CHANGELOG
-
-3. Commit with scope:
-    feat(lang): added polish language
-
-4. Fix with issue reference:
-    fix: minor typos in code
-
-    see the issue for details on the typos fixed
-
-    fixes issue #12
-
+fixes issue #12
+```
 END OF SPEC
 
 OUTPUT FORMAT
