@@ -232,13 +232,13 @@ If your browser does not open automatically, browse to %s."
   "Curl renew token request parsing."
   (switch-to-buffer (current-buffer))
   (goto-char (point-min))
-  (let
-      ((json-data
-        (json-parse-buffer
-         :object-type 'alist ;need alist to be compatible with copilot-chat-token format
-         ))
-       (cache-dir
-        (file-name-directory (expand-file-name copilot-chat-token-cache))))
+  (let ((json-data
+         (json-parse-buffer
+          :object-type 'alist ;need alist to be compatible with
+          ;copilot-chat-token format
+          ))
+        (cache-dir
+         (file-name-directory (expand-file-name copilot-chat-token-cache))))
     (setf (copilot-chat-connection-token copilot-chat--connection) json-data)
     ;; save token in copilot-chat-token-cache file after creating
     ;; folders if needed
@@ -474,11 +474,11 @@ if the prompt is out of context."
    'post
    (concat "@" (copilot-chat-curl-file instance))
    (lambda (proc string)
-     (if (copilot-chat--model-is-o1 instance)
-         (copilot-chat--curl-analyze-nonstream-response
-          instance proc string callback out-of-context)
-       (copilot-chat--curl-analyze-response
-        instance string callback out-of-context)))
+     (if (copilot-chat--instance-support-streaming instance)
+         (copilot-chat--curl-analyze-response
+          instance string callback out-of-context)
+       (copilot-chat--curl-analyze-nonstream-response
+        instance proc string callback out-of-context)))
    "-H"
    "openai-intent: conversation-panel"
    "-H"
