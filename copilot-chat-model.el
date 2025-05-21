@@ -29,7 +29,9 @@
 (require 'cl-lib)
 (require 'json)
 
+(require 'copilot-chat-connection)
 (require 'copilot-chat-debug)
+(require 'copilot-chat-instance)
 
 (defcustom copilot-chat-models-cache-file "~/.cache/copilot-chat/models.json"
   "File to cache fetched models."
@@ -94,6 +96,58 @@ is not `true' are not included in the model selection by default."
          (when copilot-chat-debug
            (message "Error loading models from cache"))
          nil)))))
+
+(defun copilot-chat--get-model-by-id (model-id)
+  "Return the model by MODEL-ID with `copilot-chat--connection'."
+  (cl-find-if
+   (lambda (model) (string= (alist-get 'id model) model-id))
+   (copilot-chat-connection-models copilot-chat--connection)))
+
+(defun copilot-chat--model-id-supports-p (model-id feature)
+  "Return t if MODEL-ID supports FEATURE set to t.
+MODEL-ID is an alist with a capabilities key whose value is another alist
+including a supports key."
+  (eq
+   (alist-get
+    feature
+    (alist-get
+     'supports
+     (alist-get 'capabilities (copilot-chat--get-model-by-id model-id))))
+   t))
+
+(defun copilot-chat--model-id-support-streaming (model-id)
+  "Return non-nil if MODEL-ID supports streaming responses.
+This checks MODEL-ID.capabilities.supports.streaming."
+  (copilot-chat--model-id-supports-p model-id 'streaming))
+
+(defun copilot-chat--instance-support-streaming (instance)
+  "Return non-nil if INSTANCE supports streaming responses.
+This checks MODEL-ID.capabilities.supports.streaming."
+  (copilot-chat--model-id-supports-p (copilot-chat-model instance) 'streaming))
+
+(defun copilot-chat--model-id-support-vision (model-id)
+  "Return non-nil if MODEL-ID supports vision (image) input.
+This checks MODEL-ID.capabilities.supports.vision."
+  (copilot-chat--model-id-supports-p model-id 'vision))
+
+(defun copilot-chat--instance-support-vision (instance)
+  "Return non-nil if INSTANCE supports vision (image) input.
+This checks MODEL-ID.capabilities.supports.vision."
+  (copilot-chat--model-id-supports-p (copilot-chat-model instance) 'vision))
+
+(defun copilot-chat--model-picker-enabled (model)
+  "Check the `model_picker_enabled' attribute of the MODEL.
+For example, GPT-3.5 has no more significance
+for most people nowadays than GPT-4o."
+  (eq (alist-get 'model_picker_enabled model) t))
+
+(defun copilot-chat--model-enabled-p (model)
+  "Return non-nil if MODEL is enabled.
+The model is enabled if it has no policy or
+if its policy state is `\"enabled\"'.
+This function checks the JSON policy data returned from the API."
+  (let ((policy (alist-get 'policy model)))
+    (or (null policy) (string= (alist-get 'state policy) "enabled"))))
 
 (provide 'copilot-chat-model)
 ;;; copilot-chat-model.el ends here

@@ -216,9 +216,9 @@ if the prompt is out of context."
        ("editor-version" . "Neovim/0.10.0"))
      :data (copilot-chat--create-req instance prompt out-of-context)
      :parser
-     (if (copilot-chat--model-is-o1 instance)
-         #'copilot-chat--request-ask-non-stream-parser
-       #'copilot-chat--request-ask-parser)
+     (if (copilot-chat--instance-support-streaming instance)
+         #'copilot-chat--request-ask-parser
+       #'copilot-chat--request-ask-non-stream-parser)
      :complete
      (cl-function
       (lambda (&key response &key data &allow-other-keys)

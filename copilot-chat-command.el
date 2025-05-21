@@ -30,6 +30,7 @@
 
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-git)
+(require 'copilot-chat-model)
 (require 'copilot-chat-prompt-mode)
 
 ;; customs
@@ -642,19 +643,6 @@ Replace selection if any."
               (copilot-chat--get-frontend))))
         (when goto-fn
           (funcall goto-fn))))))
-
-(defun copilot-chat--model-picker-enabled (model)
-  "Check the `model_picker_enabled` attribute of the MODEL.
-For example, GPT-3.5 has no more significance
-for most people nowadays than GPT-4o."
-  (eq t (alist-get 'model_picker_enabled model)))
-
-(defun copilot-chat--model-enabled-p (model)
-  "Return non-nil if MODEL is enabled.
-The model is enabled if it has no policy or if its policy state is \"enabled\".
-This function checks the JSON policy data returned from the API."
-  (let ((policy (alist-get 'policy model)))
-    (or (not policy) (equal (alist-get 'state policy) "enabled"))))
 
 (defun copilot-chat--get-model-choices-with-wait ()
   "Get the list of available models for Copilot Chat.
