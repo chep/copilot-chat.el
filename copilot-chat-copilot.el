@@ -248,15 +248,10 @@ Argument BUFFER is the buffer to remove from the context."
 Argument INSTANCE is the copilot chat instance to get the buffers for."
   (copilot-chat-buffers instance))
 
-;;;###autoload (autoload 'copilot-chat-kill-instance "copilot-chat" nil t)
-(defun copilot-chat-kill-instance ()
-  "Interactively kill a selected copilot chat instance.
-All its associated buffers are killed."
-  (interactive)
-  (let* ((instance (copilot-chat--choose-instance))
-         (buf (copilot-chat--get-buffer instance))
-         (lst-buf (copilot-chat--get-list-buffer-create instance))
-         (tmp-buf (copilot-chat-shell-maker-tmp-buf instance)))
+(defun copilot-chat--kill-instance (instance)
+  (let ((buf (copilot-chat--get-buffer instance))
+        (lst-buf (copilot-chat--get-list-buffer-create instance))
+        (tmp-buf (copilot-chat-shell-maker-tmp-buf instance)))
     (when (buffer-live-p buf)
       (kill-buffer buf))
     (when (buffer-live-p lst-buf)
@@ -264,6 +259,15 @@ All its associated buffers are killed."
     (when (buffer-live-p tmp-buf)
       (kill-buffer tmp-buf))
     (setq copilot-chat--instances (delete instance copilot-chat--instances))))
+
+;;;###autoload (autoload 'copilot-chat-kill-instance "copilot-chat" nil t)
+(defun copilot-chat-kill-instance ()
+  "Interactively kill a selected copilot chat instance.
+All its associated buffers are killed."
+  (interactive)
+  (let* ((instance (copilot-chat--choose-instance)))
+    (when instance
+      (copilot-chat--kill-instance instance))))
 
 (defun copilot-chat--create-instance ()
   "Create a new copilot chat instance for a given directory."

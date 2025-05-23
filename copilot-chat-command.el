@@ -32,6 +32,7 @@
 (require 'copilot-chat-git)
 (require 'copilot-chat-model)
 (require 'copilot-chat-prompt-mode)
+(require 'copilot-chat-save)
 
 ;; customs
 (defcustom copilot-chat-list-added-buffers-only nil
@@ -923,6 +924,33 @@ displaying a file in the instance directory will be added."
     (aio-with-async
      (aio-await (copilot-chat--add-workspace instance nil))
      (copilot-chat-list-refresh instance))))
+
+;;;###autoload (autoload 'copilot-chat-save "copilot-chat" nil t)
+(defun copilot-chat-save ()
+  "Save an instance to a file"
+  (interactive)
+  (let ((instance (copilot-chat--current-instance))
+        (current-date (format-time-string "%Y_%m_%d_%H%M%S")))
+    (when instance
+      (let ((file
+             (or (copilot-chat-file-path instance)
+                 (format "%s/%s_%s.el"
+                         "~/.cache/copilot-chat/"
+                         (replace-regexp-in-string
+                          "/" "_" (copilot-chat-directory instance))
+                         current-date))))
+        (copilot-chat--save-instance instance file)
+        (setf (copilot-chat-file-path instance) file)
+        (message "Saved instance to %s" file)))))
+
+;;;###autoload (autoload 'copilot-chat-load "copilot-chat" nil t)
+(defun copilot-chat-load ()
+  "Load an instance from a file"
+  (interactive)
+  (let ((file (read-file-name "File to load: " "~/.cache/copilot-chat/" nil t)))
+    (copilot-chat--load-instance file)
+    (message "Loaded instance from %s" file)))
+
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
