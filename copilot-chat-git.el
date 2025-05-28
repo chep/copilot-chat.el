@@ -259,6 +259,9 @@ WAIT-PROMPT is the temporary waiting message shown during generation."
 Uses the current staged changes in git to generate an appropriate commit
 message.  Requires the repository to have staged changes ready for commit."
   (interactive)
+  (when buffer-read-only
+    (signal
+     'buffer-read-only (format "Buffer `%s' is read-only" (buffer-name))))
   (aio-with-async
    (let* ((instance (copilot-chat--create-commit-instance))
           (current-buf (current-buffer))
