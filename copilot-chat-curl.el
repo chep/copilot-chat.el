@@ -474,6 +474,7 @@ if the prompt is out of context."
    'post
    (concat "@" (copilot-chat-curl-file instance))
    (lambda (proc string)
+     (copilot-chat--debug 'curl "copilot-chat--curl-ask: %s" string)
      (if (copilot-chat--instance-support-streaming instance)
          (copilot-chat--curl-analyze-response
           instance string callback out-of-context)
