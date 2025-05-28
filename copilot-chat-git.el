@@ -307,18 +307,48 @@ message.  Requires the repository to have staged changes ready for commit."
           (setq copilot-chat--instances (delq instance copilot-chat--instances))
           (signal (car err) (cdr err)))))))))
 
+(defun copilot-chat--retry-async
+    (async-func max-retries delay &optional retry-count)
+  "Retry ASYNC-FUNC up to MAX-RETRIES times with simple algorithm.
+If ASYNC-FUNC fails, it will be retried after DELAY seconds.
+RETRY-COUNT is the current retry count, starting from 0.
+DELAY is increased on each retry."
+  (let ((current-retry (or retry-count 0)))
+    (aio-with-async
+     (condition-case err
+         (aio-await (funcall async-func))
+       (error
+        (if (< current-retry max-retries)
+            (progn
+              (message "Retry %d/%d failed: %s"
+                       (1+ current-retry)
+                       max-retries
+                       (error-message-string err))
+              ;; `aio-sleep' method don't maybe refresh `(current-buffer)'.
+              (run-with-timer
+               delay nil #'copilot-chat--retry-async
+               async-func
+               (* (1+ delay) 2) ; Emacs is local application, so we can use simple backoff instead of exponential
+               (1+ current-retry)))
+          (signal (car err) (cdr err))))))))
+
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message ()
   "Generate and insert a commit message using Copilot.
-Uses the current staged changes in git to generate an appropriate commit
-message.  Requires the repository to have staged changes.
+Uses the current staged changes in git to
+generate an appropriate commit message.
+Requires the repository to have staged changes.
+If error, it will retry after a short delay.
 This function is expected to be safe to open via magit when added to
 `git-commit-setup-hook'."
   (interactive)
-  ;;FIXME: I really don't want to do anything delayed by time,
+  ;;TODO: I really don't want to do anything delayed by time,
   ;; but I had to in order to make it work anyway.
   ;; In fact, we would like to get rid of this kind of messy control.
-  (run-with-timer 1 nil #'copilot-chat-insert-commit-message-when-ready))
+  (run-with-timer 1 nil #'copilot-chat--retry-async
+                  #'copilot-chat-insert-commit-message-when-ready
+                  3
+                  1))
 
 ;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
 (defun copilot-chat-set-commit-model (model)
