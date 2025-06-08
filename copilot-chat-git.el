@@ -68,6 +68,19 @@ Supports glob patterns like `*.lock' or `node_modules/'."
   :type '(repeat string)
   :group 'copilot-chat)
 
+(defcustom copilot-chat-use-difftastic nil
+  "Whether to use difftastic for generating diffs when available.
+Difftastic provides syntax-aware diffs that are often more readable.
+Requires the `difft` command to be installed.
+
+Note: Difftastic is experimental here.  It is designed for human reviewers;
+LLMs may understand standard git diff output better."
+  :type 'boolean
+  :group 'copilot-chat)
+
+(defvar copilot-chat--git-commit-instance nil
+  "Persistent instance for Git commit message generation.")
+
 (aio-defun
  copilot-chat--exec
  (&rest command)
@@ -98,14 +111,14 @@ Supports glob patterns like `*.lock' or `node_modules/'."
           (default-directory git-dir)
           cdup)
      (cond
-      ((file-exists-p "gitdir") ; worktree case
+      ((file-exists-p "gitdir")
        (with-temp-buffer
          (insert-file-contents "gitdir")
          (file-name-directory (buffer-string))))
       ((and (setq cdup
                   (aio-await
                    (copilot-chat--exec "git" "rev-parse" "--show-cdup")))
-            (not (string-empty-p cdup))) ; submodule case
+            (not (string-empty-p cdup)))
        cdup)
       (t
        (file-name-directory git-dir))))))
@@ -123,19 +136,59 @@ Git.  REPO-ROOT must be git top directory."
         (all-files (split-string ls-output "\n" t)))
    (mapcar (lambda (file) (expand-file-name file repo-root)) all-files)))
 
-(aio-defun
- copilot-chat--get-diff ()
- "Get the diff of staged change in the current git repository.
-Returns a string containing the diff, excluding files specified in
-`copilot-chat-ignored-commit-files'.  Returns nil if not in a git
-repository or if there are no staged changes.
+(defun copilot-chat--format-git-context (status diff)
+  "Format git context information for commit message generation.
+STATUS is the output of git status command.
+DIFF is the output of git diff command."
+  (let ((commented-status
+         (if (string-empty-p status)
+             ""
+           (replace-regexp-in-string "^" "# " status))))
+    (concat
+     "<git_context>\n" "# Git Status Summary:\n" commented-status
+     (if (string-empty-p commented-status)
+         "\n"
+       "\n\n")
+     "<git_diff>\n" diff
+     (if (or (string-empty-p diff) (string-suffix-p "\n" diff))
+         ""
+       "\n")
+     "</git_diff>\n" "</git_context>")))
 
-+The diff is generated using git and excludes files matching patterns in
-+`copilot-chat-ignored-commit-files', such as lock files and build artifacts."
+(defun copilot-chat--difftastic-available-p ()
+  "Check if difftastic is available on the system."
+  (and copilot-chat-use-difftastic (executable-find "difft")))
+
+(defun copilot-chat--get-diff-command (files-to-include use-difftastic)
+  "Get the appropriate diff command based on configuration.
+FILES-TO-INCLUDE is the list of files to include in the diff.
+USE-DIFFTASTIC is non-nil to use difftastic if available."
+  (if (and use-difftastic (copilot-chat--difftastic-available-p))
+      (append
+       (list
+        "git"
+        "-c"
+        "diff.external=difft --display=inline --color=never --syntax-highlight=off"
+        "--no-pager"
+        "diff"
+        "--cached"
+        "--ext-diff"
+        "--no-color"
+        "--")
+       files-to-include)
+    (append
+     (list "git" "--no-pager" "diff" "--cached" "--no-color" "--")
+     files-to-include)))
+
+(aio-defun
+ copilot-chat--get-diff-content ()
+ "Get the diff content of staged changes.
+
+Returns a string containing the diff content, formatted by
+`copilot-chat--format-git-context`."
  (let* ((default-directory
          (or (aio-await (copilot-chat--git-top-level))
              (user-error "Not inside a Git repository")))
-        ;; First get list of staged files
         (staged-files
          (split-string (aio-await
                         (copilot-chat--exec
@@ -152,47 +205,72 @@ repository or if there are no staged changes.
                         (string-prefix-p pattern file))))
              copilot-chat-ignored-commit-files))
           staged-files)))
-   ;; Then get diff only for non-ignored files
    (when files-to-include
-     (aio-await
-      (apply #'copilot-chat--exec
-             "git"
-             "--no-pager"
-             "diff"
-             "--cached"
-             "--"
-             files-to-include)))))
+     (let* ((status
+             (aio-await
+              (copilot-chat--exec
+               "git" "status" "--short" "--branch" "--untracked-files=no")))
+            (diff-output
+             (aio-await
+              (apply #'copilot-chat--exec
+                     (copilot-chat--get-diff-command
+                      files-to-include copilot-chat-use-difftastic)))))
+       (copilot-chat--format-git-context status diff-output)))))
 
-(defun copilot-chat--create-commit-instance ()
-  "Create a temporary, lightweight instance for commit message generation.
-This instance is specifically designed for generating commit messages
-without creating a chat buffer or setting up a full chat environment."
-  (let ((current-dir
-         (file-name-directory (or (buffer-file-name) default-directory))))
-    (let ((instance
-           (copilot-chat--make
-            :directory current-dir
-            :model
-            (or copilot-chat-commit-model copilot-chat-default-model)
-            :type 'commit
-            :chat-buffer nil
-            :first-word-answer t
-            :history nil
-            :buffers nil
-            :prompt-history nil
-            :prompt-history-position nil
-            :yank-index 1
-            :last-yank-start nil
-            :last-yank-end nil
-            :spinner-timer nil
-            :spinner-index 0
-            :spinner-status nil
-            :curl-answer nil
-            :curl-file nil
-            :curl-current-data nil)))
-      ;; Store instance in our instances list to prevent GC issues with timers
-      (push instance copilot-chat--instances)
-      instance)))
+(defun copilot-chat--ensure-commit-instance (&optional repo-root)
+  "Ensure the commit INSTANCE exists, creating it if necessary.
+
+Optional REPO-ROOT specifies the Git repository's top-level directory."
+  (let ((recreate-instance t)
+        (instance-dir
+         (or repo-root
+             (file-name-directory (or (buffer-file-name) default-directory)))))
+    (if (and copilot-chat--git-commit-instance
+             (copilot-chat-p copilot-chat--git-commit-instance)
+             (eq (copilot-chat-type copilot-chat--git-commit-instance) 'commit))
+        (if (equal
+             (copilot-chat-directory copilot-chat--git-commit-instance)
+             instance-dir)
+            (setq recreate-instance nil)
+          (progn
+            (copilot-chat--debug
+             'commit
+             "Commit instance exists for %s, but current context is %s. Recreating."
+             (copilot-chat-directory copilot-chat--git-commit-instance)
+             instance-dir)
+            (copilot-chat-clear-git-commit-instance)))
+      (setq recreate-instance t))
+
+    (when recreate-instance
+      (copilot-chat--debug
+       'commit
+       "Creating/recreating commit instance for directory: %s"
+       instance-dir)
+      (let ((instance
+             (copilot-chat--make
+              :directory instance-dir
+              :model
+              (or copilot-chat-commit-model copilot-chat-default-model)
+              :type 'commit
+              :chat-buffer nil
+              :first-word-answer t
+              :history nil
+              :buffers nil
+              :prompt-history nil
+              :prompt-history-position nil
+              :yank-index 1
+              :last-yank-start nil
+              :last-yank-end nil
+              :spinner-timer nil
+              :spinner-index 0
+              :spinner-status nil
+              :curl-answer nil
+              :curl-file nil
+              :curl-current-data nil)))
+        (setq copilot-chat--git-commit-instance instance)
+        (unless (memq instance copilot-chat--instances)
+          (push instance copilot-chat--instances))))
+    copilot-chat--git-commit-instance))
 
 (defun copilot-chat--get-git-commit-template-comments ()
   "Extract comments (lines starting with #) from the commit buffer."
@@ -203,111 +281,192 @@ without creating a chat buffer or setting up a full chat environment."
         (setq comments (concat comments (match-string 0) "\n")))
       comments)))
 
-(defun copilot-chat--commit-callback
-    (instance
-     current-buf start-pos accumulated-content template-comments wait-prompt)
+(cl-defstruct
+ copilot-chat--commit-callback-params
+ "Parameters for commit message generation callback.
+All fields are required."
+ instance ; The commit instance
+ current-buf ; Buffer where commit message will be inserted
+ start-pos ; Starting position in current-buf
+ accumulated-content ; Accumulated content so far
+ template-comments ; Original commit template comments
+ wait-prompt ; Temporary prompt shown while generating
+ user-prompt-for-this-turn ; The prompt that led to this assistant response
+ out-of-context-for-ask) ; Whether copilot-chat--ask was called with out-of-context
+
+(defun copilot-chat--commit-callback (params)
   "Callback function for handling commit message generation stream.
-INSTANCE is the copilot chat instance receiving data.
-CURRENT-BUF is the buffer where commit message will be inserted.
-START-POS is the position where commit message insertion begins.
-ACCUMULATED-CONTENT stores the progressively built message.
-TEMPLATE-COMMENTS contains the original Git commit template comments.
-WAIT-PROMPT is the temporary waiting message shown during generation."
+PARAMS is a `copilot-chat--commit-callback-params' struct containing:
+- instance: The commit instance
+- current-buf: Buffer where the commit message will be inserted
+- start-pos: Starting position in current-buf
+- accumulated: Content accumulated so far
+- template-comments: Original commit template comments
+- wait-prompt: Temporary prompt shown while generating
+- user-prompt: The prompt that led to this assistant response
+- out-of-context: Whether `copilot-chat--ask' was called with out-of-context"
   (lambda (_cb-instance content)
-    (with-current-buffer current-buf
+    (with-current-buffer (copilot-chat--commit-callback-params-current-buf
+                          params)
       (save-excursion
         (if (string= content copilot-chat--magic)
             (progn
-              ;; Make sure to stop the spinner timer
-              (when (copilot-chat-spinner-timer instance)
-                (cancel-timer (copilot-chat-spinner-timer instance))
-                (setf (copilot-chat-spinner-timer instance) nil))
-
-              (with-current-buffer current-buf
-                (goto-char start-pos)
-                (when (looking-at wait-prompt)
-                  (delete-region start-pos (+ start-pos (length wait-prompt))))
-                ;; Restore the git commit template comments and insert generated message
-                (goto-char (point-max))
-                (delete-region (point-min) (point-max))
-                (insert accumulated-content "\n\n" template-comments))
-              (message "Commit message generation completed.")
-              (copilot-chat--debug 'commit "Generation completed successfully")
-
-              ;; Remove the temporary instance from instances list to avoid memory leaks
-              (setq copilot-chat--instances
-                    (delq instance copilot-chat--instances)))
-
+              (copilot-chat--spinner-stop
+               (copilot-chat--commit-callback-params-instance params))
+              (with-current-buffer
+                  (copilot-chat--commit-callback-params-current-buf params)
+                (goto-char
+                 (copilot-chat--commit-callback-params-start-pos params))
+                (when (looking-at
+                       (copilot-chat--commit-callback-params-wait-prompt
+                        params))
+                  (delete-region
+                   (copilot-chat--commit-callback-params-start-pos params)
+                   (+ (copilot-chat--commit-callback-params-start-pos params)
+                      (length
+                       (copilot-chat--commit-callback-params-wait-prompt
+                        params))))))
+              (goto-char (point-max))
+              (delete-region (point-min) (point-max))
+              (insert
+               (copilot-chat--commit-callback-params-accumulated-content params)
+               "\n\n"
+               (copilot-chat--commit-callback-params-template-comments params))
+              (if (copilot-chat--commit-callback-params-out-of-context-for-ask
+                   params)
+                  (setf
+                   (copilot-chat-history
+                    (copilot-chat--commit-callback-params-instance params))
+                   (list
+                    (list
+                     (copilot-chat--commit-callback-params-accumulated-content
+                      params)
+                     "assistant")
+                    (list
+                     (copilot-chat--commit-callback-params-user-prompt-for-this-turn
+                      params)
+                     "user")))
+                (setf
+                 (copilot-chat-history
+                  (copilot-chat--commit-callback-params-instance params))
+                 (cons
+                  (list
+                   (copilot-chat--commit-callback-params-accumulated-content
+                    params)
+                   "assistant")
+                  (copilot-chat-history
+                   (copilot-chat--commit-callback-params-instance params))))))
           (progn
-            (when (string= accumulated-content "")
-              (goto-char start-pos)
-              (when (looking-at wait-prompt)
-                (delete-region start-pos (+ start-pos (length wait-prompt)))))
-
-            (goto-char start-pos)
+            (when (string=
+                   (copilot-chat--commit-callback-params-accumulated-content
+                    params)
+                   "")
+              (goto-char
+               (copilot-chat--commit-callback-params-start-pos params))
+              (when (looking-at
+                     (copilot-chat--commit-callback-params-wait-prompt params))
+                (delete-region
+                 (copilot-chat--commit-callback-params-start-pos params)
+                 (+ (copilot-chat--commit-callback-params-start-pos params)
+                    (length
+                     (copilot-chat--commit-callback-params-wait-prompt
+                      params))))))
+            (goto-char (copilot-chat--commit-callback-params-start-pos params))
             (delete-region
-             start-pos
-             (min (+ start-pos (length accumulated-content)) (point-max)))
-            (setq accumulated-content (concat accumulated-content content))
-            (insert accumulated-content)
-            (copilot-chat--debug
-             'commit "Received chunk: %d chars" (length content))))))))
+             (copilot-chat--commit-callback-params-start-pos params)
+             (min (+ (copilot-chat--commit-callback-params-start-pos params)
+                     (length
+                      (copilot-chat--commit-callback-params-accumulated-content
+                       params)))
+                  (point-max)))
+            (setf (copilot-chat--commit-callback-params-accumulated-content
+                   params)
+                  (concat
+                   (copilot-chat--commit-callback-params-accumulated-content
+                    params)
+                   content))
+            (insert
+             (copilot-chat--commit-callback-params-accumulated-content
+              params))))))))
+
+(defmacro copilot-chat--with-commit-context (&rest body)
+  "Execute BODY with commit-specific context.
+This involves setting `copilot-chat-prompt` to `copilot-chat-commit-prompt`
+and temporarily disabling the org frontend's `create-req-fn` if active."
+  `(let ((copilot-chat-prompt copilot-chat-commit-prompt)
+         (frontend (copilot-chat--get-frontend))
+         (original-org-create-req-fn nil))
+     (when (and frontend (eq (copilot-chat-frontend-id frontend) 'org))
+       (setq original-org-create-req-fn
+             (copilot-chat-frontend-create-req-fn frontend))
+       (setf (copilot-chat-frontend-create-req-fn frontend) nil)
+       (copilot-chat--debug
+        'commit "Temporarily disabled org frontend create-req-fn for commit."))
+     (unwind-protect
+         (progn
+           ,@body)
+       (when original-org-create-req-fn
+         (setf (copilot-chat-frontend-create-req-fn frontend)
+               original-org-create-req-fn)))))
 
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message-when-ready "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message-when-ready ()
-  "Generate and insert a commit message using GitHub Copilot.
-Uses the current staged changes in git to generate an appropriate commit
-message.  Requires the repository to have staged changes ready for commit."
+  "Generate and insert a commit message using GitHub Copilot."
   (interactive)
   (when buffer-read-only
     (signal
      'buffer-read-only (format "Buffer `%s' is read-only" (buffer-name))))
   (aio-with-async
-   (let* ((instance (copilot-chat--create-commit-instance))
+   (let* ((instance (copilot-chat--ensure-commit-instance))
           (current-buf (current-buffer))
           (start-pos (point))
-          (diff (aio-await (copilot-chat--get-diff)))
+          (diff-content (aio-await (copilot-chat--get-diff-content)))
           (template-comments (copilot-chat--get-git-commit-template-comments))
           (wait-prompt
            (format "# [copilot:%s] Generating commit message..."
                    (copilot-chat-model instance)))
           (accumulated-content ""))
 
-     (copilot-chat--debug 'commit "Starting direct commit message generation")
+     (setf (copilot-chat-history instance) nil)
      (copilot-chat--debug
-      'commit
-      "Diff size: %d bytes, Model: %s"
-      (length diff)
+      'commit "Commit instance history cleared for new generation.")
+     (copilot-chat--debug 'commit "Starting initial commit message generation.")
+     (copilot-chat--debug
+      'commit "Diff content size: %d bytes, Model: %s"
+      (if diff-content
+          (length diff-content)
+        0)
       (copilot-chat-model instance))
 
      (cond
-      ((string-empty-p diff)
-       (copilot-chat--debug 'commit "No changes found in staging area")
-       (setq copilot-chat--instances (delq instance copilot-chat--instances))
-       (user-error "No staged changes found.  Please stage some changes first"))
-
+      ((or (null diff-content) (string-empty-p diff-content))
+       (copilot-chat--debug 'commit "No changes found in staging area.")
+       (user-error
+        "No staged changes found or diff content is empty.  Please stage some changes first"))
       (t
        (message "Generating commit message...")
        (insert wait-prompt "\n\n")
        (goto-char start-pos)
+       (copilot-chat--debug
+        'commit "User diff content to be sent:\n%s" diff-content)
 
        (condition-case err
-           (copilot-chat--ask
-            instance (concat copilot-chat-commit-prompt diff)
-            (copilot-chat--commit-callback
-             instance
-             current-buf
-             start-pos
-             accumulated-content
-             template-comments
-             wait-prompt)
-            t) ; out-of-context = t
+           (copilot-chat--with-commit-context
+            (copilot-chat--ask
+             instance diff-content
+             (copilot-chat--commit-callback
+              (make-copilot-chat--commit-callback-params
+               :instance instance
+               :current-buf current-buf
+               :start-pos start-pos
+               :accumulated-content accumulated-content
+               :template-comments template-comments
+               :wait-prompt wait-prompt
+               :user-prompt-for-this-turn diff-content
+               :out-of-context-for-ask t))
+             t))
          (error
-          ;; Ensure the instance is cleaned up if an error occurs
-          (when (copilot-chat-spinner-timer instance)
-            (cancel-timer (copilot-chat-spinner-timer instance))
-            (setf (copilot-chat-spinner-timer instance) nil))
-          (setq copilot-chat--instances (delq instance copilot-chat--instances))
+          (copilot-chat--spinner-stop instance)
           (signal (car err) (cdr err)))))))))
 
 (defun copilot-chat--retry-async
@@ -353,36 +512,120 @@ This function is expected to be safe to open via magit when added to
                   3
                   1))
 
+;;;###autoload (autoload 'copilot-chat-regenerate-commit-message "copilot-chat" nil t)
+(defun copilot-chat-regenerate-commit-message ()
+  "Regenerate and insert a new commit message using GitHub Copilot."
+  (interactive)
+  (aio-with-async
+   (let* ((instance (copilot-chat--ensure-commit-instance))
+          (current-buf (current-buffer))
+          (start-pos (point))
+          (template-comments (copilot-chat--get-git-commit-template-comments))
+          (additional-instructions "")
+          (wait-prompt "")
+          (accumulated-content ""))
+
+     (unless (copilot-chat-history instance)
+       (message
+        "No previous commit message generated in this session. Calling 'copilot-chat-insert-commit-message'.")
+       (copilot-chat-insert-commit-message)
+       (cl-return-from copilot-chat-regenerate-commit-message))
+
+     (setq
+      additional-instructions
+      (let
+          ((instr
+            (read-string
+             "Additional instructions for regeneration (or RET for default 'regenerate'): ")))
+        (if (string-empty-p instr)
+            "Please regenerate a new one, taking the previous attempt and my request into account."
+          instr)))
+
+     (setq wait-prompt
+           (format "# [copilot:%s] Regenerating commit message..."
+                   (copilot-chat-model instance)))
+     (copilot-chat--debug 'commit "Starting commit message regeneration.")
+     (copilot-chat--debug
+      'commit "Additional instructions: %s" additional-instructions)
+     (copilot-chat--debug
+      'commit
+      "Current history for regeneration: %S"
+      (copilot-chat-history instance))
+
+     (message "Regenerating commit message...")
+     (insert wait-prompt "\n\n")
+     (goto-char start-pos)
+
+     (condition-case err
+         (copilot-chat--with-commit-context
+          (copilot-chat--ask
+           instance additional-instructions
+           (copilot-chat--commit-callback
+            (make-copilot-chat--commit-callback-params
+             :instance instance
+             :current-buf current-buf
+             :start-pos start-pos
+             :accumulated-content accumulated-content
+             :template-comments template-comments
+             :wait-prompt wait-prompt
+             :user-prompt-for-this-turn additional-instructions
+             :out-of-context-for-ask nil))
+           nil))
+       (error
+        (copilot-chat--spinner-stop instance) (signal (car err) (cdr err)))))))
+
 ;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
 (defun copilot-chat-set-commit-model (model)
-  "Set the model to use specifically for commit message generation to MODEL.
-When called interactively, prompts for available models from the API."
-  (interactive
-   (let*
-       ((choices (copilot-chat--get-model-choices-with-wait))
-        (max-id-width
-         (apply #'max (mapcar (lambda (choics) (length (cdr choics))) choices)))
-        ;; Create completion list with ID as prefix for unique identification
-        (completion-choices
-         (mapcar
-          (lambda (choice)
-            (let ((name (car choice))
-                  (id (cdr choice)))
-              (cons (format (format "[%%-%ds] %%s" max-id-width) id name) id)))
-          choices))
-        (choice
-         (completing-read
-          "Select commit message model: " (mapcar 'car completion-choices)
-          nil t)))
-     ;; Extract model ID from the selected choice
-     (let ((model-value (cdr (assoc choice completion-choices))))
-       (when copilot-chat-debug
-         (message "Setting commit model to: %s" model-value))
-       (list model-value))))
+  "Set the model to use specifically for commit message generation to MODEL."
+  (interactive (let* ((choices (copilot-chat--get-model-choices-with-wait))
+                      (max-id-width
+                       (apply #'max
+                              (mapcar
+                               (lambda (choics)
+                                 (length (cdr choics)))
+                               choices)))
+                      (completion-choices
+                       (mapcar
+                        (lambda (choice)
+                          (let ((name (car choice))
+                                (id (cdr choice)))
+                            (cons
+                             (format (format "[%%-%ds] %%s" max-id-width)
+                                     id
+                                     name)
+                             id)))
+                        choices))
+                      (choice
+                       (completing-read "Select commit message model: "
+                                        (mapcar 'car completion-choices)
+                                        nil
+                                        t)))
+                 (let ((model-value (cdr (assoc choice completion-choices))))
+                   (when copilot-chat-debug
+                     (message "Setting commit model to: %s" model-value))
+                   (list model-value))))
 
-  ;; Set the commit model value
   (setq copilot-chat-commit-model model)
+  (when copilot-chat--git-commit-instance
+    (setf (copilot-chat-model copilot-chat--git-commit-instance)
+          (or model copilot-chat-default-model)))
   (message "Commit message model set to %s" model))
+
+;;;###autoload
+(defun copilot-chat-clear-git-commit-instance ()
+  "Clear and remove the persistent Git commit instance."
+  (interactive)
+  (when copilot-chat--git-commit-instance
+    (copilot-chat--debug 'commit "Clearing persistent Git commit instance.")
+    (setq copilot-chat--instances
+          (delq copilot-chat--git-commit-instance copilot-chat--instances))
+    (when (copilot-chat-spinner-timer copilot-chat--git-commit-instance)
+      (cancel-timer
+       (copilot-chat-spinner-timer copilot-chat--git-commit-instance)))
+    (setq copilot-chat--git-commit-instance nil)
+    (message "Persistent Git commit instance cleared."))
+  (unless copilot-chat--git-commit-instance
+    (message "No active persistent Git commit instance to clear.")))
 
 (provide 'copilot-chat-git)
 ;;; copilot-chat-git.el ends here

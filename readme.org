@@ -158,6 +158,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 *** Magit
 - ~(copilot-chat-insert-commit-message)~ Insert in the current buffer a copilot generated commit message.
+- ~(copilot-chat-regenerate-commit-message)~ Regenerate the commit message, optionally providing additional instructions or a custom user prompt. This reuses previous context and history for improved results.
 
 *** Transient
 - ~(copilot-chat-transient)~ display main transient menu to access all functions.
@@ -220,6 +221,7 @@ Copilot Chat supports custom instructions from GitHub repository:
 
 *** Git
 - ~copilot-chat-ignored-commit-files~ - List of file patterns to ignore when generating commit messages.
+- ~copilot-chat-use-difftastic~ - Whether to use difftastic for generating diffs. *Experimental*: Difftastic is designed for human reviewers; LLMs may understand standard git diff output better. Default is ~nil~ for this reason. You can enable it if you want to experiment and have ~difft~ installed.
 
 
 ** Faces
