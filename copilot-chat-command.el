@@ -299,10 +299,7 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
   "Internal function to display copilot chat buffer.
 Argument INSTANCE is the copilot chat instance to display."
   (let ((base-buffer (copilot-chat--get-buffer instance))
-        (init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend)))
         (window-found nil))
-    (when init-fn
-      (funcall init-fn))
     ;; Check if any window is already displaying the base buffer or an indirect
     ;; buffer
     (cl-block
@@ -608,12 +605,14 @@ Optional argument KEEP-BUFFERS if non-nil, preserve the current buffer list."
     (copilot-chat--display instance)
     (copilot-chat-list-refresh instance)))
 
-(defun copilot-chat--clean ()
+(defun copilot-chat-frontend-clean ()
   "Cleaning function."
+  (interactive)
   (let ((clean-fn
          (copilot-chat-frontend-clean-fn (copilot-chat--get-frontend))))
     (when clean-fn
-      (funcall clean-fn))))
+      (funcall clean-fn))
+    (setq copilot-chat--frontend-init-p nil)))
 
 
 (defun copilot-chat-send-to-buffer ()
@@ -923,6 +922,25 @@ displaying a file in the instance directory will be added."
     (aio-with-async
      (aio-await (copilot-chat--add-workspace instance nil))
      (copilot-chat-list-refresh instance))))
+
+;;;###autoload (autoload 'copilot-chat-kill-instance "copilot-chat" nil t)
+(defun copilot-chat-kill-instance ()
+  "Interactively kill a selected copilot chat instance.
+All its associated buffers are killed."
+  (interactive)
+  (let* ((instance (copilot-chat--choose-instance))
+         (buf (copilot-chat--get-buffer instance))
+         (lst-buf (copilot-chat--get-list-buffer-create instance))
+         (clear-fn
+          (copilot-chat-frontend-instance-clean-fn
+           (copilot-chat--get-frontend))))
+    (when (buffer-live-p buf)
+      (kill-buffer buf))
+    (when (buffer-live-p lst-buf)
+      (kill-buffer lst-buf))
+    (when clear-fn
+      (funcall clear-fn instance))
+    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here

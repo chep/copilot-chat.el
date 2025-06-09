@@ -58,9 +58,7 @@ Use `copilot-chat-set-model' to interactively select a model."
  (curl-answer nil :type (or null string))
  (curl-file nil :type (or null file))
  (curl-current-data nil :type (or null string))
- (shell-maker-tmp-buf nil :type buffer)
- (shell-maker-answer-point nil :type point)
- (shell-cb-fn nil :type function))
+ (frontend-private nil))
 
 (defvar copilot-chat--instances (list)
   "Global instance of Copilot chat.")

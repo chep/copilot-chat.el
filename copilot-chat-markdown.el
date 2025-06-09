@@ -122,9 +122,6 @@ INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
              relative-path)))
       content)))
 
-(defun copilot-chat--markdown-clean ()
-  "Clean the copilot chat markdown frontend.")
-
 (defun copilot-chat--get-markdown-block-content-at-point ()
   "Get the content of the markdown block at point."
   (let* ((props (text-properties-at (point)))
@@ -242,7 +239,9 @@ INSTANCE is `copilot-chat' instance to use."
  (make-copilot-chat-frontend
   :id 'markdown
   :init-fn #'copilot-chat--markdown-init
-  :clean-fn #'copilot-chat--markdown-clean
+  :clean-fn nil
+  :instance-init-fn nil
+  :instance-clean-fn nil
   :format-fn #'copilot-chat--markdown-format-data
   :format-code-fn #'copilot-chat--markdown-format-code
   :format-buffer-fn #'copilot-chat--markdown-format-buffer
