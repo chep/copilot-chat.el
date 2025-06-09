@@ -116,6 +116,18 @@
     ;; Schedule background model fetching with slight delay
     (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
 
+    ;; init frontend if needed
+    (let ((init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend)))
+          (instance-init-fn
+           (copilot-chat-frontend-instance-init-fn
+            (copilot-chat--get-frontend))))
+      (when (and init-fn (not copilot-chat--frontend-init-p))
+        (funcall init-fn)
+        (setq copilot-chat--frontend-init-p t))
+      (when instance-init-fn
+        (funcall instance-init-fn instance)))
+
+    ;; return instance
     instance))
 
 (defun copilot-chat--fetch-models-async ()
@@ -247,23 +259,6 @@ Argument BUFFER is the buffer to remove from the context."
   "Get copilot buffer list for the given INSTANCE.
 Argument INSTANCE is the copilot chat instance to get the buffers for."
   (copilot-chat-buffers instance))
-
-;;;###autoload (autoload 'copilot-chat-kill-instance "copilot-chat" nil t)
-(defun copilot-chat-kill-instance ()
-  "Interactively kill a selected copilot chat instance.
-All its associated buffers are killed."
-  (interactive)
-  (let* ((instance (copilot-chat--choose-instance))
-         (buf (copilot-chat--get-buffer instance))
-         (lst-buf (copilot-chat--get-list-buffer-create instance))
-         (tmp-buf (copilot-chat-shell-maker-tmp-buf instance)))
-    (when (buffer-live-p buf)
-      (kill-buffer buf))
-    (when (buffer-live-p lst-buf)
-      (kill-buffer lst-buf))
-    (when (buffer-live-p tmp-buf)
-      (kill-buffer tmp-buf))
-    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
 
 (defun copilot-chat--create-instance ()
   "Create a new copilot chat instance for a given directory."
