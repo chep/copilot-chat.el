@@ -128,12 +128,14 @@ Arguments ARGS are additional arguments to pass to curl."
       (when (/= result 0)
         (error (format "curl returned non-zero result: %d" result))))))
 
-(defun copilot-chat--curl-make-process (address method data filter &rest args)
+(defun copilot-chat--curl-make-process
+    (address method data filter vision &rest args)
   "Call curl asynchronously.
 Argument ADDRESS is the URL to call.
 Argument METHOD is the HTTP method to use.
 Argument DATA is the data to send.
 Argument FILTER is the function called to parse data.
+If VISION is t, add vision header.
 Optional argument ARGS are additional arguments to pass to curl."
   (let ((command
          (append
@@ -154,9 +156,9 @@ Optional argument ARGS are additional arguments to pass to curl."
            "-H"
            "editor-plugin-version: CopilotChat.nvim/2.0.0"
            "-H"
-           "editor-version: Neovim/0.10.0"
-           "-H"
-           "Copilot-Vision-Request: true")
+           "editor-version: Neovim/0.10.0")
+          (when vision
+            (list "-H" "Copilot-Vision-Request: true"))
           (when data
             (list "-d" data))
           (when copilot-chat-curl-proxy
@@ -480,6 +482,7 @@ if the prompt is out of context."
           instance string callback out-of-context)
        (copilot-chat--curl-analyze-nonstream-response
         instance proc string callback out-of-context)))
+   (copilot-chat-uses-vision instance)
    "-H"
    "openai-intent: conversation-panel"
    "-H"

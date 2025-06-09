@@ -198,7 +198,10 @@ if the prompt is out of context."
        ("content-type" . "application/json")
        ("user-agent" . "CopilotChat.nvim/2.0.0")
        ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-       ("Copilot-Vision-Request" . "true")
+       ("Copilot-Vision-Request" .
+        ,(if (copilot-chat-uses-vision instance)
+             "true"
+           "false"))
        ("authorization" .
         ,(concat
           "Bearer "

@@ -118,22 +118,25 @@ INSTANCE is the `copilot-chat' instance being used."
       (if (and filename
                (copilot-chat--instance-support-vision instance)
                (image-supported-file-p filename))
-          (push (list
-                 `(content
-                   .
-                   ,(vconcat
-                     (list
-                      (list
-                       `(type . "text") `(text . ,(concat "FILE " filename)))
-                      (list
-                       `(type . , "image_url")
-                       `(image_url
-                         .
-                         ,(list
-                           `(url
-                             . ,(copilot-chat--image-to-base64 filename))))))))
-                 `(role . "user"))
-                messages)
+          (progn
+            (setf (copilot-chat-uses-vision instance) t)
+            (push (list
+                   `(content
+                     .
+                     ,(vconcat
+                       (list
+                        (list
+                         `(type . "text") `(text . ,(concat "FILE " filename)))
+                        (list
+                         `(type . , "image_url")
+                         `(image_url
+                           .
+                           ,(list
+                             `(url
+                               .
+                               ,(copilot-chat--image-to-base64 filename))))))))
+                   `(role . "user"))
+                  messages))
         (push (list
                `(content
                  . ,(copilot-chat--format-buffer-for-copilot buffer instance))
@@ -165,6 +168,8 @@ The create req function is called first and will return new prompt."
       (setq prompt (funcall create-req-fn prompt no-context)))
     ;; user prompt
     (push (list `(content . ,prompt) `(role . "user")) messages)
+    ;; reset vision support
+    (setf (copilot-chat-uses-vision instance) nil)
     ;; Add context if needed
     (unless no-context
       ;; history
