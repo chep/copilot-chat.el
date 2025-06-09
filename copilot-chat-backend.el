@@ -29,8 +29,10 @@
 
 (require 'cl-lib)
 
+;; Forward declaration of custom variables
 (defvar copilot-chat-backend)
 
+;; Struct
 (cl-defstruct
  copilot-chat-backend
  "Struct for Copilot chat backend."
