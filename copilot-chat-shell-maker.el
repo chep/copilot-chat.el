@@ -67,7 +67,7 @@ INSTANCE is used to get directory"
   "Create or retrieve the Copilot Chat shell-maker buffer for INSTANCE."
   (unless (buffer-live-p (copilot-chat-chat-buffer instance))
     (setf (copilot-chat-chat-buffer instance) (copilot-chat--shell instance)))
-  (let* ((private (copilot-chat-frontend-private instance))
+  (let* ((private (copilot-chat--frontend instance))
          (tempb
           (or (copilot-chat-shell-maker-tmp-buf private)
               (get-buffer-create
@@ -81,7 +81,7 @@ INSTANCE is used to get directory"
 (defun copilot-chat--shell-maker-font-lock-faces (instance)
   "Replace faces by font-lock-faces in INSTANCE buffer."
   (with-current-buffer (copilot-chat-shell-maker-tmp-buf
-                        (copilot-chat-frontend-private instance))
+                        (copilot-chat--frontend instance))
     (let ((inhibit-read-only t))
       (font-lock-ensure)
       (goto-char (point-min))
@@ -97,7 +97,7 @@ INSTANCE is used to get directory"
 (defun copilot-chat--shell-maker-copy-faces (instance)
   "Apply faces to the copilot chat buffer corresponding to INSTANCE."
   (with-current-buffer (copilot-chat-shell-maker-tmp-buf
-                        (copilot-chat-frontend-private instance))
+                        (copilot-chat--frontend instance))
     (save-restriction
       (widen)
       (font-lock-ensure)
@@ -106,7 +106,7 @@ INSTANCE is used to get directory"
         (with-current-buffer (copilot-chat--shell-maker-get-buffer instance)
           (goto-char
            (1+ (copilot-chat-shell-maker-answer-point
-                (copilot-chat-frontend-private instance))))
+                (copilot-chat--frontend instance))))
           (insert content)
           (delete-region (point) (+ (point) (1- (length content))))
           (goto-char (point-max)))))))
@@ -126,7 +126,7 @@ Argument CONTENT is copilot chat answer."
               (format "Copilot(%s):\n" (copilot-chat-model instance))))
             (inhibit-read-only t))
         (with-current-buffer (copilot-chat-shell-maker-tmp-buf
-                              (copilot-chat-frontend-private instance))
+                              (copilot-chat--frontend instance))
           (insert str))
         (funcall (map-elt shell :write-output) str)))
     (if (string= content copilot-chat--magic)
@@ -136,7 +136,7 @@ Argument CONTENT is copilot chat answer."
           (setf (copilot-chat-first-word-answer instance) t))
       (progn
         (with-current-buffer (copilot-chat-shell-maker-tmp-buf
-                              (copilot-chat-frontend-private instance))
+                              (copilot-chat--frontend instance))
           (goto-char (point-max))
           (let ((inhibit-read-only t))
             (insert content)))
@@ -157,18 +157,17 @@ Argument INSTANCE is `copilot-chat' instance.
 Argument COMMAND is the command to send to Copilot.
 Argument SHELL is the `shell-maker' instance."
   (setf
-   (copilot-chat-shell-maker-cb-fn (copilot-chat-frontend-private instance))
+   (copilot-chat-shell-maker-cb-fn (copilot-chat--frontend instance))
    (apply-partially #'copilot-chat--shell-cb-prompt-wrapper shell)
-   (copilot-chat-shell-maker-answer-point
-    (copilot-chat-frontend-private instance))
-   (point))
+   (copilot-chat-shell-maker-answer-point (copilot-chat--frontend instance)) (point))
   (let ((inhibit-read-only t))
     (with-current-buffer (copilot-chat-shell-maker-tmp-buf
-                          (copilot-chat-frontend-private instance))
+                          (copilot-chat--frontend instance))
       (erase-buffer)))
   (copilot-chat--ask
-   instance command
-   (copilot-chat-shell-maker-cb-fn (copilot-chat-frontend-private instance))))
+   instance
+   command
+   (copilot-chat-shell-maker-cb-fn (copilot-chat--frontend instance))))
 
 (defun copilot-chat--shell (instance)
   "Start a Copilot Chat shell for INSTANCE."
@@ -210,17 +209,15 @@ INSTANCE is the copilot chat instance."
 
 (defun copilot-chat--shell-maker-init-instance (instance)
   "Initialize the copilot chat `shell-maker' INSTANCE."
-  (setf (copilot-chat-frontend-private instance)
-        (copilot-chat-shell-maker--make)))
+  (setf (copilot-chat--frontend instance) (copilot-chat-shell-maker--make)))
 
 (defun copilot-chat--shell-maker-clean-instance (instance)
   "Initialize the copilot chat `shell-maker' INSTANCE."
   (let ((tmp-buf
-         (copilot-chat-shell-maker-tmp-buf
-          (copilot-chat-frontend-private instance))))
+         (copilot-chat-shell-maker-tmp-buf (copilot-chat--frontend instance))))
     (when (buffer-live-p tmp-buf)
       (kill-buffer tmp-buf)))
-  (setf (copilot-chat-frontend-private instance) nil))
+  (setf (copilot-chat--frontend instance) nil))
 
 
 ;; Top-level execute code.
