@@ -153,7 +153,7 @@
         (condition-case err
             (progn
               (copilot-chat--auth)
-              (if (eq copilot-chat-backend 'request)
+              (if (eq (copilot-chat--get-backend) 'request)
                   (copilot-chat--request-models-async t)
                 (copilot-chat--request-models t)))
           (error
@@ -165,7 +165,7 @@
   (let ((login-fn (copilot-chat-backend-login-fn (copilot-chat--get-backend))))
     (if login-fn
         (funcall login-fn)
-      (error "No login function for backend: %s" copilot-chat-backend))))
+      (error "No login function for backend: %s" (copilot-chat--get-backend)))))
 
 
 (defun copilot-chat--renew-token ()
@@ -174,7 +174,8 @@
          (copilot-chat-backend-renew-token-fn (copilot-chat--get-backend))))
     (if renew-fn
         (funcall renew-fn)
-      (error "No renew token function for backend: %s" copilot-chat-backend))))
+      (error
+       "No renew token function for backend: %s" (copilot-chat--get-backend)))))
 
 (defun copilot-chat--auth ()
   "Authenticate with GitHub Copilot API.
@@ -217,7 +218,7 @@ Argument OUT-OF-CONTEXT indicates if prompt is out of context (git commit)."
     (copilot-chat--auth)
     (if ask-fn
         (funcall ask-fn instance prompt callback out-of-context)
-      (error "No ask function for backend: %s" copilot-chat-backend))
+      (error "No ask function for backend: %s" (copilot-chat--get-backend)))
     (unless out-of-context
       (setf (copilot-chat-history instance) new-history))))
 
