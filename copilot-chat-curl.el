@@ -86,7 +86,7 @@ authentication."
 
 ;; structures
 (cl-defstruct
- (copilot-chat-curl)
+ copilot-chat-curl
  "Private data for Copilot chat curl backend."
  (answer nil :type (or null string))
  (file nil :type (or null file))

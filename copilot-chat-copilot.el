@@ -80,13 +80,17 @@
         (insert-file-contents token-file)
         (buffer-substring-no-properties (point-min) (point-max))))))
 
-(defun copilot-chat--create (directory)
-  "Create a new Copilot chat instance with DIRECTORY as source directory."
+(defun copilot-chat--create (directory &optional model type)
+  "Create a new Copilot chat instance with DIRECTORY as source directory.
+Argument DIRECTORY is the directory to use for the instance.
+Optional argument MODEL is the model to use for the instance.
+Optional argument TYPE is the type of the instance (nil or commit)."
   ;; Load models from cache if available
   (let ((instance
          (copilot-chat--make
           :directory directory
-          :model copilot-chat-default-model
+          :model (or model copilot-chat-default-model)
+          :type type
           :chat-buffer nil
           :first-word-answer t
           :history nil
