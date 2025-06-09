@@ -55,9 +55,7 @@ Use `copilot-chat-set-model' to interactively select a model."
  (spinner-timer nil :type timer)
  (spinner-index 0 :type int)
  (spinner-status nil :type (or null string))
- (curl-answer nil :type (or null string))
- (curl-file nil :type (or null file))
- (curl-current-data nil :type (or null string))
+ (backend-private nil)
  (frontend-private nil))
 
 (defvar copilot-chat--instances (list)

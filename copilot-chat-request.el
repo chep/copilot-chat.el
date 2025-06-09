@@ -33,6 +33,7 @@
 (require 'copilot-chat-body)
 (require 'copilot-chat-common)
 (require 'copilot-chat-connection)
+(require 'copilot-chat-backend)
 
 (cl-defun
  copilot-chat--request-token-cb (&key response &key data &allow-other-keys)
@@ -430,6 +431,18 @@ Optional argument QUIET suppresses user messages when non-nil."
         (when copilot-chat-debug
           (message "Error fetching models asynchronously: %S"
                    error-thrown)))))))
+
+;; Top-level execute code.
+(cl-pushnew
+ (make-copilot-chat-backend
+  :id 'request
+  :init-fn nil
+  :clean-fn nil
+  :login-fn #'copilot-chat--request-login
+  :renew-token-fn #'copilot-chat--request-renew-token
+  :ask-fn #'copilot-chat--request-ask)
+ copilot-chat--backend-list
+ :test #'equal)
 
 (provide 'copilot-chat-request)
 ;;; copilot-chat-request.el ends here
