@@ -249,23 +249,8 @@ Optional REPO-ROOT specifies the Git repository's top-level directory."
        "Creating/recreating commit instance for directory: %s"
        instance-dir)
       (let ((instance
-             (copilot-chat--make
-              :directory instance-dir
-              :model
-              (or copilot-chat-commit-model copilot-chat-default-model)
-              :type 'commit
-              :chat-buffer nil
-              :first-word-answer t
-              :history nil
-              :buffers nil
-              :prompt-history nil
-              :prompt-history-position nil
-              :yank-index 1
-              :last-yank-start nil
-              :last-yank-end nil
-              :spinner-timer nil
-              :spinner-index 0
-              :spinner-status nil)))
+             (copilot-chat--create
+              instance-dir copilot-chat-commit-model 'commit)))
         (setq copilot-chat--git-commit-instance instance)
         (unless (memq instance copilot-chat--instances)
           (push instance copilot-chat--instances))))
