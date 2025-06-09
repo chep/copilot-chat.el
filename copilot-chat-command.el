@@ -942,6 +942,43 @@ All its associated buffers are killed."
       (funcall clear-fn instance))
     (setq copilot-chat--instances (delete instance copilot-chat--instances))))
 
+;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
+(defun copilot-chat-set-commit-model (model)
+  "Set the model to use specifically for commit message generation to MODEL."
+  (interactive (let* ((choices (copilot-chat--get-model-choices-with-wait))
+                      (max-id-width
+                       (apply #'max
+                              (mapcar
+                               (lambda (choics)
+                                 (length (cdr choics)))
+                               choices)))
+                      (completion-choices
+                       (mapcar
+                        (lambda (choice)
+                          (let ((name (car choice))
+                                (id (cdr choice)))
+                            (cons
+                             (format (format "[%%-%ds] %%s" max-id-width)
+                                     id
+                                     name)
+                             id)))
+                        choices))
+                      (choice
+                       (completing-read "Select commit message model: "
+                                        (mapcar 'car completion-choices)
+                                        nil
+                                        t)))
+                 (let ((model-value (cdr (assoc choice completion-choices))))
+                   (when copilot-chat-debug
+                     (message "Setting commit model to: %s" model-value))
+                   (list model-value))))
+
+  (setq copilot-chat-commit-model model)
+  (when copilot-chat--git-commit-instance
+    (setf (copilot-chat-model copilot-chat--git-commit-instance)
+          (or model copilot-chat-default-model)))
+  (message "Commit message model set to %s" model))
+
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
 
