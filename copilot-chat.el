@@ -42,19 +42,18 @@
 (require 'copilot-chat-common)
 (require 'copilot-chat-connection)
 (require 'copilot-chat-copilot)
-(require 'copilot-chat-curl)
 (require 'copilot-chat-frontend)
+(require 'copilot-chat-backend)
 (require 'copilot-chat-git)
 (require 'copilot-chat-instance)
 (require 'copilot-chat-model)
 (require 'copilot-chat-prompts)
 (require 'copilot-chat-prompt-mode)
-(require 'copilot-chat-request)
 (require 'copilot-chat-spinner)
 (require 'copilot-chat-transient)
 
 (defcustom copilot-chat-frontend 'org
-  "Frontend to use with `copilot-chat'.  Can be org or markdown."
+  "Frontend to use with `copilot-chat'.  Can be org, markdown or shell-maker."
   :type
   '(choice
     (const :tag "org-mode" org)
@@ -67,6 +66,17 @@
       (`org (require 'copilot-chat-org))
       (`markdown (require 'copilot-chat-markdown))
       (`shell-maker (require 'copilot-chat-shell-maker))))
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-backend 'curl
+  "Copilot chat backend.  Can be `curl` or `request`."
+  :type '(choice (const :tag "curl" curl) (const :tag "request" request))
+  :set
+  (lambda (symbol value)
+    (set-default-toplevel-value symbol value)
+    (pcase value
+      (`curl (require 'copilot-chat-curl))
+      (`request (require 'copilot-chat-request))))
   :group 'copilot-chat)
 
 (provide 'copilot-chat)

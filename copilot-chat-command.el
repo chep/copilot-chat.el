@@ -299,10 +299,7 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
   "Internal function to display copilot chat buffer.
 Argument INSTANCE is the copilot chat instance to display."
   (let ((base-buffer (copilot-chat--get-buffer instance))
-        (init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend)))
         (window-found nil))
-    (when init-fn
-      (funcall init-fn))
     ;; Check if any window is already displaying the base buffer or an indirect
     ;; buffer
     (cl-block
@@ -608,12 +605,14 @@ Optional argument KEEP-BUFFERS if non-nil, preserve the current buffer list."
     (copilot-chat--display instance)
     (copilot-chat-list-refresh instance)))
 
-(defun copilot-chat--clean ()
+(defun copilot-chat-frontend-clean ()
   "Cleaning function."
+  (interactive)
   (let ((clean-fn
          (copilot-chat-frontend-clean-fn (copilot-chat--get-frontend))))
     (when clean-fn
-      (funcall clean-fn))))
+      (funcall clean-fn))
+    (setq copilot-chat--frontend-init-p nil)))
 
 
 (defun copilot-chat-send-to-buffer ()
@@ -923,6 +922,62 @@ displaying a file in the instance directory will be added."
     (aio-with-async
      (aio-await (copilot-chat--add-workspace instance nil))
      (copilot-chat-list-refresh instance))))
+
+;;;###autoload (autoload 'copilot-chat-kill-instance "copilot-chat" nil t)
+(defun copilot-chat-kill-instance ()
+  "Interactively kill a selected copilot chat instance.
+All its associated buffers are killed."
+  (interactive)
+  (let* ((instance (copilot-chat--choose-instance))
+         (buf (copilot-chat--get-buffer instance))
+         (lst-buf (copilot-chat--get-list-buffer-create instance))
+         (clear-fn
+          (copilot-chat-frontend-instance-clean-fn
+           (copilot-chat--get-frontend))))
+    (when (buffer-live-p buf)
+      (kill-buffer buf))
+    (when (buffer-live-p lst-buf)
+      (kill-buffer lst-buf))
+    (when clear-fn
+      (funcall clear-fn instance))
+    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
+
+;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
+(defun copilot-chat-set-commit-model (model)
+  "Set the model to use specifically for commit message generation to MODEL."
+  (interactive (let* ((choices (copilot-chat--get-model-choices-with-wait))
+                      (max-id-width
+                       (apply #'max
+                              (mapcar
+                               (lambda (choics)
+                                 (length (cdr choics)))
+                               choices)))
+                      (completion-choices
+                       (mapcar
+                        (lambda (choice)
+                          (let ((name (car choice))
+                                (id (cdr choice)))
+                            (cons
+                             (format (format "[%%-%ds] %%s" max-id-width)
+                                     id
+                                     name)
+                             id)))
+                        choices))
+                      (choice
+                       (completing-read "Select commit message model: "
+                                        (mapcar 'car completion-choices)
+                                        nil
+                                        t)))
+                 (let ((model-value (cdr (assoc choice completion-choices))))
+                   (when copilot-chat-debug
+                     (message "Setting commit model to: %s" model-value))
+                   (list model-value))))
+
+  (setq copilot-chat-commit-model model)
+  (when copilot-chat--git-commit-instance
+    (setf (copilot-chat-model copilot-chat--git-commit-instance)
+          (or model copilot-chat-default-model)))
+  (message "Commit message model set to %s" model))
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here

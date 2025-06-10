@@ -26,8 +26,9 @@
 
 ;;; Code:
 
-(require 'copilot-chat-curl)
 (require 'copilot-chat-model)
+(require 'copilot-chat-backend)
+(require 'copilot-chat-frontend)
 (require 'copilot-chat-request)
 
 ;; customs
@@ -61,11 +62,6 @@
   :type 'string
   :group 'copilot-chat)
 
-(defcustom copilot-chat-backend 'curl
-  "Copilot chat backend.  Can be `curl` or `request`."
-  :type 'symbol
-  :group 'copilot-chat)
-
 ;; Functions
 (defun copilot-chat--prompts ()
   "Return assoc list of promts for each command."
@@ -84,13 +80,17 @@
         (insert-file-contents token-file)
         (buffer-substring-no-properties (point-min) (point-max))))))
 
-(defun copilot-chat--create (directory)
-  "Create a new Copilot chat instance with DIRECTORY as source directory."
+(defun copilot-chat--create (directory &optional model type)
+  "Create a new Copilot chat instance with DIRECTORY as source directory.
+Argument DIRECTORY is the directory to use for the instance.
+Optional argument MODEL is the model to use for the instance.
+Optional argument TYPE is the type of the instance (nil or commit)."
   ;; Load models from cache if available
   (let ((instance
          (copilot-chat--make
           :directory directory
-          :model copilot-chat-default-model
+          :model (or model copilot-chat-default-model)
+          :type type
           :chat-buffer nil
           :first-word-answer t
           :history nil
@@ -102,10 +102,7 @@
           :last-yank-end nil
           :spinner-timer nil
           :spinner-index 0
-          :spinner-status nil
-          :curl-answer nil
-          :curl-file nil
-          :curl-current-data nil))
+          :spinner-status nil))
         (cached-models (copilot-chat--load-models-from-cache)))
     (when cached-models
       (setf (copilot-chat-connection-models copilot-chat--connection)
@@ -116,6 +113,23 @@
     ;; Schedule background model fetching with slight delay
     (run-with-timer 2 nil #'copilot-chat--fetch-models-async)
 
+    ;; init backend
+    (let ((init-fn (copilot-chat-backend-init-fn (copilot-chat--get-backend))))
+      (when init-fn
+        (funcall init-fn instance)))
+
+    ;; init frontend
+    (let ((init-fn (copilot-chat-frontend-init-fn (copilot-chat--get-frontend)))
+          (instance-init-fn
+           (copilot-chat-frontend-instance-init-fn
+            (copilot-chat--get-frontend))))
+      (when (and init-fn (not copilot-chat--frontend-init-p))
+        (funcall init-fn)
+        (setq copilot-chat--frontend-init-p t))
+      (when instance-init-fn
+        (funcall instance-init-fn instance)))
+
+    ;; return instance
     instance))
 
 (defun copilot-chat--fetch-models-async ()
@@ -143,7 +157,7 @@
         (condition-case err
             (progn
               (copilot-chat--auth)
-              (if (eq copilot-chat-backend 'request)
+              (if (eq (copilot-chat--get-backend) 'request)
                   (copilot-chat--request-models-async t)
                 (copilot-chat--request-models t)))
           (error
@@ -152,24 +166,20 @@
 
 (defun copilot-chat--login ()
   "Login to GitHub Copilot API."
-  (cond
-   ((eq copilot-chat-backend 'curl)
-    (copilot-chat--curl-login))
-   ((eq copilot-chat-backend 'request)
-    (copilot-chat--request-login))
-   (t
-    (error "Unknown backend: %s" copilot-chat-backend))))
+  (let ((login-fn (copilot-chat-backend-login-fn (copilot-chat--get-backend))))
+    (if login-fn
+        (funcall login-fn)
+      (error "No login function for backend: %s" (copilot-chat--get-backend)))))
 
 
 (defun copilot-chat--renew-token ()
   "Renew the session token."
-  (cond
-   ((eq copilot-chat-backend 'curl)
-    (copilot-chat--curl-renew-token))
-   ((eq copilot-chat-backend 'request)
-    (copilot-chat--request-renew-token))
-   (t
-    (error "Unknown backend: %s" copilot-chat-backend))))
+  (let ((renew-fn
+         (copilot-chat-backend-renew-token-fn (copilot-chat--get-backend))))
+    (if renew-fn
+        (funcall renew-fn)
+      (error
+       "No renew token function for backend: %s" (copilot-chat--get-backend)))))
 
 (defun copilot-chat--auth ()
   "Authenticate with GitHub Copilot API.
@@ -207,15 +217,12 @@ Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT indicates if prompt is out of context (git commit)."
   (let* ((history (copilot-chat-history instance))
-         (new-history (cons (list prompt "user") history)))
+         (new-history (cons (list prompt "user") history))
+         (ask-fn (copilot-chat-backend-ask-fn (copilot-chat--get-backend))))
     (copilot-chat--auth)
-    (cond
-     ((eq copilot-chat-backend 'curl)
-      (copilot-chat--curl-ask instance prompt callback out-of-context))
-     ((eq copilot-chat-backend 'request)
-      (copilot-chat--request-ask instance prompt callback out-of-context))
-     (t
-      (error "Unknown backend: %s" copilot-chat-backend)))
+    (if ask-fn
+        (funcall ask-fn instance prompt callback out-of-context)
+      (error "No ask function for backend: %s" (copilot-chat--get-backend)))
     (unless out-of-context
       (setf (copilot-chat-history instance) new-history))))
 
@@ -247,23 +254,6 @@ Argument BUFFER is the buffer to remove from the context."
   "Get copilot buffer list for the given INSTANCE.
 Argument INSTANCE is the copilot chat instance to get the buffers for."
   (copilot-chat-buffers instance))
-
-;;;###autoload (autoload 'copilot-chat-kill-instance "copilot-chat" nil t)
-(defun copilot-chat-kill-instance ()
-  "Interactively kill a selected copilot chat instance.
-All its associated buffers are killed."
-  (interactive)
-  (let* ((instance (copilot-chat--choose-instance))
-         (buf (copilot-chat--get-buffer instance))
-         (lst-buf (copilot-chat--get-list-buffer-create instance))
-         (tmp-buf (copilot-chat-shell-maker-tmp-buf instance)))
-    (when (buffer-live-p buf)
-      (kill-buffer buf))
-    (when (buffer-live-p lst-buf)
-      (kill-buffer lst-buf))
-    (when (buffer-live-p tmp-buf)
-      (kill-buffer tmp-buf))
-    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
 
 (defun copilot-chat--create-instance ()
   "Create a new copilot chat instance for a given directory."
