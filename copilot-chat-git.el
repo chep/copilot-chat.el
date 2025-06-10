@@ -490,6 +490,7 @@ DELAY is increased on each retry."
               (run-with-timer
                delay nil #'copilot-chat--retry-async
                async-func
+               max-retries
                (* (1+ delay) 2) ; Emacs is local application, so we can use simple backoff instead of exponential
                (1+ current-retry)))
           (signal (car err) (cdr err))))))))
