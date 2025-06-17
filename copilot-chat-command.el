@@ -947,7 +947,7 @@ All its associated buffers are killed."
 
 ;;;###autoload (autoload 'copilot-chat-save "copilot-chat" nil t)
 (defun copilot-chat-save ()
-  "Save an instance to a file"
+  "Save an instance to a file."
   (interactive)
   (let ((instance (copilot-chat--current-instance))
         (current-date (format-time-string "%Y_%m_%d_%H%M%S")))
@@ -965,7 +965,7 @@ All its associated buffers are killed."
 
 ;;;###autoload (autoload 'copilot-chat-load "copilot-chat" nil t)
 (defun copilot-chat-load ()
-  "Load an instance from a file"
+  "Load an instance from a file."
   (interactive)
   (let ((file (read-file-name "File to load: " "~/.cache/copilot-chat/" nil t)))
     (copilot-chat--load-instance file)
