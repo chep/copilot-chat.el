@@ -280,6 +280,7 @@ Argument INSTANCE is the copilot chat instance to display."
       (pop-to-buffer base-buffer))))
 
 (defun copilot-chat--kill-instance (instance)
+  "Kill the copilot chat INSTANCE."
   (let* ((buf (copilot-chat--get-buffer instance))
          (lst-buf (copilot-chat--get-list-buffer-create instance))
          (clear-fn
@@ -369,7 +370,10 @@ Argument DIRECTORY is the path to search for matching instance."
 
 (defun copilot-chat--save-instance (instance file-path)
   "Save the copilot chat INSTANCE to FILE-PATH."
-  (let ((temp (copilot-chat--copy instance)))
+  (let ((temp (copilot-chat--copy instance))
+        (save-fn (copilot-chat-frontend-save-fn (copilot-chat--get-frontend))))
+    (when save-fn
+      (funcall save-fn temp))
     (setf
      (copilot-chat-chat-buffer temp) nil
      (copilot-chat-buffers temp) nil)
@@ -409,11 +413,13 @@ Argument DIRECTORY is the path to search for matching instance."
            (read (current-buffer)))))
     (when (copilot-chat-p instance)
       (let ((existing
-             (copilot-chat--find-instance (copilot-chat-directory instance))))
+             (copilot-chat--find-instance (copilot-chat-directory instance)))
+            (load-fn
+             (copilot-chat-frontend-load-fn (copilot-chat--get-frontend))))
         (when existing
           (if (y-or-n-p
                (format
-                "An instance with directory '%s' already exists. Replace it? "
+                "An instance with directory '%s' already exists.  Replace it? "
                 (copilot-chat-directory existing)))
               (copilot-chat--kill-instance existing)
             (cl-return-from
@@ -422,7 +428,9 @@ Argument DIRECTORY is the path to search for matching instance."
         (setf (copilot-chat-file-path instance) file-path)
         (push instance copilot-chat--instances)
         (copilot-chat--display instance)
-        (copilot-chat--refill-buffer instance)))))
+        (if load-fn
+            (funcall load-fn instance)
+          (copilot-chat--refill-buffer instance))))))
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
