@@ -294,8 +294,10 @@ Argument SEGMENT is data segment to parse."
             (json-parse-string data :object-type 'alist)
           ;; failure => the segment was probably truncated and we need more data from a future
           ;; response
-          (json-parse-error 'partial)
-          (json-end-of-file 'partial)))))
+          (json-parse-error
+           'partial)
+          (json-end-of-file
+           'partial)))))
    ;; otherwise, try parsing the segment as a non-prefixed json (such as in
    ;; error responses) When even this fails, then we have a partial response
    ;; that was probably truncated (e.g. "dat", or "data:") => need more data
@@ -303,7 +305,8 @@ Argument SEGMENT is data segment to parse."
    (t
     (condition-case _err
         (json-parse-string segment :object-type 'alist)
-      (error 'partial)))))
+      (error
+       'partial)))))
 
 
 (defun copilot-chat--curl-analyze-response (instance string callback no-history)

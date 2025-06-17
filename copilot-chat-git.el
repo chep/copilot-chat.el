@@ -557,7 +557,8 @@ This function is expected to be safe to open via magit when added to
              :out-of-context-for-ask nil))
            nil))
        (error
-        (copilot-chat--spinner-stop instance) (signal (car err) (cdr err)))))))
+        (copilot-chat--spinner-stop instance)
+        (signal (car err) (cdr err)))))))
 
 ;;;###autoload
 (defun copilot-chat-clear-git-commit-instance ()
