@@ -31,6 +31,7 @@
 (require 'copilot-chat-common)
 (require 'copilot-chat-connection)
 (require 'copilot-chat-spinner)
+(require 'copilot-chat-backend)
 
 ;; customs
 (defcustom copilot-chat-curl-program "curl"
@@ -82,6 +83,15 @@ Specify the username and password <user:password> to use for proxy
 authentication."
   :type 'boolean
   :group 'copilot-chat)
+
+;; structures
+(cl-defstruct
+ copilot-chat-curl
+ "Private data for Copilot chat curl backend."
+ (answer nil :type (or null string))
+ (file nil :type (or null file))
+ (current-data nil :type (or null string)))
+
 
 ;; functions
 (defun copilot-chat--curl-call-process (address method data &rest args)
@@ -284,8 +294,10 @@ Argument SEGMENT is data segment to parse."
             (json-parse-string data :object-type 'alist)
           ;; failure => the segment was probably truncated and we need more data from a future
           ;; response
-          (json-parse-error 'partial)
-          (json-end-of-file 'partial)))))
+          (json-parse-error
+           'partial)
+          (json-end-of-file
+           'partial)))))
    ;; otherwise, try parsing the segment as a non-prefixed json (such as in
    ;; error responses) When even this fails, then we have a partial response
    ;; that was probably truncated (e.g. "dat", or "data:") => need more data
@@ -293,7 +305,8 @@ Argument SEGMENT is data segment to parse."
    (t
     (condition-case _err
         (json-parse-string segment :object-type 'alist)
-      (error 'partial)))))
+      (error
+       'partial)))))
 
 
 (defun copilot-chat--curl-analyze-response (instance string callback no-history)
@@ -335,9 +348,14 @@ if the response should be added to history."
   ;; 3. With segment 3, `curl-current-data' is prepended to `string', resulting in a value of
   ;;    "data: [DONE]\n\n". Thus, `callback' is called with the value of `copilot-chat--magic', and
   ;;    the two trailing empty lines are skipped.
-  (when (copilot-chat-curl-current-data instance)
-    (setq string (concat (copilot-chat-curl-current-data instance) string))
-    (setf (copilot-chat-curl-current-data instance) nil))
+  (when (copilot-chat-curl-current-data (copilot-chat--backend instance))
+    (setq string
+          (concat
+           (copilot-chat-curl-current-data
+            (copilot-chat--backend instance))
+           string))
+    (setf (copilot-chat-curl-current-data (copilot-chat--backend instance))
+          nil))
 
   (let ((segments (split-string string "\n")))
     (dolist (segment segments)
@@ -348,7 +366,9 @@ if the response should be added to history."
           nil)
          ;; Data looks truncated, save it for the next segment:
          ((eq extracted 'partial)
-          (setf (copilot-chat-curl-current-data instance) segment))
+          (setf (copilot-chat-curl-current-data
+                 (copilot-chat--backend instance))
+                segment))
          ;; Final segment, all done:
          ((eq extracted 'done)
           (copilot-chat--spinner-stop instance)
@@ -356,9 +376,13 @@ if the response should be added to history."
           (unless no-history
             (setf (copilot-chat-history instance)
                   (cons
-                   (list (copilot-chat-curl-answer instance) "assistant")
+                   (list
+                    (copilot-chat-curl-answer
+                     (copilot-chat--backend instance))
+                    "assistant")
                    (copilot-chat-history instance))))
-          (setf (copilot-chat-curl-answer instance) nil))
+          (setf (copilot-chat-curl-answer (copilot-chat--backend instance))
+                nil))
 
          ;; Otherwise, JSON parsed successfully
          (extracted
@@ -371,11 +395,17 @@ if the response should be added to history."
                          (alist-get 'delta (aref choices 0))))
                    (token (and delta (alist-get 'content delta))))
               (when (and token (not (eq token :null)))
-                (when (not (copilot-chat-curl-answer instance))
+                (when (not
+                       (copilot-chat-curl-answer
+                        (copilot-chat--backend instance)))
                   (copilot-chat--spinner-set-status instance "Generating"))
                 (funcall callback instance token)
-                (setf (copilot-chat-curl-answer instance)
-                      (concat (copilot-chat-curl-answer instance) token)))))
+                (setf (copilot-chat-curl-answer
+                       (copilot-chat--backend instance))
+                      (concat
+                       (copilot-chat-curl-answer
+                        (copilot-chat--backend instance))
+                       token)))))
 
            ;; display .error.message in the chat.
            ((alist-get 'error extracted)
@@ -391,7 +421,8 @@ if the response should be added to history."
               (setf (copilot-chat-history instance)
                     (cons
                      (list "" "assistant") (copilot-chat-history instance)))
-              (setf (copilot-chat-curl-answer instance) nil)))
+              (setf (copilot-chat-curl-answer (copilot-chat--backend instance))
+                    nil)))
            ;; Fallback -- nag developers about possibly unhandled payloads
            (t
             (warn "Unhandled message from copilot: %S" extracted)))))))))
@@ -406,9 +437,14 @@ Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data.
 Argument NO-HISTORY is a boolean to indicate
  if the response should be added to history."
-  (when (copilot-chat-curl-current-data instance)
-    (setq string (concat (copilot-chat-curl-current-data instance) string))
-    (setf (copilot-chat-curl-current-data instance) nil))
+  (when (copilot-chat-curl-current-data (copilot-chat--backend instance))
+    (setq string
+          (concat
+           (copilot-chat-curl-current-data
+            (copilot-chat--backend instance))
+           string))
+    (setf (copilot-chat-curl-current-data (copilot-chat--backend instance))
+          nil))
 
   (condition-case err
       (let* ((extracted (json-parse-string string :object-type 'alist))
@@ -421,16 +457,22 @@ Argument NO-HISTORY is a boolean to indicate
           (copilot-chat--spinner-stop instance)
           (funcall callback instance token)
           (funcall callback instance copilot-chat--magic)
-          (setf (copilot-chat-curl-answer instance)
-                (concat (copilot-chat-curl-answer instance) token))
+          (setf (copilot-chat-curl-answer (copilot-chat--backend instance))
+                (concat
+                 (copilot-chat-curl-answer
+                  (copilot-chat--backend instance))
+                 token))
           (unless no-history
             (setf (copilot-chat-history instance)
                   (cons
-                   (list (copilot-chat-curl-answer instance) "assistant")
+                   (list
+                    (copilot-chat-curl-answer
+                     (copilot-chat--backend instance))
+                    "assistant")
                    (copilot-chat-history instance))))
           (setf
-           (copilot-chat-curl-answer instance) nil
-           (copilot-chat-curl-current-data instance) nil)))
+           (copilot-chat-curl-answer (copilot-chat--backend instance)) nil
+           (copilot-chat-curl-current-data (copilot-chat--backend instance)) nil)))
     ;; o1 often returns `rate limit exceeded` because of its severe rate limitation,
     ;; so the message in case of an error should be easy to understand.
     (error
@@ -439,10 +481,12 @@ Argument NO-HISTORY is a boolean to indicate
      ;; wait for the next call.
      ;; I'm not sure if asynchronous control is working properly.
      (progn
-       (setf (copilot-chat-curl-current-data instance) string)
+       (setf (copilot-chat-curl-current-data (copilot-chat--backend instance))
+             string)
        (unless (process-live-p proc)
          (copilot-chat--spinner-stop instance)
-         (setf (copilot-chat-curl-current-data instance) nil)
+         (setf (copilot-chat-curl-current-data (copilot-chat--backend instance))
+               nil)
          (funcall callback
                   instance
                   (format "GitHub Copilot error: %S\nResponse is %S"
@@ -457,24 +501,25 @@ Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT is a boolean to indicate
 if the prompt is out of context."
   (setf
-   (copilot-chat-curl-current-data instance) nil
-   (copilot-chat-curl-answer instance) nil)
+   (copilot-chat-curl-current-data (copilot-chat--backend instance)) nil
+   (copilot-chat-curl-answer (copilot-chat--backend instance)) nil)
 
   ;; Start the spinner animation only for instances with chat buffers
   (when (buffer-live-p (copilot-chat-chat-buffer instance))
     (copilot-chat--spinner-start instance))
 
-  (when (copilot-chat-curl-file instance)
-    (delete-file (copilot-chat-curl-file instance)))
-  (setf (copilot-chat-curl-file instance) (make-temp-file "copilot-chat"))
+  (when (copilot-chat-curl-file (copilot-chat--backend instance))
+    (delete-file (copilot-chat-curl-file (copilot-chat--backend instance))))
+  (setf (copilot-chat-curl-file (copilot-chat--backend instance))
+        (make-temp-file "copilot-chat"))
   (let ((coding-system-for-write 'raw-text))
-    (with-temp-file (copilot-chat-curl-file instance)
+    (with-temp-file (copilot-chat-curl-file (copilot-chat--backend instance))
       (insert (copilot-chat--create-req instance prompt out-of-context))))
 
   (copilot-chat--curl-make-process
    "https://api.githubcopilot.com/chat/completions"
    'post
-   (concat "@" (copilot-chat-curl-file instance))
+   (concat "@" (copilot-chat-curl-file (copilot-chat--backend instance)))
    (lambda (proc string)
      (copilot-chat--debug 'curl "copilot-chat--curl-ask: %s" string)
      (if (copilot-chat--instance-support-streaming instance)
@@ -502,6 +547,22 @@ if the prompt is out of context."
    "-H"
    "copilot-integration-id: vscode-chat"))
 
+(defun copilot-chat--curl-init (instance)
+  "Initialize Copilot chat curl backend for INSTANCE."
+  (setf (copilot-chat--backend instance) (make-copilot-chat-curl)))
+
+
+;; Top-level execute code.
+(cl-pushnew
+ (make-copilot-chat-backend
+  :id 'curl
+  :init-fn #'copilot-chat--curl-init
+  :clean-fn nil
+  :login-fn #'copilot-chat--curl-login
+  :renew-token-fn #'copilot-chat--curl-renew-token
+  :ask-fn #'copilot-chat--curl-ask)
+ copilot-chat--backend-list
+ :test #'equal)
 
 (provide 'copilot-chat-curl)
 ;;; copilot-chat-curl.el ends here

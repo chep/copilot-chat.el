@@ -149,9 +149,6 @@ asking for a commit message."
 - Use / for italics"
      prompt)))
 
-(defun copilot-chat--org-clean ()
-  "Clean the copilot chat org frontend.")
-
 (defun copilot-chat--get-org-block-content-at-point ()
   "Get the content of the org block at point."
   (let* ((element (org-element-at-point))
@@ -343,7 +340,9 @@ INSTANCE is `copilot-chat' instance to use."
  (make-copilot-chat-frontend
   :id 'org
   :init-fn #'copilot-chat--org-init
-  :clean-fn #'copilot-chat--org-clean
+  :clean-fn nil
+  :instance-init-fn nil
+  :instance-clean-fn nil
   :format-fn #'copilot-chat--org-format-data
   :format-code-fn #'copilot-chat--org-format-code
   :format-buffer-fn #'copilot-chat--org-format-buffer

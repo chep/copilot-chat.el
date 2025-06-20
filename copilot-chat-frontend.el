@@ -35,6 +35,8 @@
  id
  init-fn
  clean-fn
+ instance-init-fn
+ instance-clean-fn
  format-fn
  format-code-fn
  format-buffer-fn
@@ -53,6 +55,9 @@
   "Copilot-chat frontends and functions list.
 Each element must be a `copilot-chat-frontend' struct instance.
 Elements are added in the module that defines each front end.")
+
+(defvar copilot-chat--frontend-init-p nil
+  "Flag to indicate if the frontend has been initialized.")
 
 (cl-declaim (type (list-of copilot-chat-frontend) copilot-chat--frontend-list))
 

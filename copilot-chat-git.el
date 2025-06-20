@@ -29,6 +29,8 @@
 (require 'aio)
 
 (require 'copilot-chat-copilot)
+(require 'copilot-chat-frontend)
+(require 'copilot-chat-spinner)
 
 (defcustom copilot-chat-commit-model nil
   "The model to use specifically for commit message generation.
@@ -247,26 +249,8 @@ Optional REPO-ROOT specifies the Git repository's top-level directory."
        "Creating/recreating commit instance for directory: %s"
        instance-dir)
       (let ((instance
-             (copilot-chat--make
-              :directory instance-dir
-              :model
-              (or copilot-chat-commit-model copilot-chat-default-model)
-              :type 'commit
-              :chat-buffer nil
-              :first-word-answer t
-              :history nil
-              :buffers nil
-              :prompt-history nil
-              :prompt-history-position nil
-              :yank-index 1
-              :last-yank-start nil
-              :last-yank-end nil
-              :spinner-timer nil
-              :spinner-index 0
-              :spinner-status nil
-              :curl-answer nil
-              :curl-file nil
-              :curl-current-data nil)))
+             (copilot-chat--create
+              instance-dir copilot-chat-commit-model 'commit)))
         (setq copilot-chat--git-commit-instance instance)
         (unless (memq instance copilot-chat--instances)
           (push instance copilot-chat--instances))))
@@ -573,44 +557,8 @@ This function is expected to be safe to open via magit when added to
              :out-of-context-for-ask nil))
            nil))
        (error
-        (copilot-chat--spinner-stop instance) (signal (car err) (cdr err)))))))
-
-;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
-(defun copilot-chat-set-commit-model (model)
-  "Set the model to use specifically for commit message generation to MODEL."
-  (interactive (let* ((choices (copilot-chat--get-model-choices-with-wait))
-                      (max-id-width
-                       (apply #'max
-                              (mapcar
-                               (lambda (choics)
-                                 (length (cdr choics)))
-                               choices)))
-                      (completion-choices
-                       (mapcar
-                        (lambda (choice)
-                          (let ((name (car choice))
-                                (id (cdr choice)))
-                            (cons
-                             (format (format "[%%-%ds] %%s" max-id-width)
-                                     id
-                                     name)
-                             id)))
-                        choices))
-                      (choice
-                       (completing-read "Select commit message model: "
-                                        (mapcar 'car completion-choices)
-                                        nil
-                                        t)))
-                 (let ((model-value (cdr (assoc choice completion-choices))))
-                   (when copilot-chat-debug
-                     (message "Setting commit model to: %s" model-value))
-                   (list model-value))))
-
-  (setq copilot-chat-commit-model model)
-  (when copilot-chat--git-commit-instance
-    (setf (copilot-chat-model copilot-chat--git-commit-instance)
-          (or model copilot-chat-default-model)))
-  (message "Commit message model set to %s" model))
+        (copilot-chat--spinner-stop instance)
+        (signal (car err) (cdr err)))))))
 
 ;;;###autoload
 (defun copilot-chat-clear-git-commit-instance ()
