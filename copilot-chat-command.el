@@ -971,6 +971,13 @@ All its associated buffers are killed."
     (copilot-chat--load-instance file)
     (message "Loaded instance from %s" file)))
 
+;;;###autoload (autoload 'copilot-chat-quotas "copilot-chat" nil t)
+(defun copilot-chat-quotas ()
+  "Display the current Copilot Chat quotas."
+  (interactive)
+  (copilot-chat--quotas))
+
+
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
 
