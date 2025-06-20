@@ -548,6 +548,44 @@ if the prompt is out of context."
    "-H"
    "copilot-integration-id: vscode-chat"))
 
+(defun copilot-chat--curl-quotas ()
+  "Get the current GitHub Copilot quotas."
+  (with-temp-buffer
+    (let* ((curl-args
+            (append
+             (list
+              "https://api.github.com/rate_limit" "-s" "-X" "GET" "-H"
+              (concat
+               "authorization: Bearer "
+               (copilot-chat-connection-github-token copilot-chat--connection))
+              "-H" "Accept: application/vnd.github+json")))
+           (result
+            (apply #'call-process
+                   copilot-chat-curl-program
+                   nil
+                   t
+                   nil
+                   curl-args)))
+      (when (/= result 0)
+        (error (format "curl returned non-zero result: %d" result))))
+    (goto-char (point-min))
+    (let* ((json-data (json-parse-buffer :object-type 'alist))
+           (resources (alist-get 'resources json-data))
+           (result '()))
+      (dolist (resource resources)
+        (let* ((name
+                (capitalize
+                 (replace-regexp-in-string
+                  "_" " "
+                  (symbol-name (car resource)))))
+               (data (cdr resource))
+               (limit (alist-get 'limit data))
+               (used (alist-get 'used data))
+               (remaining (alist-get 'remaining data))
+               (reset (alist-get 'reset data)))
+          (push (list name limit used remaining reset) result)))
+      (nreverse result))))
+
 (defun copilot-chat--curl-init (instance)
   "Initialize Copilot chat curl backend for INSTANCE."
   (setf (copilot-chat--backend instance) (make-copilot-chat-curl)))
@@ -561,7 +599,8 @@ if the prompt is out of context."
   :clean-fn nil
   :login-fn #'copilot-chat--curl-login
   :renew-token-fn #'copilot-chat--curl-renew-token
-  :ask-fn #'copilot-chat--curl-ask)
+  :ask-fn #'copilot-chat--curl-ask
+  :quotas-fn #'copilot-chat--curl-quotas)
  copilot-chat--backend-list
  :test #'equal)
 

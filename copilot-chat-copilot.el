@@ -31,6 +31,7 @@
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-request)
 (require 'copilot-chat-prompt-mode)
+(require 'org)
 
 ;; customs
 (defcustom copilot-chat-prompt-explain "/explain\n"
@@ -62,6 +63,11 @@
   "The prompt used by `copilot-chat-test'."
   :type 'string
   :group 'copilot-chat)
+
+;; constants
+(defconst copilot-chat-quotas-buffer "*Copilot-chat-quotas*"
+  "Copilot quotas buffer name.")
+
 
 ;; Functions
 (defun copilot-chat--prompts ()
@@ -431,6 +437,41 @@ Argument DIRECTORY is the path to search for matching instance."
         (if load-fn
             (funcall load-fn instance)
           (copilot-chat--refill-buffer instance))))))
+
+(defun copilot-chat--quotas ()
+  "Display quotas for the copilot chat."
+  (let ((quotas-fn
+         (copilot-chat-backend-quotas-fn (copilot-chat--get-backend))))
+    (when quotas-fn
+      (let ((quotas (funcall quotas-fn)))
+        (with-current-buffer (get-buffer-create copilot-chat-quotas-buffer)
+          (read-only-mode -1)
+          (erase-buffer)
+          (insert "#+TITLE: Rate Limit Data\n\n")
+          (insert
+           "| Resource Name       | Limit   | Used   | Remaining | Reset Time           |\n")
+          (insert
+           "|---------------------+---------+--------+-----------+----------------------|\n")
+          (dolist (entry quotas)
+            (let ((name (nth 0 entry))
+                  (limit (nth 1 entry))
+                  (used (nth 2 entry))
+                  (remaining (nth 3 entry))
+                  (reset
+                   (format-time-string "%Y-%m-%d %H:%M:%S"
+                                       (seconds-to-time (nth 4 entry)))))
+              (insert
+               (format "| %-20s | %-7d | %-6d | %-9d | %-20s |\n"
+                       name
+                       limit
+                       used
+                       remaining
+                       reset))))
+          (org-mode)
+          (org-table-align)
+          (read-only-mode)
+          (goto-char (point-min))
+          (display-buffer (current-buffer)))))))
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
