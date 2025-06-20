@@ -432,6 +432,42 @@ Optional argument QUIET suppresses user messages when non-nil."
           (message "Error fetching models asynchronously: %S"
                    error-thrown)))))))
 
+(defun copilot-chat--request-quotas ()
+  "Get the current GitHub Copilot quotas for INSTANCE."
+  (let ((result '()))
+    (request
+     "https://api.github.com/rate_limit"
+     :type "GET"
+     :sync t
+     :headers
+     `(("content-type" . "application/json")
+       ("Accept" . "application/vnd.github+json")
+       ("authorization" .
+        ,(concat
+          "Bearer "
+          (copilot-chat-connection-github-token copilot-chat--connection))))
+     :parser (apply-partially 'json-parse-buffer :object-type 'alist)
+     :success
+     (cl-function
+      (lambda (&key data &allow-other-keys)
+        (let ((resources (alist-get 'resources data)))
+          (dolist (resource resources)
+            (let* ((name
+                    (capitalize
+                     (replace-regexp-in-string
+                      "_" " " (symbol-name (car resource)))))
+                   (data (cdr resource))
+                   (limit (alist-get 'limit data))
+                   (used (alist-get 'used data))
+                   (remaining (alist-get 'remaining data))
+                   (reset (alist-get 'reset data)))
+              (push (list name limit used remaining reset) result))))))
+     :error
+     (cl-function
+      (lambda (&key error-thrown &allow-other-keys)
+        (message "Error fetching quotas: %S" error-thrown))))
+    (nreverse result)))
+
 ;; Top-level execute code.
 (cl-pushnew
  (make-copilot-chat-backend
@@ -440,7 +476,8 @@ Optional argument QUIET suppresses user messages when non-nil."
   :clean-fn nil
   :login-fn #'copilot-chat--request-login
   :renew-token-fn #'copilot-chat--request-renew-token
-  :ask-fn #'copilot-chat--request-ask)
+  :ask-fn #'copilot-chat--request-ask
+  :quotas-fn #'copilot-chat--request-quotas)
  copilot-chat--backend-list
  :test #'equal)
 

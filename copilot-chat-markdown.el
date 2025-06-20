@@ -242,6 +242,8 @@ INSTANCE is `copilot-chat' instance to use."
   :clean-fn nil
   :instance-init-fn nil
   :instance-clean-fn nil
+  :save-fn nil
+  :load-fn nil
   :format-fn #'copilot-chat--markdown-format-data
   :format-code-fn #'copilot-chat--markdown-format-code
   :format-buffer-fn #'copilot-chat--markdown-format-buffer
