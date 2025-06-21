@@ -37,7 +37,7 @@ Use `copilot-chat-set-model' to interactively select a model."
   :group 'copilot-chat)
 
 (cl-defstruct
- (copilot-chat (:constructor copilot-chat--make) (:copier nil))
+ (copilot-chat (:constructor copilot-chat--make) (:copier copilot-chat--copy))
  "Struct for Copilot chat state."
  (directory nil :type (or null string))
  (model copilot-chat-default-model :type string)
@@ -56,7 +56,8 @@ Use `copilot-chat-set-model' to interactively select a model."
  (spinner-index 0 :type int)
  (spinner-status nil :type (or null string))
  (-backend nil)
- (-frontend nil))
+ (-frontend nil)
+ (file-path nil :type string))
 
 (defvar copilot-chat--instances (list)
   "Global instance of Copilot chat.")
