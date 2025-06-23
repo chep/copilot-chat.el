@@ -198,6 +198,7 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 - ~copilot-chat-list-show-relative-path~ - If ~t~ (default), show only relative path in buffer list.
 
 *** Storage and cache
+- ~copilot-chat-default-save-dir~ - Default directory to save chats.
 - ~copilot-chat-github-token-file~ - File path to store GitHub authentication token.
 - ~copilot-chat-token-cache~ - File path to store session token cache.
 
