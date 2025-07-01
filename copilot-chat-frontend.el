@@ -37,6 +37,8 @@
  clean-fn
  instance-init-fn
  instance-clean-fn
+ save-fn
+ load-fn
  format-fn
  format-code-fn
  format-buffer-fn

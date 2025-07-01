@@ -508,8 +508,9 @@ if the prompt is out of context."
   (when (buffer-live-p (copilot-chat-chat-buffer instance))
     (copilot-chat--spinner-start instance))
 
-  (when (copilot-chat-curl-file (copilot-chat--backend instance))
-    (delete-file (copilot-chat-curl-file (copilot-chat--backend instance))))
+  (let ((file (copilot-chat-curl-file (copilot-chat--backend instance))))
+    (when (and file (file-exists-p file))
+      (delete-file file)))
   (setf (copilot-chat-curl-file (copilot-chat--backend instance))
         (make-temp-file "copilot-chat"))
   (let ((coding-system-for-write 'raw-text))

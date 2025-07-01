@@ -43,6 +43,9 @@ In copilot-chat buffer, you can use (or bind to a key) the interactive ~copilot-
 ** Start new instance
 Calling ~copilot-chat-display~ with prefix argument will let you choose instance or create a new one.
 
+** Save instance
+You can use ~copilot-chat-save~ and ~copilot-chat-load~ to save/restore a chat with its history.
+
 * Installation
 ** Melpa
 Copilot-chat is available on melpa :
@@ -118,6 +121,8 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 - ~(copilot-chat-switch-to-buffer)~ switch to Copilot Chat buffer, side by side with the current code editing buffer.
 - ~(copilot-chat-set-model)~ Select AI model to use for current instance.
 - ~(copilot-chat-kill-instance)~ Kill a selected Copilot chat instance and close its associated buffers.
+- ~(copilot-chat-save)~ Save current instance to a file.
+- ~(copilot-chat-load)~ Restore an instance from a previous save.
 
 *** Prompt
 - ~copilot-chat-goto-input~ place point at the beginning of the prompt area.
@@ -193,6 +198,7 @@ All variables can be customized using ~M-x customize-group RET copilot-chat RET~
 - ~copilot-chat-list-show-relative-path~ - If ~t~ (default), show only relative path in buffer list.
 
 *** Storage and cache
+- ~copilot-chat-default-save-dir~ - Default directory to save chats.
 - ~copilot-chat-github-token-file~ - File path to store GitHub authentication token.
 - ~copilot-chat-token-cache~ - File path to store session token cache.
 

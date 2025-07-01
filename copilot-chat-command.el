@@ -51,6 +51,12 @@ If nil, show absolute path."
   :type 'boolean
   :group 'copilot-chat)
 
+(defcustom copilot-chat-default-save-dir
+  (concat user-emacs-directory "copilot-chat")
+  "Default directory to save chats."
+  :type 'string
+  :group 'copilot-chat)
+
 ;; Faces
 (defface copilot-chat-list-selected-buffer-face
   '((t :inherit font-lock-keyword-face))
@@ -294,30 +300,6 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
       (copilot-chat-list-mode))
     (copilot-chat-list-refresh instance)
     (switch-to-buffer buffer)))
-
-(defun copilot-chat--display (instance)
-  "Internal function to display copilot chat buffer.
-Argument INSTANCE is the copilot chat instance to display."
-  (let ((base-buffer (copilot-chat--get-buffer instance))
-        (window-found nil))
-    ;; Check if any window is already displaying the base buffer or an indirect
-    ;; buffer
-    (cl-block
-     window-search
-     (dolist (window (window-list))
-       (let ((buf (window-buffer window)))
-         (when (or (eq buf base-buffer)
-                   (eq
-                    (with-current-buffer buf
-                      (pm-base-buffer))
-                    base-buffer))
-           (select-window window)
-           (switch-to-buffer base-buffer)
-           (setq window-found t)
-           (cl-return-from window-search)))))
-
-    (unless window-found
-      (pop-to-buffer base-buffer))))
 
 ;;;###autoload (autoload 'copilot-chat-display "copilot-chat" nil t)
 (defun copilot-chat-display (&optional arg)
@@ -928,19 +910,9 @@ displaying a file in the instance directory will be added."
   "Interactively kill a selected copilot chat instance.
 All its associated buffers are killed."
   (interactive)
-  (let* ((instance (copilot-chat--choose-instance))
-         (buf (copilot-chat--get-buffer instance))
-         (lst-buf (copilot-chat--get-list-buffer-create instance))
-         (clear-fn
-          (copilot-chat-frontend-instance-clean-fn
-           (copilot-chat--get-frontend))))
-    (when (buffer-live-p buf)
-      (kill-buffer buf))
-    (when (buffer-live-p lst-buf)
-      (kill-buffer lst-buf))
-    (when clear-fn
-      (funcall clear-fn instance))
-    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
+  (let* ((instance (copilot-chat--choose-instance)))
+    (when instance
+      (copilot-chat--kill-instance instance))))
 
 ;;;###autoload (autoload 'copilot-chat-set-commit-model "copilot-chat" nil t)
 (defun copilot-chat-set-commit-model (model)
@@ -978,6 +950,40 @@ All its associated buffers are killed."
     (setf (copilot-chat-model copilot-chat--git-commit-instance)
           (or model copilot-chat-default-model)))
   (message "Commit message model set to %s" model))
+
+;;;###autoload (autoload 'copilot-chat-save "copilot-chat" nil t)
+(defun copilot-chat-save ()
+  "Save an instance to a file."
+  (interactive)
+  (let ((instance (copilot-chat--current-instance))
+        (current-date (format-time-string "%Y_%m_%d_%H%M%S")))
+    (when instance
+      (let* ((default-path
+              (or (copilot-chat-file-path instance)
+                  (format "%s/%s_%s.el"
+                          copilot-chat-default-save-dir
+                          (replace-regexp-in-string
+                           "/" "_" (copilot-chat-directory instance))
+                          current-date)))
+             (default-dir (file-name-directory default-path))
+             (default-file (file-name-nondirectory default-path))
+             (file
+              (read-file-name "Save instance to file: "
+                              default-dir
+                              nil
+                              nil
+                              default-file)))
+        (copilot-chat--save-instance instance file)
+        (setf (copilot-chat-file-path instance) file)
+        (message "Saved instance to %s" file)))))
+
+;;;###autoload (autoload 'copilot-chat-load "copilot-chat" nil t)
+(defun copilot-chat-load ()
+  "Load an instance from a file."
+  (interactive)
+  (let ((file (read-file-name "File to load: " "~/.cache/copilot-chat/" nil t)))
+    (copilot-chat--load-instance file)
+    (message "Loaded instance from %s" file)))
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here

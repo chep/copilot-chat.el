@@ -30,6 +30,7 @@
 (require 'copilot-chat-backend)
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-request)
+(require 'copilot-chat-prompt-mode)
 
 ;; customs
 (defcustom copilot-chat-prompt-explain "/explain\n"
@@ -255,6 +256,44 @@ Argument BUFFER is the buffer to remove from the context."
 Argument INSTANCE is the copilot chat instance to get the buffers for."
   (copilot-chat-buffers instance))
 
+(defun copilot-chat--display (instance)
+  "Internal function to display copilot chat buffer.
+Argument INSTANCE is the copilot chat instance to display."
+  (let ((base-buffer (copilot-chat--get-buffer instance))
+        (window-found nil))
+    ;; Check if any window is already displaying the base buffer or an indirect
+    ;; buffer
+    (cl-block
+     window-search
+     (dolist (window (window-list))
+       (let ((buf (window-buffer window)))
+         (when (or (eq buf base-buffer)
+                   (eq
+                    (with-current-buffer buf
+                      (pm-base-buffer))
+                    base-buffer))
+           (select-window window)
+           (switch-to-buffer base-buffer)
+           (setq window-found t)
+           (cl-return-from window-search)))))
+    (unless window-found
+      (pop-to-buffer base-buffer))))
+
+(defun copilot-chat--kill-instance (instance)
+  "Kill the copilot chat INSTANCE."
+  (let* ((buf (copilot-chat--get-buffer instance))
+         (lst-buf (copilot-chat--get-list-buffer-create instance))
+         (clear-fn
+          (copilot-chat-frontend-instance-clean-fn
+           (copilot-chat--get-frontend))))
+    (when (buffer-live-p buf)
+      (kill-buffer buf))
+    (when (buffer-live-p lst-buf)
+      (kill-buffer lst-buf))
+    (when clear-fn
+      (funcall clear-fn instance))
+    (setq copilot-chat--instances (delete instance copilot-chat--instances))))
+
 (defun copilot-chat--create-instance ()
   "Create a new copilot chat instance for a given directory."
   (let* ((current-dir
@@ -328,6 +367,70 @@ Argument DIRECTORY is the path to search for matching instance."
            "Choose Copilot Chat instance: " (mapcar 'car choices)
            nil t)))
     (copilot-chat--find-instance choice)))
+
+(defun copilot-chat--save-instance (instance file-path)
+  "Save the copilot chat INSTANCE to FILE-PATH."
+  (let ((temp (copilot-chat--copy instance))
+        (save-fn (copilot-chat-frontend-save-fn (copilot-chat--get-frontend))))
+    (when save-fn
+      (funcall save-fn temp))
+    (setf
+     (copilot-chat-chat-buffer temp) nil
+     (copilot-chat-buffers temp) nil)
+    (with-temp-file file-path
+      (prin1 temp (current-buffer)))))
+
+(defun copilot-chat--str-to-type (type)
+  "Convert TYPE string to symbol."
+  (cond
+   ((string= type "user")
+    'prompt)
+   ((string= type "assistant")
+    'answer)))
+
+
+(defun copilot-chat--refill-buffer (instance)
+  "Refill the buffer of the copilot chat INSTANCE."
+  (with-current-buffer (copilot-chat-chat-buffer instance)
+    (let ((inhibit-read-only t)
+          (history (reverse (copilot-chat-history instance))))
+      (erase-buffer)
+      (goto-char (point-min))
+      (dolist (entry history)
+        (setf (copilot-chat-first-word-answer instance) t)
+        (copilot-chat--write-buffer
+         instance
+         (copilot-chat--format-data
+          instance (car entry) (copilot-chat--str-to-type (cadr entry)))
+         nil)))))
+
+
+(defun copilot-chat--load-instance (file-path)
+  "Load a copilot chat instance from FILE-PATH."
+  (let ((instance
+         (with-temp-buffer
+           (insert-file-contents file-path)
+           (read (current-buffer)))))
+    (when (copilot-chat-p instance)
+      (let ((existing
+             (copilot-chat--find-instance (copilot-chat-directory instance)))
+            (load-fn
+             (copilot-chat-frontend-load-fn (copilot-chat--get-frontend))))
+        (when existing
+          (if (y-or-n-p
+               (format
+                "An instance with directory '%s' already exists.  Replace it? "
+                (copilot-chat-directory existing)))
+              (copilot-chat--kill-instance existing)
+            (cl-return-from
+             copilot-chat--load-instance
+             (message "Keeping existing instance."))))
+        (setf (copilot-chat-file-path instance) file-path)
+        (push instance copilot-chat--instances)
+        (copilot-chat--display instance)
+        (if load-fn
+            (funcall load-fn instance)
+          (copilot-chat--refill-buffer instance))))))
 
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
