@@ -41,7 +41,8 @@
  clean-fn
  login-fn
  renew-token-fn
- ask-fn)
+ ask-fn
+ quotas-fn)
 
 (cl-declaim (type (list-of copilot-chat-backend) copilot-chat--backend-list))
 
