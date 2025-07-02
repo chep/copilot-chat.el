@@ -981,7 +981,8 @@ All its associated buffers are killed."
 (defun copilot-chat-load ()
   "Load an instance from a file."
   (interactive)
-  (let ((file (read-file-name "File to load: " "~/.cache/copilot-chat/" nil t)))
+  (let ((file
+         (read-file-name "File to load: " copilot-chat-default-save-dir nil t)))
     (copilot-chat--load-instance file)
     (message "Loaded instance from %s" file)))
 

@@ -37,15 +37,15 @@
  [["Commands"
    ("d" "Display chat" copilot-chat-display)
    ("h" "Hide chat" copilot-chat-hide)
-   ("r" "Reset & reopen"
-    (lambda ()
-      (interactive)
-      (copilot-chat-reset)
-      (copilot-chat-display)))
    ("x" "Reset" copilot-chat-reset)
    ("g" "Go to buffer" copilot-chat-switch-to-buffer)
-   ("M" "Set model" copilot-chat-set-model)
    ("q" "Quit" transient-quit-one)]
+  ["Instance"
+   ("M" "Set model" copilot-chat-set-model)
+   ("C" "Set commit model" copilot-chat-set-commit-model)
+   ("S" "Save chat" copilot-chat-save)
+   ("L" "Load chat" copilot-chat-load)
+   ("k" "Kill instance" copilot-chat-kill-instance)]
   ["Actions"
    ("p" "Custom prompt" copilot-chat-custom-prompt-selection)
    ("i" "Ask and insert" copilot-chat-ask-and-insert)
