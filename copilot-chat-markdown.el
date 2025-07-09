@@ -165,16 +165,10 @@ Replace selection if any."
 
 (defun copilot-chat--markdown-write (data)
   "Write DATA at the end of the chat part of the buffer."
-  (if copilot-chat-follow
-      (save-excursion
-        (copilot-chat--markdown-goto-input)
-        (forward-line -3)
-        (end-of-line)
-        (insert data))
-    (copilot-chat--markdown-goto-input)
-    (forward-line -3)
-    (end-of-line)
-    (insert data)))
+  (copilot-chat--markdown-goto-input)
+  (forward-line -3)
+  (end-of-line)
+  (insert data))
 
 (defun copilot-chat--markdown-goto-input ()
   "Go to the input part of the chat buffer.
@@ -207,10 +201,8 @@ The input is created if not found."
 (defun copilot-chat--markdown-get-spinner-buffers (instance)
   "Get markdown spinner buffers for INSTANCE."
   (let ((buffer (copilot-chat--markdown-get-buffer instance)))
-    (if copilot-chat-follow
-        buffer
-      (with-current-buffer buffer
-        (list (pm-get-buffer-of-mode 'markdown-view-mode) buffer)))))
+    (with-current-buffer buffer
+      (list (pm-get-buffer-of-mode 'markdown-view-mode) buffer))))
 
 (defun copilot-chat--markdown-insert-prompt (instance prompt)
   "Insert PROMPT in the chat buffer corresponding to INSTANCE."
