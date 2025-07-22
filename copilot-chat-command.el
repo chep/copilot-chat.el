@@ -992,6 +992,13 @@ All its associated buffers are killed."
   (interactive)
   (copilot-chat--quotas))
 
+;;;###autoload (autoload 'copilot-chat-cancel "copilot-chat" nil t)
+(defun copilot-chat-cancel ()
+  "Cancel the current Copilot Chat request."
+  (interactive)
+  (let ((instance (copilot-chat--current-instance)))
+    (copilot-chat--cancel instance)))
+
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here

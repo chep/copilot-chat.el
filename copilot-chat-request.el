@@ -191,97 +191,104 @@ if the prompt is out of context."
 
   ;; Initialize answer accumulator
   (let ((full-response ""))
-    (request
-     "https://api.githubcopilot.com/chat/completions"
-     :type "POST"
-     :headers
-     `(("openai-intent" . "conversation-panel")
-       ("content-type" . "application/json")
-       ("user-agent" . "CopilotChat.nvim/2.0.0")
-       ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
-       ("Copilot-Vision-Request" .
-        ,(if (copilot-chat-uses-vision instance)
-             "true"
-           "false"))
-       ("authorization" .
-        ,(concat
-          "Bearer "
-          (alist-get
-           'token (copilot-chat-connection-token copilot-chat--connection))))
-       ("x-request-id" . ,(copilot-chat--uuid))
-       ("vscode-sessionid"
-        .
-        ,(copilot-chat-connection-sessionid copilot-chat--connection))
-       ("vscode-machineid"
-        .
-        ,(copilot-chat-connection-machineid copilot-chat--connection))
-       ("copilot-integration-id" . "vscode-chat")
-       ("openai-organization" . "github-copilot")
-       ("editor-version" . "Neovim/0.10.0"))
-     :data (copilot-chat--create-req instance prompt out-of-context)
-     :parser
-     (if (copilot-chat--instance-support-streaming instance)
-         #'copilot-chat--request-ask-parser
-       #'copilot-chat--request-ask-non-stream-parser)
-     :complete
-     (cl-function
-      (lambda (&key response &key data &allow-other-keys)
-        ;; Stop spinner when complete
-        (when (fboundp 'copilot-chat--spinner-stop)
-          (copilot-chat--spinner-stop instance))
+    (setf (copilot-chat--backend instance)
+          (request
+           "https://api.githubcopilot.com/chat/completions"
+           :type "POST"
+           :headers
+           `(("openai-intent" . "conversation-panel")
+             ("content-type" . "application/json")
+             ("user-agent" . "CopilotChat.nvim/2.0.0")
+             ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
+             ("Copilot-Vision-Request" .
+              ,(if (copilot-chat-uses-vision instance)
+                   "true"
+                 "false"))
+             ("authorization" .
+              ,(concat
+                "Bearer "
+                (alist-get
+                 'token
+                 (copilot-chat-connection-token copilot-chat--connection))))
+             ("x-request-id" . ,(copilot-chat--uuid))
+             ("vscode-sessionid"
+              .
+              ,(copilot-chat-connection-sessionid copilot-chat--connection))
+             ("vscode-machineid"
+              .
+              ,(copilot-chat-connection-machineid copilot-chat--connection))
+             ("copilot-integration-id" . "vscode-chat")
+             ("openai-organization" . "github-copilot")
+             ("editor-version" . "Neovim/0.10.0"))
+           :data (copilot-chat--create-req instance prompt out-of-context)
+           :parser
+           (if (copilot-chat--instance-support-streaming instance)
+               #'copilot-chat--request-ask-parser
+             #'copilot-chat--request-ask-non-stream-parser)
+           :complete
+           (cl-function
+            (lambda (&key response &key data &allow-other-keys)
+              ;; Stop spinner when complete
+              (when (fboundp 'copilot-chat--spinner-stop)
+                (copilot-chat--spinner-stop instance))
 
-        (unless (= (request-response-status-code response) 200)
-          (let ((error-msg
-                 (format "Error: %s" (request-response-status-code response))))
-            (funcall callback instance error-msg)
-            (funcall callback instance copilot-chat--magic)
-            (error error-msg)))
+              (setf (copilot-chat--backend instance) nil)
+              (unless (= (request-response-status-code response) 200)
+                (let ((error-msg
+                       (format "Process interrupted: %s"
+                               (request-response-status-code response))))
+                  (funcall callback instance error-msg)
+                  (funcall callback instance copilot-chat--magic)
+                  (error error-msg)))
 
-        ;; Update full response and call callback with final magic token
-        (setq full-response (concat full-response data))
-        (funcall callback instance data)
-        (funcall callback instance copilot-chat--magic)
-        (unless out-of-context
-          (setf (copilot-chat-history instance)
-                (cons
-                 (list prompt "assistant") (copilot-chat-history instance))))))
-     :status-code
-     '((400 .
-            (lambda (&rest _)
+              ;; Update full response and call callback with final magic token
+              (setq full-response (concat full-response data))
+              (funcall callback instance data)
+              (funcall callback instance copilot-chat--magic)
+              (unless out-of-context
+                (setf (copilot-chat-history instance)
+                      (cons
+                       (list prompt "assistant")
+                       (copilot-chat-history instance))))))
+           :status-code
+           '((400 .
+                  (lambda (&rest _)
+                    (when (fboundp 'copilot-chat--spinner-stop)
+                      (copilot-chat--spinner-stop instance))
+                    (let ((error-msg "Bad request. Please check your input."))
+                      (funcall callback instance error-msg)
+                      (funcall callback instance copilot-chat--magic))))
+             (401 .
+                  (lambda (&rest _)
+                    (when (fboundp 'copilot-chat--spinner-stop)
+                      (copilot-chat--spinner-stop instance))
+                    (let ((error-msg
+                           "Authentication error. Please re-authenticate."))
+                      (funcall callback instance error-msg)
+                      (funcall callback instance copilot-chat--magic))))
+             (429 .
+                  (lambda (&rest _)
+                    (when (fboundp 'copilot-chat--spinner-stop)
+                      (copilot-chat--spinner-stop instance))
+                    (let ((error-msg
+                           "Rate limit exceeded. Please try again later."))
+                      (funcall callback instance error-msg)
+                      (funcall callback instance copilot-chat--magic))))
+             (500 .
+                  (lambda (&rest _)
+                    (when (fboundp 'copilot-chat--spinner-stop)
+                      (copilot-chat--spinner-stop instance))
+                    (let ((error-msg "Server error. Please try again later."))
+                      (funcall callback instance error-msg)
+                      (funcall callback instance copilot-chat--magic)))))
+           :error
+           (cl-function
+            (lambda (&rest args &key error-thrown &allow-other-keys)
               (when (fboundp 'copilot-chat--spinner-stop)
                 (copilot-chat--spinner-stop instance))
-              (let ((error-msg "Bad request. Please check your input."))
+              (let ((error-msg (format "Request error: %S" error-thrown)))
                 (funcall callback instance error-msg)
-                (funcall callback instance copilot-chat--magic))))
-       (401 .
-            (lambda (&rest _)
-              (when (fboundp 'copilot-chat--spinner-stop)
-                (copilot-chat--spinner-stop instance))
-              (let ((error-msg "Authentication error. Please re-authenticate."))
-                (funcall callback instance error-msg)
-                (funcall callback instance copilot-chat--magic))))
-       (429 .
-            (lambda (&rest _)
-              (when (fboundp 'copilot-chat--spinner-stop)
-                (copilot-chat--spinner-stop instance))
-              (let ((error-msg "Rate limit exceeded. Please try again later."))
-                (funcall callback instance error-msg)
-                (funcall callback instance copilot-chat--magic))))
-       (500 .
-            (lambda (&rest _)
-              (when (fboundp 'copilot-chat--spinner-stop)
-                (copilot-chat--spinner-stop instance))
-              (let ((error-msg "Server error. Please try again later."))
-                (funcall callback instance error-msg)
-                (funcall callback instance copilot-chat--magic)))))
-     :error
-     (cl-function
-      (lambda (&rest args &key error-thrown &allow-other-keys)
-        (when (fboundp 'copilot-chat--spinner-stop)
-          (copilot-chat--spinner-stop instance))
-        (let ((error-msg (format "Request error: %S" error-thrown)))
-          (funcall callback instance error-msg)
-          (funcall callback instance copilot-chat--magic)))))))
+                (funcall callback instance copilot-chat--magic))))))))
 
 (defun copilot-chat--get-headers ()
   "Get headers for Copilot API requests."
@@ -432,6 +439,13 @@ Optional argument QUIET suppresses user messages when non-nil."
           (message "Error fetching models asynchronously: %S"
                    error-thrown)))))))
 
+(defun copilot-chat--request-cancel (instance)
+  "Cancel the current request for INSTANCE."
+  (let ((backend (copilot-chat--backend instance)))
+    (when backend
+      (request-abort backend))))
+
+
 (defun copilot-chat--request-quotas ()
   "Get the current GitHub Copilot quotas for INSTANCE."
   (let ((result '()))
@@ -477,6 +491,7 @@ Optional argument QUIET suppresses user messages when non-nil."
   :login-fn #'copilot-chat--request-login
   :renew-token-fn #'copilot-chat--request-renew-token
   :ask-fn #'copilot-chat--request-ask
+  :cancel-fn #'copilot-chat--request-cancel
   :quotas-fn #'copilot-chat--request-quotas)
  copilot-chat--backend-list
  :test #'equal)

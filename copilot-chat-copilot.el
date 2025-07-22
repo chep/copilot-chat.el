@@ -473,6 +473,15 @@ Argument DIRECTORY is the path to search for matching instance."
           (goto-char (point-min))
           (display-buffer (current-buffer)))))))
 
+
+(defun copilot-chat--cancel (instance)
+  "Cancel the current request in the copilot chat INSTANCE."
+  (let ((cancel-fn
+         (copilot-chat-backend-cancel-fn (copilot-chat--get-backend))))
+    (when cancel-fn
+      (funcall cancel-fn instance)
+      (message "Request cancelled."))))
+
 (provide 'copilot-chat-copilot)
 ;;; copilot-chat-copilot.el ends here
 

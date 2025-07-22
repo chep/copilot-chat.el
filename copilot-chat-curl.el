@@ -90,7 +90,8 @@ authentication."
  "Private data for Copilot chat curl backend."
  (answer nil :type (or null string))
  (file nil :type (or null file))
- (current-data nil :type (or null string)))
+ (current-data nil :type (or null string))
+ (process nil :type (or null process)))
 
 
 ;; functions
@@ -139,13 +140,14 @@ Arguments ARGS are additional arguments to pass to curl."
         (error (format "curl returned non-zero result: %d" result))))))
 
 (defun copilot-chat--curl-make-process
-    (address method data filter vision &rest args)
-  "Call curl asynchronously.
+    (instance address method data filter vision callback &rest args)
+  "Call curl asynchronously for INSTANCE.
 Argument ADDRESS is the URL to call.
 Argument METHOD is the HTTP method to use.
 Argument DATA is the data to send.
 Argument FILTER is the function called to parse data.
 If VISION is t, add vision header.
+Argument CALLBACK is the function to call with analysed data.
 Optional argument ARGS are additional arguments to pass to curl."
   (let ((command
          (append
@@ -178,18 +180,24 @@ Optional argument ARGS are additional arguments to pass to curl."
           (when copilot-chat-curl-proxy-user-pass
             (list "-U" copilot-chat-curl-proxy-user-pass))
           args)))
-    (make-process
-     :name "copilot-chat-curl"
-     :buffer nil
-     :filter filter
-     :sentinel
-     (lambda (proc _exit)
-       (when (/= (process-exit-status proc) 0)
-         (error
-          (format "curl returned non-zero status %d"
-                  (process-exit-status proc)))))
-     :stderr (get-buffer-create "*copilot-chat-curl-stderr*")
-     :command command)))
+    (setf (copilot-chat-curl-process (copilot-chat--backend instance))
+          (make-process
+           :name "copilot-chat-curl"
+           :buffer nil
+           :filter filter
+           :sentinel
+           (lambda (proc _exit)
+             (when (/= (process-exit-status proc) 0)
+               (let ((error-msg
+                      (format "Curl interrupted: %d"
+                              (process-exit-status proc))))
+                 (funcall callback instance error-msg)
+                 (funcall callback instance copilot-chat--magic)))
+             (setf (copilot-chat-curl-process (copilot-chat--backend instance))
+                   nil)
+             (copilot-chat--spinner-stop instance))
+           :stderr (get-buffer-create "*copilot-chat-curl-stderr*")
+           :command command))))
 
 (defun copilot-chat--curl-parse-github-token ()
   "Curl github token request parsing."
@@ -518,6 +526,7 @@ if the prompt is out of context."
       (insert (copilot-chat--create-req instance prompt out-of-context))))
 
   (copilot-chat--curl-make-process
+   instance
    "https://api.githubcopilot.com/chat/completions"
    'post
    (concat "@" (copilot-chat-curl-file (copilot-chat--backend instance)))
@@ -529,6 +538,7 @@ if the prompt is out of context."
        (copilot-chat--curl-analyze-nonstream-response
         instance proc string callback out-of-context)))
    (copilot-chat-uses-vision instance)
+   callback
    "-H"
    "openai-intent: conversation-panel"
    "-H"
@@ -547,6 +557,12 @@ if the prompt is out of context."
     (copilot-chat-connection-machineid copilot-chat--connection))
    "-H"
    "copilot-integration-id: vscode-chat"))
+
+(defun copilot-chat--curl-cancel (instance)
+  "Cancel the current request for INSTANCE."
+  (let ((proc (copilot-chat-curl-process (copilot-chat--backend instance))))
+    (when (process-live-p proc)
+      (delete-process proc))))
 
 (defun copilot-chat--curl-quotas ()
   "Get the current GitHub Copilot quotas."
@@ -600,6 +616,7 @@ if the prompt is out of context."
   :login-fn #'copilot-chat--curl-login
   :renew-token-fn #'copilot-chat--curl-renew-token
   :ask-fn #'copilot-chat--curl-ask
+  :cancel-fn #'copilot-chat--curl-cancel
   :quotas-fn #'copilot-chat--curl-quotas)
  copilot-chat--backend-list
  :test #'equal)
