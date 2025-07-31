@@ -133,7 +133,7 @@ INSTANCE is `copilot-chat' instance, used to retrieve relative file path."
   "Create a request with `org-mode' syntax reminder.
 PROMPT is the input text.  If NO-CONTEXT is t, do nothing because we are
 asking for a commit message."
-  (if no-context
+  (if (or no-context (not (stringp prompt)))
       prompt
     (format
      "%s\n\nUse only Emacs org-mode formatting in your answers:

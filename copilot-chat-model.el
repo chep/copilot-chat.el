@@ -149,6 +149,14 @@ This function checks the JSON policy data returned from the API."
   (let ((policy (alist-get 'policy model)))
     (or (null policy) (string= (alist-get 'state policy) "enabled"))))
 
+(defun copilot-chat--model-id-support-tools (model-id)
+  "Return non-nil if MODEL-ID supports tool calls."
+  (copilot-chat--model-id-supports-p model-id 'tool_calls))
+
+(defun copilot-chat--instance-support-tools (instance)
+  "Return non-nil if INSTANCE supports tool calls."
+  (copilot-chat--model-id-supports-p (copilot-chat-model instance) 'tool_calls))
+
 (provide 'copilot-chat-model)
 ;;; copilot-chat-model.el ends here
 

@@ -88,6 +88,58 @@
    ("R" "Review whole buffer" copilot-chat-review-whole-buffer)
    ("q" "Quit" transient-quit-one)]])
 
+
+(defun copilot-chat--mcp-generate-server-suffixes ()
+  "Génère dynamiquement les switches pour les serveurs."
+  (let ((suffixes '())
+        (index 0)
+        (instance (copilot-chat--current-instance)))
+    ;; Ajouter chaque serveur comme switch
+    (dolist (server (mapcar 'car mcp-hub-servers))
+      (push (list
+             (format "%d" index) (format "Add %s" server) (format "%s" server)
+             :init-value
+             (lambda (obj)
+               (when (member
+                      (slot-value obj 'argument)
+                      (copilot-chat-mcp-servers instance))
+                 (setf (slot-value obj 'value) (slot-value obj 'argument)))))
+            suffixes)
+      (setq index (1+ index)))
+
+    ;; Ajouter l'option "ALL"
+    (push (list (format "%d" index) "Add All" "ALL") suffixes)
+    (push (list (format "%d" (1+ index)) "Clear All" "CLEAR") suffixes)
+
+    ;; Inverser pour avoir l'ordre correct
+    (nreverse suffixes)))
+
+(defun copilot-chat--mcp-handle-selection (servers)
+  "Gère les serveurs sélectionnés à partir des arguments."
+  (interactive (list (transient-args 'copilot-chat-mcp-servers-transient)))
+  (let ((instance (copilot-chat--current-instance)))
+    (cond
+     ((member "ALL" servers)
+      (setf (copilot-chat-mcp-servers instance) (mapcar 'car mcp-hub-servers)))
+     ((member "CLEAR" servers)
+      (setf (copilot-chat-mcp-servers instance) nil))
+     (t
+      (setf (copilot-chat-mcp-servers instance) servers)))
+    (copilot-chat--activate-mcp-servers instance)))
+
+;;;###autoload (autoload 'copilot-chat-mcp-servers-transient "copilot-chat" nil t)
+(transient-define-prefix
+ copilot-chat-mcp-servers-transient () "Copilot chat MCP servers menu."
+ ["MCP servers:"
+  :class transient-column
+  :setup-children
+  (lambda (_)
+    (transient-parse-suffixes
+     transient--prefix (copilot-chat--mcp-generate-server-suffixes)))]
+ [["Actions"
+   ("RET" "Validate" copilot-chat--mcp-handle-selection)
+   ("q" "Cancel" transient-quit-one)]])
+
 (provide 'copilot-chat-transient)
 ;;; copilot-chat-transient.el ends here
 

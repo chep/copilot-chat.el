@@ -57,7 +57,8 @@ Use `copilot-chat-set-model' to interactively select a model."
  (spinner-status nil :type (or null string))
  (-backend nil)
  (-frontend nil)
- (file-path nil :type string))
+ (file-path nil :type string)
+ (mcp-servers nil))
 
 (defvar copilot-chat--instances (list)
   "Global instance of Copilot chat.")

@@ -441,6 +441,8 @@ Optional argument QUIET suppresses user messages when non-nil."
 
 (defun copilot-chat--request-cancel (instance)
   "Cancel the current request for INSTANCE."
+  (when (fboundp 'copilot-chat--spinner-stop)
+    (copilot-chat--spinner-stop instance))
   (let ((backend (copilot-chat--backend instance)))
     (when backend
       (request-abort backend))))

@@ -551,12 +551,11 @@ Optional argument INSTANCE specifies which instance to refresh the list for."
                 nil
               (if (= 0 (copilot-chat-prompt-history-position instance))
                   ""
-                (progn
-                  (setf (copilot-chat-prompt-history-position instance)
-                        (1- (copilot-chat-prompt-history-position instance)))
-                  (nth
-                   (copilot-chat-prompt-history-position instance)
-                   (copilot-chat-prompt-history instance))))))))
+                (setf (copilot-chat-prompt-history-position instance)
+                      (1- (copilot-chat-prompt-history-position instance)))
+                (nth
+                 (copilot-chat-prompt-history-position instance)
+                 (copilot-chat-prompt-history instance)))))))
     (when prompt
       (copilot-chat--insert-prompt instance prompt))))
 
@@ -999,6 +998,11 @@ All its associated buffers are killed."
   (let ((instance (copilot-chat--current-instance)))
     (copilot-chat--cancel instance)))
 
+;;;###autoload (autoload 'copilot-chat-set-mcp-servers "copilot-chat" nil t)
+(defun copilot-chat-set-mcp-servers ()
+  "Manage MCP server list."
+  (interactive)
+  (copilot-chat-mcp-servers-transient))
 
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
