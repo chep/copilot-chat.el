@@ -581,7 +581,13 @@ if the prompt is out of context."
                 ;; classic prompt
                 (cons `(:content ,prompt :role "user") history)
               ;; tool answer
-              (append (list prompt) history))))
+              (append
+               (list
+                `(:content
+                  "Here is the result of the tool you requested."
+                  :role "user")
+                prompt)
+               history))))
       (setf (copilot-chat-history instance) new-history)))
 
   (copilot-chat--curl-make-process
