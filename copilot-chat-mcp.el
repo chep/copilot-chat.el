@@ -117,7 +117,8 @@
     nil))
 
 (defun copilot-chat--call-function (instance function)
-  "Call the FUNCTION and manage the result."
+  "Call the FUNCTION and manage the result.
+INSTANCE is the copilot chat instance."
   (let* ((connection (copilot-chat--mcp-find-connection instance function))
          (name (copilot-chat-function-name function))
          (arguments (copilot-chat-function-arguments function))
@@ -149,7 +150,7 @@
           #'copilot-chat-prompt-cb))))))
 
 (defun copilot-chat--activate-mcp-servers (instance)
-  "Start the MCP server connection."
+  "Start the MCP server connections for INSTANCE."
   (let ((servers (copilot-chat-mcp-servers instance)))
     (dolist (server-name servers)
       (dolist (server mcp-hub-servers)
@@ -173,7 +174,7 @@
                        (error (concat "MCP server start error :" err))))))))))))
 
 (defun copilot-chat--get-tools (instance)
-  "Return the list of tools from the MCP servers."
+  "Return the list of tools from the MCP servers managed in INSTANCE."
   (let ((all-tools nil))
     (dolist (server (copilot-chat-mcp-servers instance))
       (let ((connection (gethash server mcp-server-connections)))
