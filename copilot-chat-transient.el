@@ -90,7 +90,7 @@
 
 
 (defun copilot-chat--mcp-generate-server-suffixes ()
-  "Génère dynamiquement les switches pour les serveurs."
+  "Generate dynamic switches for servers."
   (let ((suffixes '())
         (index 0)
         (instance (copilot-chat--current-instance)))
@@ -115,7 +115,7 @@
     (nreverse suffixes)))
 
 (defun copilot-chat--mcp-handle-selection (servers)
-  "Gère les serveurs sélectionnés à partir des arguments."
+  "Handle selected servers from arguments."
   (interactive (list (transient-args 'copilot-chat-mcp-servers-transient)))
   (let ((instance (copilot-chat--current-instance)))
     (cond

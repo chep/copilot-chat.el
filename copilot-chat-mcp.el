@@ -170,7 +170,7 @@ INSTANCE is the copilot chat instance."
                      :resources-callback nil
                      :resources-templates-callback nil
                      :error-callback
-                     (lambda (_ error)
+                     (lambda (_ err)
                        (error (concat "MCP server start error :" err))))))))))))
 
 (defun copilot-chat--get-tools (instance)

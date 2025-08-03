@@ -439,7 +439,7 @@ if the response should be added to history."
                     (and (> (length choices) 0)
                          (alist-get 'delta (aref choices 0))))
                    (token (and delta (alist-get 'content delta))))
-              (when (and delta token)
+              (when token
                 (if (eq token :null)
                     (let ((tool_calls (alist-get 'tool_calls delta)))
                       (when (and tool_calls (not (eq tool_calls :null)))
@@ -611,7 +611,7 @@ if the prompt is out of context."
     "authorization: Bearer "
     (alist-get 'token (copilot-chat-connection-token copilot-chat--connection)))
    "-H"
-   (concat "x--id: " (copilot-chat--uuid))
+   (concat "x-request-id: " (copilot-chat--uuid))
    "-H"
    (concat
     "vscode-sessionid: "
