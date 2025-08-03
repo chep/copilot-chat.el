@@ -102,7 +102,6 @@ Optional argument TYPE is the type of the instance (nil or commit)."
           :first-word-answer t
           :history nil
           :buffers nil
-          :prompt-history nil
           :prompt-history-position nil
           :yank-index 1
           :last-yank-start nil

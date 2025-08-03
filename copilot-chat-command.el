@@ -108,7 +108,6 @@ to Copilot for processing."
          (copilot-chat--format-data instance prompt 'prompt) nil)
         (with-current-buffer (copilot-chat--get-buffer instance)
           (recenter-top-bottom))
-        (push prompt (copilot-chat-prompt-history instance))
         (setf (copilot-chat-prompt-history-position instance) nil)
         (copilot-chat--ask instance prompt 'copilot-chat-prompt-cb)))))
 
@@ -286,9 +285,16 @@ If CUSTOM-PROMPT is provided, use it instead of reading from the mini-buffer."
   "Read a string with Helm completion, showing historical inputs."
   (interactive)
   (let* ((instance (copilot-chat--current-instance))
-         (prompt "Question for copilot-chat: ")
-         (input (read-string prompt nil 'copilot-chat--prompt-history)))
-    (copilot-chat--insert-and-send-prompt instance input)))
+         (prompt "Question for copilot-chat: "))
+    (setq copilot-chat--prompt-history
+          (mapcar
+           (lambda (msg) (plist-get msg :content))
+           (seq-filter
+            (lambda (msg)
+              (equal (plist-get msg :role) "user"))
+            (copilot-chat-history instance))))
+    (let ((input (read-string prompt nil 'copilot-chat--prompt-history 0)))
+      (copilot-chat--insert-and-send-prompt instance input))))
 
 ;;;###autoload (autoload 'copilot-chat-list "copilot-chat" nil t)
 (defun copilot-chat-list ()
@@ -521,41 +527,44 @@ Optional argument INSTANCE specifies which instance to refresh the list for."
   "Insert previous prompt in prompt buffer."
   (interactive)
   (let* ((instance (copilot-chat--current-instance))
+         (user-messages
+          (seq-filter
+           (lambda (msg)
+             (equal (plist-get msg :role) "user"))
+           (copilot-chat-history instance)))
+         (index (copilot-chat-prompt-history-position instance))
          (prompt
-          (if (null (copilot-chat-prompt-history instance))
-              nil
-            (if (null (copilot-chat-prompt-history-position instance))
+          (when (copilot-chat-history instance)
+            (if (null index)
                 (progn
                   (setf (copilot-chat-prompt-history-position instance) 0)
-                  (car (copilot-chat-prompt-history instance)))
-              (if (= (copilot-chat-prompt-history-position instance)
-                     (1- (length (copilot-chat-prompt-history instance))))
-                  (car (last (copilot-chat-prompt-history instance)))
+                  (plist-get (car user-messages) :content))
+              (if (= index (1- (length user-messages)))
+                  (plist-get (car (last user-messages)) :content)
                 (setf (copilot-chat-prompt-history-position instance)
-                      (1+ (copilot-chat-prompt-history-position instance)))
-                (nth
-                 (copilot-chat-prompt-history-position instance)
-                 (copilot-chat-prompt-history instance)))))))
+                      (1+ index))
+                (plist-get (nth index user-messages) :content))))))
     (when prompt
       (copilot-chat--insert-prompt instance prompt))))
-
 
 (defun copilot-chat-prompt-history-next ()
   "Insert next prompt in prompt buffer."
   (interactive)
   (let* ((instance (copilot-chat--current-instance))
+         (user-messages
+          (seq-filter
+           (lambda (msg)
+             (equal (plist-get msg :role) "user"))
+           (copilot-chat-history instance)))
+         (index (copilot-chat-prompt-history-position instance))
          (prompt
-          (if (null (copilot-chat-prompt-history instance))
-              nil
-            (if (null (copilot-chat-prompt-history-position instance))
-                nil
-              (if (= 0 (copilot-chat-prompt-history-position instance))
-                  ""
-                (setf (copilot-chat-prompt-history-position instance)
-                      (1- (copilot-chat-prompt-history-position instance)))
-                (nth
-                 (copilot-chat-prompt-history-position instance)
-                 (copilot-chat-prompt-history instance)))))))
+          (when (and (copilot-chat-history instance) index)
+            (if (= 0 index)
+                ""
+              (setf
+               index (1- index)
+               (copilot-chat-prompt-history-position instance) index)
+              (plist-get (nth index user-messages) :content)))))
     (when prompt
       (copilot-chat--insert-prompt instance prompt))))
 
@@ -573,7 +582,6 @@ Optional argument KEEP-BUFFERS if non-nil, preserve the current buffer list."
       (kill-buffer buf))
     (setf
      (copilot-chat-history instance) nil
-     (copilot-chat-prompt-history instance) nil
      (copilot-chat-prompt-history-position instance) nil
      (copilot-chat-yank-index instance) 1
      (copilot-chat-last-yank-start instance) nil

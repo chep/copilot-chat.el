@@ -47,7 +47,6 @@ Use `copilot-chat-set-model' to interactively select a model."
  (history nil :type list)
  (buffers nil :type list)
  (uses-vision nil :type boolean)
- (prompt-history nil :type list)
  (prompt-history-position nil :type (or null int))
  (yank-index 1 :type int)
  (last-yank-start nil :type (or null point))
