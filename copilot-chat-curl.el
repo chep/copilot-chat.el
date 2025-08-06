@@ -418,7 +418,7 @@ if the response should be added to history."
             ;; manage tool
             (if (not (string-empty-p (copilot-chat-function-name function)))
                 ;; We have a tool to call
-                (copilot-chat--call-function instance function)
+                (copilot-chat--call-function instance function callback)
 
               ;; Else, we are not using a tool,
               ;; so just we can send magic and clean.

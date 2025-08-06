@@ -116,7 +116,7 @@
               (throw 'break connection))))))
     nil))
 
-(defun copilot-chat--call-function (instance function)
+(defun copilot-chat--call-function (instance function callback)
   "Call the FUNCTION and manage the result.
 INSTANCE is the copilot chat instance."
   (let* ((connection (copilot-chat--mcp-find-connection instance function))
@@ -138,7 +138,7 @@ INSTANCE is the copilot chat instance."
              "tool"
              :tool_call_id ,(copilot-chat-function-id function))
            result)
-          #'copilot-chat-prompt-cb))
+          callback))
        (lambda (_ msg)
          (message "Error calling function %s: %s" name msg)
          (copilot-chat--ask
@@ -147,7 +147,7 @@ INSTANCE is the copilot chat instance."
             "tool"
             :tool_call_id ,(copilot-chat-function-id function)
             :content ,msg)
-          #'copilot-chat-prompt-cb))))))
+          callback))))))
 
 (defun copilot-chat--activate-mcp-servers (instance)
   "Start the MCP server connections for INSTANCE."
