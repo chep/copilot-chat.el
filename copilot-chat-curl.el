@@ -206,7 +206,7 @@ Optional argument ARGS are additional arguments to pass to curl."
 (defun copilot-chat--curl-parse-github-token ()
   "Curl github token request parsing."
   (goto-char (point-min))
-  (let* ((json-data (json-parse-buffer))
+  (let* ((json-data (json-parse-buffer :false-object :json-false))
          (token (gethash "access_token" json-data))
          (token-dir
           (file-name-directory
@@ -220,7 +220,7 @@ Optional argument ARGS are additional arguments to pass to curl."
 (defun copilot-chat--curl-parse-login ()
   "Curl login request parsing."
   (goto-char (point-min))
-  (let* ((json-data (json-parse-buffer))
+  (let* ((json-data (json-parse-buffer :false-object :json-false))
          (device-code (gethash "device_code" json-data))
          (user-code (gethash "user_code" json-data))
          (verification-uri (gethash "verification_uri" json-data)))
@@ -260,7 +260,8 @@ If your browser does not open automatically, browse to %s."
          (json-parse-buffer
           :object-type 'alist ;need alist to be compatible with
           ;copilot-chat-token format
-          ))
+          :false-object
+          :json-false))
         (cache-dir
          (file-name-directory (expand-file-name copilot-chat-token-cache))))
     (setf (copilot-chat-connection-token copilot-chat--connection) json-data)
@@ -269,7 +270,7 @@ If your browser does not open automatically, browse to %s."
     (when (not (file-directory-p cache-dir))
       (make-directory cache-dir t))
     (with-temp-file copilot-chat-token-cache
-      (insert (json-serialize json-data)))))
+      (insert (json-serialize json-data :false-object :json-false)))))
 
 
 (defun copilot-chat--curl-renew-token ()
@@ -303,7 +304,10 @@ Argument SEGMENT is data segment to parse."
           'done
         ;; not the done marker, so must be "done: {...json...}"
         (condition-case _err
-            (json-parse-string data :object-type 'alist)
+            (json-parse-string data
+                               :object-type 'alist
+                               :false-object
+                               :json-false)
           ;; failure => the segment was probably truncated and we need more data from a future
           ;; response
           (json-parse-error
@@ -316,7 +320,10 @@ Argument SEGMENT is data segment to parse."
    ;; from a future response
    (t
     (condition-case _err
-        (json-parse-string segment :object-type 'alist)
+        (json-parse-string segment
+                           :object-type 'alist
+                           :false-object
+                           :json-false)
       (error
        'partial)))))
 
@@ -501,7 +508,11 @@ Argument NO-HISTORY is a boolean to indicate
           nil))
 
   (condition-case err
-      (let* ((extracted (json-parse-string string :object-type 'alist))
+      (let* ((extracted
+              (json-parse-string string
+                                 :object-type 'alist
+                                 :false-object
+                                 :json-false))
              (choices (alist-get 'choices extracted))
              (message
               (and (> (length choices) 0)
@@ -645,7 +656,8 @@ if the prompt is out of context."
       (when (/= result 0)
         (error (format "curl returned non-zero result: %d" result))))
     (goto-char (point-min))
-    (let* ((json-data (json-parse-buffer :object-type 'alist))
+    (let* ((json-data
+            (json-parse-buffer :object-type 'alist :false-object :json-false))
            (resources (alist-get 'resources json-data))
            (result '()))
       (dolist (resource resources)

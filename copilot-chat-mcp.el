@@ -129,7 +129,7 @@ INSTANCE is the copilot chat instance."
       (mcp-async-call-tool
        connection name
        (when arg
-         (json-parse-string arg :object-type 'alist))
+         (json-parse-string arg :object-type 'alist :false-object :json-false))
        (lambda (result)
          (copilot-chat--ask
           instance

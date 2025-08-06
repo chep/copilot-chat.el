@@ -64,7 +64,7 @@ is not `true' are not included in the model selection by default."
     (let ((cache-data
            `((timestamp . ,(round (float-time))) (models . ,(vconcat models)))))
       (with-temp-file copilot-chat-models-cache-file
-        (insert (json-serialize cache-data)))
+        (insert (json-serialize cache-data :false-object :json-false)))
       (when copilot-chat-debug
         (message "Saved %d models to cache %s"
                  (length models)
