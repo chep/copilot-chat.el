@@ -171,14 +171,7 @@ The create req function is called first and will return new prompt."
     ;; user prompt
     (if (stringp prompt)
         (setq messages (append messages `((:content ,prompt :role "user"))))
-      (setq messages
-            (append
-             messages
-             (list
-              prompt
-              `(:content
-                "Here is the result of the tool you requested."
-                :role "user")))))
+      (setq messages (append messages (list prompt))))
     ;; reset vision support
     (setf (copilot-chat-uses-vision instance) nil)
     ;; Add context if needed
