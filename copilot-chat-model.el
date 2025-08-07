@@ -76,11 +76,7 @@ is not `true' are not included in the model selection by default."
     (with-temp-buffer
       (insert-file-contents copilot-chat-models-cache-file)
       (condition-case nil
-          (let* ((cache-data
-                  (json-read-from-string
-                   (buffer-string)
-                   :false-object
-                   :json-false))
+          (let* ((cache-data (json-read-from-string (buffer-string)))
                  (timestamp (alist-get 'timestamp cache-data))
                  (current-time (round (float-time)))
                  (age (- current-time timestamp)))
@@ -154,11 +150,11 @@ This function checks the JSON policy data returned from the API."
     (or (null policy) (string= (alist-get 'state policy) "enabled"))))
 
 (defun copilot-chat--model-id-support-tools (model-id)
-  "Return non-nil if MODEL-ID supports tool_calls."
+  "Return non-nil if MODEL-ID supports `tool_calls'."
   (copilot-chat--model-id-supports-p model-id 'tool_calls))
 
 (defun copilot-chat--instance-support-tools (instance)
-  "Return non-nil if INSTANCE supports tool_calls."
+  "Return non-nil if INSTANCE supports `tool_calls'."
   (copilot-chat--model-id-supports-p (copilot-chat-model instance) 'tool_calls))
 
 (provide 'copilot-chat-model)

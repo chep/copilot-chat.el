@@ -1006,12 +1006,6 @@ All its associated buffers are killed."
   (let ((instance (copilot-chat--current-instance)))
     (copilot-chat--cancel instance)))
 
-;;;###autoload (autoload 'copilot-chat-set-mcp-servers "copilot-chat" nil t)
-(defun copilot-chat-set-mcp-servers ()
-  "Manage MCP server list."
-  (interactive)
-  (copilot-chat-mcp-servers-transient))
-
 (provide 'copilot-chat-command)
 ;;; copilot-chat-command.el ends here
 

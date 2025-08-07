@@ -162,7 +162,7 @@ INSTANCE is the copilot chat instance."
                     (list
                      :initial-callback (lambda (_))
                      :tools-callback
-                     (lambda (server tools)
+                     (lambda (server _)
                        (message
                         (format "MCP server %s started"
                                 (slot-value server 'name))))

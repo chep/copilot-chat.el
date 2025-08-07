@@ -206,9 +206,7 @@ Then we need a session token."
           (insert-file-contents token-file)
           (setf (copilot-chat-connection-token copilot-chat--connection)
                 (json-read-from-string
-                 (buffer-substring-no-properties (point-min) (point-max))
-                 :false-object
-                 :json-false))))))
+                 (buffer-substring-no-properties (point-min) (point-max))))))))
 
   (when (or (null (copilot-chat-connection-token copilot-chat--connection))
             (> (round (float-time (current-time)))

@@ -115,7 +115,7 @@
     (nreverse suffixes)))
 
 (defun copilot-chat--mcp-handle-selection (servers)
-  "Handle selected servers from arguments."
+  "Handle selected SERVERS from arguments."
   (interactive (list (transient-args 'copilot-chat-mcp-servers-transient)))
   (let ((instance (copilot-chat--current-instance)))
     (cond
@@ -139,6 +139,9 @@
  [["Actions"
    ("RET" "Validate" copilot-chat--mcp-handle-selection)
    ("q" "Cancel" transient-quit-one)]])
+
+;;;###autoload (autoload 'copilot-chat-set-mcp-servers "copilot-chat" nil t)
+(defalias 'copilot-chat-set-mcp-servers 'copilot-chat-mcp-servers-transient)
 
 (provide 'copilot-chat-transient)
 ;;; copilot-chat-transient.el ends here
