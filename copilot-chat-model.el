@@ -76,7 +76,11 @@ is not `true' are not included in the model selection by default."
     (with-temp-buffer
       (insert-file-contents copilot-chat-models-cache-file)
       (condition-case nil
-          (let* ((cache-data (json-read-from-string (buffer-string)))
+          (let* ((cache-data
+                  (json-read-from-string
+                   (buffer-string)
+                   :false-object
+                   :json-false))
                  (timestamp (alist-get 'timestamp cache-data))
                  (current-time (round (float-time)))
                  (age (- current-time timestamp)))

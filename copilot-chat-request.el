@@ -130,7 +130,7 @@ Argument DATA is whatever PARSER function returns, or nil."
    (when (not (file-directory-p cache-dir))
      (make-directory cache-dir t))
    (with-temp-file copilot-chat-token-cache
-     (insert (json-serialize data)))))
+     (insert (json-serialize data :false-object :json-false)))))
 
 (defun copilot-chat--request-renew-token ()
   "Renew session token."
@@ -375,7 +375,8 @@ Argument RESPONSE is request-response object."
   "Enable policy for MODEL-ID."
   (let ((url (format "https://api.githubcopilot.com/models/%s/policy" model-id))
         (headers (copilot-chat--get-headers))
-        (data (json-serialize '((state . "enabled")))))
+        (data
+         (json-serialize '((state . "enabled")) :false-object :json-false)))
     (when copilot-chat-debug
       (message "Enabling policy for model %s" model-id))
     (request

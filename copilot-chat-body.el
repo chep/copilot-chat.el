@@ -216,7 +216,7 @@ The create req function is called first and will return new prompt."
                         ,(vconcat messages)
                         :model ,(copilot-chat-model instance)
                         :stream
-                        :false))
+                        :json-false))
                     :false-object
                     :json-false)))
 
