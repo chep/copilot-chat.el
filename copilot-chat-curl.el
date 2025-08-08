@@ -602,11 +602,15 @@ if the prompt is out of context."
    (concat "@" (copilot-chat-curl-file (copilot-chat--backend instance)))
    (lambda (proc string)
      (copilot-chat--debug 'curl "copilot-chat--curl-ask: %s" string)
-     (if (copilot-chat--instance-support-streaming instance)
-         (copilot-chat--curl-analyze-response
-          instance string callback out-of-context)
-       (copilot-chat--curl-analyze-nonstream-response
-        instance proc string callback out-of-context)))
+     (if (not
+          (string= string "quota exceeded\n"))
+         (if (copilot-chat--instance-support-streaming instance)
+             (copilot-chat--curl-analyze-response
+              instance string callback out-of-context)
+           (copilot-chat--curl-analyze-nonstream-response
+            instance proc string callback out-of-context))
+       (copilot-chat--spinner-stop instance)
+       (funcall callback instance "Quota exceeded.")))
    (copilot-chat-uses-vision instance)
    callback
    "-H"
