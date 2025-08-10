@@ -101,7 +101,7 @@
     (nreverse objects)))
 
 (defun copilot-chat--mcp-find-connection (instance function)
-  "Find the MCP connection for the given FUNCTION in INSTANCE servers."
+  "Find the MCP connection for the given FUNCTION in INSTANCE."
   (catch 'break
     (dolist (server (copilot-chat-mcp-servers instance))
       (let ((connection (gethash server mcp-server-connections)))

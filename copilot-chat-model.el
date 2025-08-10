@@ -163,4 +163,5 @@ This function checks the JSON policy data returned from the API."
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
 ;; fill-column: 80
+;; checkdoc-verb-check-experimental-flag: nil
 ;; End:
