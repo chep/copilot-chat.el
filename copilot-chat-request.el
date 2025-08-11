@@ -85,7 +85,11 @@ If your browser does not open automatically, browse to %s."
     (format
      "{\"client_id\":\"Iv1.b507a08c87ecfe98\",\"device_code\":\"%s\",\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"}"
      device-code)
-    :parser (apply-partially 'json-parse-buffer :object-type 'alist)
+    :parser
+    (apply-partially 'json-parse-buffer
+                     :object-type 'alist
+                     :false-object
+                     :json-false)
     :sync t
     :complete #'copilot-chat--request-token-cb)))
 
@@ -102,7 +106,11 @@ If your browser does not open automatically, browse to %s."
      ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
      ("user-agent" . "CopilotChat.nvim/2.0.0")
      ("editor-version" . "Neovim/0.10.0"))
-   :parser (apply-partially 'json-parse-buffer :object-type 'alist)
+   :parser
+   (apply-partially 'json-parse-buffer
+                    :object-type 'alist
+                    :false-object
+                    :json-false)
    :complete #'copilot-chat--request-code-cb))
 
 
@@ -122,7 +130,7 @@ Argument DATA is whatever PARSER function returns, or nil."
    (when (not (file-directory-p cache-dir))
      (make-directory cache-dir t))
    (with-temp-file copilot-chat-token-cache
-     (insert (json-serialize data)))))
+     (insert (json-serialize data :false-object :json-false)))))
 
 (defun copilot-chat--request-renew-token ()
   "Renew session token."
@@ -138,7 +146,11 @@ Argument DATA is whatever PARSER function returns, or nil."
      ("editor-version" . "Neovim/0.10.0")
      ("editor-plugin-version" . "CopilotChat.nvim/2.0.0")
      ("user-agent" . "CopilotChat.nvim/2.0.0"))
-   :parser (apply-partially 'json-parse-buffer :object-type 'alist)
+   :parser
+   (apply-partially 'json-parse-buffer
+                    :object-type 'alist
+                    :false-object
+                    :json-false)
    :sync t
    :complete #'copilot-chat--request-renew-token-cb))
 
@@ -151,7 +163,10 @@ Argument DATA is whatever PARSER function returns, or nil."
              (json-string (and (not (string= "[DONE]" line)) line))
              (json-obj
               (and json-string
-                   (json-parse-string json-string :object-type 'alist)))
+                   (json-parse-string json-string
+                                      :object-type 'alist
+                                      :false-object
+                                      :json-false)))
              (choices (and json-obj (alist-get 'choices json-obj)))
              (delta
               (and (> (length choices) 0) (alist-get 'delta (aref choices 0))))
@@ -168,7 +183,10 @@ Non-streaming version."
             (buffer-substring-no-properties (point-min) (point-max)))
            (json-obj
             (and json-string
-                 (json-parse-string json-string :object-type 'alist)))
+                 (json-parse-string json-string
+                                    :object-type 'alist
+                                    :false-object
+                                    :json-false)))
            (choices (and json-obj (alist-get 'choices json-obj)))
            (message
             (and (> (length choices) 0) (alist-get 'message (aref choices 0))))
@@ -357,7 +375,8 @@ Argument RESPONSE is request-response object."
   "Enable policy for MODEL-ID."
   (let ((url (format "https://api.githubcopilot.com/models/%s/policy" model-id))
         (headers (copilot-chat--get-headers))
-        (data (json-serialize '((state . "enabled")))))
+        (data
+         (json-serialize '((state . "enabled")) :false-object :json-false)))
     (when copilot-chat-debug
       (message "Enabling policy for model %s" model-id))
     (request
@@ -365,7 +384,11 @@ Argument RESPONSE is request-response object."
      :type "POST"
      :headers headers
      :data data
-     :parser (apply-partially 'json-parse-buffer :object-type 'alist))))
+     :parser
+     (apply-partially 'json-parse-buffer
+                      :object-type 'alist
+                      :false-object
+                      :json-false))))
 
 (defun copilot-chat--request-models (&optional quiet)
   "Fetch available models from Copilot API.
@@ -380,7 +403,11 @@ Optional argument QUIET suppresses user messages when non-nil."
      url
      :type "GET"
      :headers headers
-     :parser (apply-partially 'json-parse-buffer :object-type 'alist)
+     :parser
+     (apply-partially 'json-parse-buffer
+                      :object-type 'alist
+                      :false-object
+                      :json-false)
      :sync t ; Use synchronous request when called directly
      :complete #'copilot-chat--request-models-cb)))
 
@@ -397,7 +424,11 @@ Optional argument QUIET suppresses user messages when non-nil."
      url
      :type "GET"
      :headers headers
-     :parser (apply-partially 'json-parse-buffer :object-type 'alist)
+     :parser
+     (apply-partially 'json-parse-buffer
+                      :object-type 'alist
+                      :false-object
+                      :json-false)
      :sync nil ; Use asynchronous request for background fetching
      :success
      (cl-function
@@ -441,6 +472,8 @@ Optional argument QUIET suppresses user messages when non-nil."
 
 (defun copilot-chat--request-cancel (instance)
   "Cancel the current request for INSTANCE."
+  (when (fboundp 'copilot-chat--spinner-stop)
+    (copilot-chat--spinner-stop instance))
   (let ((backend (copilot-chat--backend instance)))
     (when backend
       (request-abort backend))))
@@ -460,7 +493,11 @@ Optional argument QUIET suppresses user messages when non-nil."
         ,(concat
           "Bearer "
           (copilot-chat-connection-github-token copilot-chat--connection))))
-     :parser (apply-partially 'json-parse-buffer :object-type 'alist)
+     :parser
+     (apply-partially 'json-parse-buffer
+                      :object-type 'alist
+                      :false-object
+                      :json-false)
      :success
      (cl-function
       (lambda (&key data &allow-other-keys)

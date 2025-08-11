@@ -64,7 +64,7 @@ is not `true' are not included in the model selection by default."
     (let ((cache-data
            `((timestamp . ,(round (float-time))) (models . ,(vconcat models)))))
       (with-temp-file copilot-chat-models-cache-file
-        (insert (json-serialize cache-data)))
+        (insert (json-serialize cache-data :false-object :json-false)))
       (when copilot-chat-debug
         (message "Saved %d models to cache %s"
                  (length models)
@@ -149,10 +149,19 @@ This function checks the JSON policy data returned from the API."
   (let ((policy (alist-get 'policy model)))
     (or (null policy) (string= (alist-get 'state policy) "enabled"))))
 
+(defun copilot-chat--model-id-support-tools (model-id)
+  "Return non-nil if MODEL-ID supports `tool_calls'."
+  (copilot-chat--model-id-supports-p model-id 'tool_calls))
+
+(defun copilot-chat--instance-support-tools (instance)
+  "Return non-nil if INSTANCE supports `tool_calls'."
+  (copilot-chat--model-id-supports-p (copilot-chat-model instance) 'tool_calls))
+
 (provide 'copilot-chat-model)
 ;;; copilot-chat-model.el ends here
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
 ;; fill-column: 80
+;; checkdoc-verb-check-experimental-flag: nil
 ;; End:

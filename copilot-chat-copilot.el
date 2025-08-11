@@ -102,7 +102,6 @@ Optional argument TYPE is the type of the instance (nil or commit)."
           :first-word-answer t
           :history nil
           :buffers nil
-          :prompt-history nil
           :prompt-history-position nil
           :yank-index 1
           :last-yank-start nil
@@ -223,15 +222,11 @@ Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT is the prompt to send to copilot.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT indicates if prompt is out of context (git commit)."
-  (let* ((history (copilot-chat-history instance))
-         (new-history (cons (list prompt "user") history))
-         (ask-fn (copilot-chat-backend-ask-fn (copilot-chat--get-backend))))
+  (let ((ask-fn (copilot-chat-backend-ask-fn (copilot-chat--get-backend))))
     (copilot-chat--auth)
     (if ask-fn
         (funcall ask-fn instance prompt callback out-of-context)
-      (error "No ask function for backend: %s" (copilot-chat--get-backend)))
-    (unless out-of-context
-      (setf (copilot-chat-history instance) new-history))))
+      (error "No ask function for backend: %s" (copilot-chat--get-backend)))))
 
 (defun copilot-chat--add-buffer (instance buffer)
   "Add a BUFFER to copilot buffers list.
@@ -404,11 +399,15 @@ Argument DIRECTORY is the path to search for matching instance."
       (goto-char (point-min))
       (dolist (entry history)
         (setf (copilot-chat-first-word-answer instance) t)
-        (copilot-chat--write-buffer
-         instance
-         (copilot-chat--format-data
-          instance (car entry) (copilot-chat--str-to-type (cadr entry)))
-         nil)))))
+        (when (and (plist-get entry :content)
+                   (not (string= "tool" (plist-get entry :role))))
+          (copilot-chat--write-buffer
+           instance
+           (copilot-chat--format-data
+            instance
+            (plist-get entry :content)
+            (copilot-chat--str-to-type (plist-get entry :role)))
+           nil))))))
 
 
 (defun copilot-chat--load-instance (file-path)

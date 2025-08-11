@@ -33,6 +33,7 @@
 (require 'copilot-chat-instance)
 (require 'copilot-chat-model)
 (require 'copilot-chat-prompts)
+(require 'copilot-chat-mcp)
 
 (defcustom copilot-chat-use-copilot-instruction-files t
   "Use custom instructions from `.github/copilot-instructions.md'."
@@ -128,7 +129,7 @@ INSTANCE is the `copilot-chat' instance being used."
                         (list
                          `(type . "text") `(text . ,(concat "FILE " filename)))
                         (list
-                         `(type . , "image_url")
+                         `(type . "image_url")
                          `(image_url
                            .
                            ,(list
@@ -147,7 +148,7 @@ INSTANCE is the `copilot-chat' instance being used."
 (defun copilot-chat--create-req (instance prompt no-context)
   "Create a request for Copilot.
 Argument INSTANCE is the copilot chat instance to use.
-Argument PROMPT Copilot prompt to send.
+Argument PROMPT Copilot prompt to send (string or list of json objects)
 Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
   (let* ((create-req-fn
@@ -162,20 +163,22 @@ The create req function is called first and will return new prompt."
          (git-commit-instruction-content
           (and copilot-chat-use-git-commit-instruction-files
                (copilot-chat--read-git-commit-instructions-file)))
-         (messages nil))
+         (messages nil)
+         (tools (copilot-chat--get-tools instance)))
     ;; Apply create-req-fn if available
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
     ;; user prompt
-    (push (list `(content . ,prompt) `(role . "user")) messages)
+    (if (stringp prompt)
+        (setq messages (append messages `((:content ,prompt :role "user"))))
+      (setq messages (append messages (list prompt))))
     ;; reset vision support
     (setf (copilot-chat-uses-vision instance) nil)
     ;; Add context if needed
     (unless no-context
       ;; history
-      (dolist (history (copilot-chat-history instance))
-        (push
-         (list `(content . ,(car history)) `(role . ,(cadr history))) messages))
+      (setq messages
+            (append (reverse (copilot-chat-history instance)) messages))
       ;; Clean buffer list once and add buffer contents
       (setf (copilot-chat-buffers instance)
             (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
@@ -186,32 +189,36 @@ The create req function is called first and will return new prompt."
     ;; Add custom instruction as a separate message if available.
     ;; Prefer Global < Project.
     (when formatted-copilot-instructions
-      (push (list
-             `(content . ,formatted-copilot-instructions) `(role . "system"))
-            messages))
+      (push
+       `(:content ,formatted-copilot-instructions :role "system") messages))
 
     (when (and git-commit-instruction-content
                (eq (copilot-chat-type instance) 'commit))
-      (push (list
-             `(content . ,git-commit-instruction-content) `(role . "system"))
-            messages))
+      (push
+       `(:content ,git-commit-instruction-content :role "system") messages))
 
     ;; Global instruction.
-    (push (list `(content . ,copilot-chat-prompt) `(role . "system")) messages)
+    (push `(:content ,copilot-chat-prompt :role "system") messages)
 
     ;; Create the appropriate payload based on model type
-    (json-serialize
-     (if (copilot-chat--instance-support-streaming instance)
-         `((messages . ,(vconcat messages))
-           (top_p . 1)
-           (model . ,(copilot-chat-model instance))
-           (stream . t)
-           (n . 1)
-           (intent . t)
-           (temperature . 0.1))
-       `((messages . ,(vconcat messages))
-         (model . ,(copilot-chat-model instance))
-         (stream . :false))))))
+    (json-serialize (if (copilot-chat--instance-support-streaming instance)
+                        `(:messages
+                          ,(vconcat messages)
+                          :top_p 1
+                          :model ,(copilot-chat-model instance)
+                          :stream t
+                          :n 1
+                          :intent t
+                          :temperature 0.1
+                          :tools ,(vconcat tools)
+                          :parallel_tool_calls t)
+                      `(:messages
+                        ,(vconcat messages)
+                        :model ,(copilot-chat-model instance)
+                        :stream
+                        :json-false))
+                    :false-object
+                    :json-false)))
 
 (provide 'copilot-chat-body)
 ;;; copilot-chat-body.el ends here

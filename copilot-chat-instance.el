@@ -47,7 +47,6 @@ Use `copilot-chat-set-model' to interactively select a model."
  (history nil :type list)
  (buffers nil :type list)
  (uses-vision nil :type boolean)
- (prompt-history nil :type list)
  (prompt-history-position nil :type (or null int))
  (yank-index 1 :type int)
  (last-yank-start nil :type (or null point))
@@ -57,7 +56,8 @@ Use `copilot-chat-set-model' to interactively select a model."
  (spinner-status nil :type (or null string))
  (-backend nil)
  (-frontend nil)
- (file-path nil :type string))
+ (file-path nil :type string)
+ (mcp-servers nil))
 
 (defvar copilot-chat--instances (list)
   "Global instance of Copilot chat.")

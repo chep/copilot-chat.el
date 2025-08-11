@@ -32,6 +32,7 @@
 (require 'copilot-chat-connection)
 (require 'copilot-chat-spinner)
 (require 'copilot-chat-backend)
+(require 'copilot-chat-mcp)
 
 ;; customs
 (defcustom copilot-chat-curl-program "curl"
@@ -89,6 +90,7 @@ authentication."
  copilot-chat-curl
  "Private data for Copilot chat curl backend."
  (answer nil :type (or null string))
+ (function nil :type (or null copilot-chat-function))
  (file nil :type (or null file))
  (current-data nil :type (or null string))
  (process nil :type (or null process)))
@@ -168,7 +170,9 @@ Optional argument ARGS are additional arguments to pass to curl."
            "-H"
            "editor-plugin-version: CopilotChat.nvim/2.0.0"
            "-H"
-           "editor-version: Neovim/0.10.0")
+           "editor-version: Neovim/0.10.0"
+           "-H"
+           "copilot-integration-id: vscode-chat")
           (when vision
             (list "-H" "Copilot-Vision-Request: true"))
           (when data
@@ -202,7 +206,7 @@ Optional argument ARGS are additional arguments to pass to curl."
 (defun copilot-chat--curl-parse-github-token ()
   "Curl github token request parsing."
   (goto-char (point-min))
-  (let* ((json-data (json-parse-buffer))
+  (let* ((json-data (json-parse-buffer :false-object :json-false))
          (token (gethash "access_token" json-data))
          (token-dir
           (file-name-directory
@@ -216,7 +220,7 @@ Optional argument ARGS are additional arguments to pass to curl."
 (defun copilot-chat--curl-parse-login ()
   "Curl login request parsing."
   (goto-char (point-min))
-  (let* ((json-data (json-parse-buffer))
+  (let* ((json-data (json-parse-buffer :false-object :json-false))
          (device-code (gethash "device_code" json-data))
          (user-code (gethash "user_code" json-data))
          (verification-uri (gethash "verification_uri" json-data)))
@@ -256,7 +260,8 @@ If your browser does not open automatically, browse to %s."
          (json-parse-buffer
           :object-type 'alist ;need alist to be compatible with
           ;copilot-chat-token format
-          ))
+          :false-object
+          :json-false))
         (cache-dir
          (file-name-directory (expand-file-name copilot-chat-token-cache))))
     (setf (copilot-chat-connection-token copilot-chat--connection) json-data)
@@ -265,7 +270,7 @@ If your browser does not open automatically, browse to %s."
     (when (not (file-directory-p cache-dir))
       (make-directory cache-dir t))
     (with-temp-file copilot-chat-token-cache
-      (insert (json-serialize json-data)))))
+      (insert (json-serialize json-data :false-object :json-false)))))
 
 
 (defun copilot-chat--curl-renew-token ()
@@ -299,7 +304,10 @@ Argument SEGMENT is data segment to parse."
           'done
         ;; not the done marker, so must be "done: {...json...}"
         (condition-case _err
-            (json-parse-string data :object-type 'alist)
+            (json-parse-string data
+                               :object-type 'alist
+                               :false-object
+                               :json-false)
           ;; failure => the segment was probably truncated and we need more data from a future
           ;; response
           (json-parse-error
@@ -312,7 +320,10 @@ Argument SEGMENT is data segment to parse."
    ;; from a future response
    (t
     (condition-case _err
-        (json-parse-string segment :object-type 'alist)
+        (json-parse-string segment
+                           :object-type 'alist
+                           :false-object
+                           :json-false)
       (error
        'partial)))))
 
@@ -379,18 +390,51 @@ if the response should be added to history."
                 segment))
          ;; Final segment, all done:
          ((eq extracted 'done)
-          (copilot-chat--spinner-stop instance)
-          (funcall callback instance copilot-chat--magic)
-          (unless no-history
-            (setf (copilot-chat-history instance)
-                  (cons
-                   (list
-                    (copilot-chat-curl-answer
-                     (copilot-chat--backend instance))
-                    "assistant")
-                   (copilot-chat-history instance))))
-          (setf (copilot-chat-curl-answer (copilot-chat--backend instance))
-                nil))
+          (let ((answer
+                 (copilot-chat-curl-answer (copilot-chat--backend instance)))
+                (function
+                 (copilot-chat-curl-function (copilot-chat--backend instance))))
+
+            ;; History
+            (unless no-history
+              (let ((new-hist
+                     `(:content
+                       ,(if answer
+                            answer
+                          "")
+                       :role "assistant")))
+                (unless (string-empty-p (copilot-chat-function-name function))
+                  (setq new-hist
+                        (append
+                         new-hist
+                         `(:tool_calls
+                           ,(vconcat
+                             `((:type
+                                "function"
+                                :id
+                                ,(copilot-chat-function-id function)
+                                :function
+                                (:name
+                                 ,(copilot-chat-function-name function)
+                                 :arguments
+                                 ,(copilot-chat-function-arguments
+                                   function)))))))))
+                (setf (copilot-chat-history instance)
+                      (cons new-hist (copilot-chat-history instance)))))
+
+            ;; manage tool
+            (if (not (string-empty-p (copilot-chat-function-name function)))
+                ;; We have a tool to call
+                (copilot-chat--call-function instance function callback)
+
+              ;; Else, we are not using a tool,
+              ;; so just we can send magic and clean.
+              (copilot-chat--spinner-stop instance)
+              (funcall callback instance copilot-chat--magic))
+            (setf
+             (copilot-chat-curl-function (copilot-chat--backend instance))
+             (make-copilot-chat-function)
+             (copilot-chat-curl-answer (copilot-chat--backend instance)) nil)))
 
          ;; Otherwise, JSON parsed successfully
          (extracted
@@ -402,18 +446,25 @@ if the response should be added to history."
                     (and (> (length choices) 0)
                          (alist-get 'delta (aref choices 0))))
                    (token (and delta (alist-get 'content delta))))
-              (when (and token (not (eq token :null)))
-                (when (not
-                       (copilot-chat-curl-answer
-                        (copilot-chat--backend instance)))
-                  (copilot-chat--spinner-set-status instance "Generating"))
-                (funcall callback instance token)
-                (setf (copilot-chat-curl-answer
-                       (copilot-chat--backend instance))
-                      (concat
-                       (copilot-chat-curl-answer
-                        (copilot-chat--backend instance))
-                       token)))))
+              (when token
+                (if (eq token :null)
+                    (let ((tool_calls (alist-get 'tool_calls delta)))
+                      (when (and tool_calls (not (eq tool_calls :null)))
+                        (copilot-chat--append-vector-to-function
+                         tool_calls
+                         (copilot-chat-curl-function
+                          (copilot-chat--backend instance)))))
+                  (when (not
+                         (copilot-chat-curl-answer
+                          (copilot-chat--backend instance)))
+                    (copilot-chat--spinner-set-status instance "Generating"))
+                  (funcall callback instance token)
+                  (setf (copilot-chat-curl-answer
+                         (copilot-chat--backend instance))
+                        (concat
+                         (copilot-chat-curl-answer
+                          (copilot-chat--backend instance))
+                         token))))))
 
            ;; display .error.message in the chat.
            ((alist-get 'error extracted)
@@ -426,11 +477,13 @@ if the response should be added to history."
               (funcall callback instance copilot-chat--magic)
               ;; Add an empty response to the chat history to avoid confusing
               ;; the assistant with its own error messages...
-              (setf (copilot-chat-history instance)
-                    (cons
-                     (list "" "assistant") (copilot-chat-history instance)))
-              (setf (copilot-chat-curl-answer (copilot-chat--backend instance))
-                    nil)))
+              (setf
+               (copilot-chat-history instance)
+               (cons
+                `(:content "" :role "assistant")
+                (copilot-chat-history instance))
+               (copilot-chat-curl-answer (copilot-chat--backend instance)) nil
+               (copilot-chat-curl-function (copilot-chat--backend instance)) (make-copilot-chat-function))))
            ;; Fallback -- nag developers about possibly unhandled payloads
            (t
             (warn "Unhandled message from copilot: %S" extracted)))))))))
@@ -455,7 +508,11 @@ Argument NO-HISTORY is a boolean to indicate
           nil))
 
   (condition-case err
-      (let* ((extracted (json-parse-string string :object-type 'alist))
+      (let* ((extracted
+              (json-parse-string string
+                                 :object-type 'alist
+                                 :false-object
+                                 :json-false))
              (choices (alist-get 'choices extracted))
              (message
               (and (> (length choices) 0)
@@ -473,13 +530,14 @@ Argument NO-HISTORY is a boolean to indicate
           (unless no-history
             (setf (copilot-chat-history instance)
                   (cons
-                   (list
-                    (copilot-chat-curl-answer
-                     (copilot-chat--backend instance))
-                    "assistant")
+                   `(:content
+                     ,(copilot-chat-curl-answer
+                       (copilot-chat--backend instance))
+                     :role "assistant")
                    (copilot-chat-history instance))))
           (setf
            (copilot-chat-curl-answer (copilot-chat--backend instance)) nil
+           (copilot-chat-curl-function (copilot-chat--backend instance)) (make-copilot-chat-function)
            (copilot-chat-curl-current-data (copilot-chat--backend instance)) nil)))
     ;; o1 often returns `rate limit exceeded` because of its severe rate limitation,
     ;; so the message in case of an error should be easy to understand.
@@ -504,12 +562,14 @@ Argument NO-HISTORY is a boolean to indicate
 (defun copilot-chat--curl-ask (instance prompt callback out-of-context)
   "Ask a question to Copilot using curl backend.
 Argument INSTANCE is the copilot chat instance to use.
-Argument PROMPT is the prompt to send to copilot.
+Argument PROMPT is the prompt to send to copilot.  It can be a string or a list
+of json objects.
 Argument CALLBACK is the function to call with copilot answer as argument.
 Argument OUT-OF-CONTEXT is a boolean to indicate
 if the prompt is out of context."
   (setf
    (copilot-chat-curl-current-data (copilot-chat--backend instance)) nil
+   (copilot-chat-curl-function (copilot-chat--backend instance)) (make-copilot-chat-function)
    (copilot-chat-curl-answer (copilot-chat--backend instance)) nil)
 
   ;; Start the spinner animation only for instances with chat buffers
@@ -525,6 +585,16 @@ if the prompt is out of context."
     (with-temp-file (copilot-chat-curl-file (copilot-chat--backend instance))
       (insert (copilot-chat--create-req instance prompt out-of-context))))
 
+  (unless out-of-context
+    (let* ((history (copilot-chat-history instance))
+           (new-history
+            (if (stringp prompt)
+                ;; classic prompt
+                (cons `(:content ,prompt :role "user") history)
+              ;; tool answer
+              (append (list prompt) history))))
+      (setf (copilot-chat-history instance) new-history)))
+
   (copilot-chat--curl-make-process
    instance
    "https://api.githubcopilot.com/chat/completions"
@@ -532,11 +602,15 @@ if the prompt is out of context."
    (concat "@" (copilot-chat-curl-file (copilot-chat--backend instance)))
    (lambda (proc string)
      (copilot-chat--debug 'curl "copilot-chat--curl-ask: %s" string)
-     (if (copilot-chat--instance-support-streaming instance)
-         (copilot-chat--curl-analyze-response
-          instance string callback out-of-context)
-       (copilot-chat--curl-analyze-nonstream-response
-        instance proc string callback out-of-context)))
+     (if (not
+          (string= string "quota exceeded\n"))
+         (if (copilot-chat--instance-support-streaming instance)
+             (copilot-chat--curl-analyze-response
+              instance string callback out-of-context)
+           (copilot-chat--curl-analyze-nonstream-response
+            instance proc string callback out-of-context))
+       (copilot-chat--spinner-stop instance)
+       (funcall callback instance "Quota exceeded.")))
    (copilot-chat-uses-vision instance)
    callback
    "-H"
@@ -560,6 +634,7 @@ if the prompt is out of context."
 
 (defun copilot-chat--curl-cancel (instance)
   "Cancel the current request for INSTANCE."
+  (copilot-chat--spinner-stop instance)
   (let ((proc (copilot-chat-curl-process (copilot-chat--backend instance))))
     (when (process-live-p proc)
       (delete-process proc))))
@@ -585,7 +660,8 @@ if the prompt is out of context."
       (when (/= result 0)
         (error (format "curl returned non-zero result: %d" result))))
     (goto-char (point-min))
-    (let* ((json-data (json-parse-buffer :object-type 'alist))
+    (let* ((json-data
+            (json-parse-buffer :object-type 'alist :false-object :json-false))
            (resources (alist-get 'resources json-data))
            (result '()))
       (dolist (resource resources)

@@ -321,23 +321,22 @@ PARAMS is a `copilot-chat--commit-callback-params' struct containing:
                   (setf
                    (copilot-chat-history
                     (copilot-chat--commit-callback-params-instance params))
-                   (list
-                    (list
-                     (copilot-chat--commit-callback-params-accumulated-content
-                      params)
-                     "assistant")
-                    (list
-                     (copilot-chat--commit-callback-params-user-prompt-for-this-turn
-                      params)
-                     "user")))
+                   `((:content
+                      ,(copilot-chat--commit-callback-params-accumulated-content
+                        params)
+                      :role "assistant")
+                     (:content
+                      ,(copilot-chat--commit-callback-params-user-prompt-for-this-turn
+                        params)
+                      :role "user")))
                 (setf
                  (copilot-chat-history
                   (copilot-chat--commit-callback-params-instance params))
                  (cons
-                  (list
-                   (copilot-chat--commit-callback-params-accumulated-content
-                    params)
-                   "assistant")
+                  `(:content
+                    ,(copilot-chat--commit-callback-params-accumulated-content
+                      params)
+                    :role "assistant")
                   (copilot-chat-history
                    (copilot-chat--commit-callback-params-instance params))))))
           (progn
