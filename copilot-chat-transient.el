@@ -89,6 +89,18 @@
    ("q" "Quit" transient-quit-one)]])
 
 
+(defun copilot-chat--index-to-key (index)
+  "Convert INDEX to a string key for transient suffixes."
+  (cond
+   ((< index 10)
+    (format "%d" index))
+   ((< index 36)
+    (char-to-string (+ ?a (- index 10))))
+   ((< index 62)
+    (char-to-string (+ ?A (- index 10))))
+   (t
+    (error "Index %d is out of range for transient suffixes" index))))
+
 (defun copilot-chat--mcp-generate-server-suffixes ()
   "Generate dynamic switches for servers."
   (let ((suffixes '())
@@ -97,7 +109,9 @@
     ;; Ajouter chaque serveur comme switch
     (dolist (server (mapcar 'car mcp-hub-servers))
       (push (list
-             (format "%d" index) (format "Add %s" server) (format "%s" server)
+             (copilot-chat--index-to-key index)
+             (format "Add %s" server)
+             (format "%s" server)
              :init-value
              (lambda (obj)
                (when (member
@@ -108,8 +122,9 @@
       (setq index (1+ index)))
 
     ;; Ajouter l'option "ALL"
-    (push (list (format "%d" index) "Add All" "ALL") suffixes)
-    (push (list (format "%d" (1+ index)) "Clear All" "CLEAR") suffixes)
+    (push (list (copilot-chat--index-to-key index) "Add All" "ALL") suffixes)
+    (push (list (copilot-chat--index-to-key (1+ index)) "Clear All" "CLEAR")
+          suffixes)
 
     ;; Inverser pour avoir l'ordre correct
     (nreverse suffixes)))
