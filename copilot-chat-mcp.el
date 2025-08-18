@@ -133,11 +133,12 @@ INSTANCE is the copilot chat instance."
        (lambda (result)
          (copilot-chat--ask
           instance
-          (append
-           `(:role
-             "tool"
-             :tool_call_id ,(copilot-chat-function-id function))
-           result)
+          `(:role
+            "tool"
+            :tool_call_id ,(copilot-chat-function-id function)
+            :name ,name
+            :content
+            ,(plist-get (aref (plist-get result :content) 0) :text))
           callback))
        (lambda (_ msg)
          (message "Error calling function %s: %s" name msg)
