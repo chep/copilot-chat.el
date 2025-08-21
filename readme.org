@@ -27,6 +27,29 @@ Bug reports, PR and new ideas are very welcome.
 
 Many of you won't read this readme. And many of those who start reading won't read more than a few lines. So I'll write some tips here, at the beginning.
 
+** MCP servers
+To enable MCP servers, you need to configure the ~mcp~ package. This is a simple example for GitHub :
+#+begin_src emacs-lisp
+ (setopt mcp-hub-servers
+  '(("github" .
+     (:command
+      "docker"
+      :args
+      ("run"
+       "-i"
+       "--rm"
+       "-e"
+       "GITHUB_PERSONAL_ACCESS_TOKEN"
+       "ghcr.io/github/github-mcp-server")
+      :env
+      (:GITHUB_PERSONAL_ACCESS_TOKEN
+       "Your PAT")))))
+
+#+end_src
+
+Use ~mcp-hub~ to check that your servers work. While in a ~copilot-chat~ instance, use ~copilot-chat-set-mcp-servers~ to enable or disable servers for the instance. Not all models are able to use this feature, so choose wisely.
+
+
 ** Yank
 When using the org frontend, you can yank code blocks provided by Copilot just as you would use the kill ring. Here's a simple configuration:
 
