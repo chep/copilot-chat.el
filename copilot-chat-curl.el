@@ -225,6 +225,12 @@ Optional argument ARGS are additional arguments to pass to curl."
          (user-code (gethash "user_code" json-data))
          (verification-uri (gethash "verification_uri" json-data)))
     (gui-set-selection 'CLIPBOARD user-code)
+    (message
+     (format
+      "Your one-time code %s is copied. \
+Press ENTER to open GitHub in your browser. \
+If your browser does not open automatically, browse to %s."
+      user-code verification-uri))
     (read-from-minibuffer
      (format
       "Your one-time code %s is copied. \
