@@ -122,33 +122,49 @@ INSTANCE is the copilot chat instance."
   (let* ((connection (copilot-chat--mcp-find-connection instance function))
          (name (copilot-chat-function-name function))
          (arguments (copilot-chat-function-arguments function))
-         (arglist (copilot-chat--extract-json-objects arguments)))
-    (unless arglist
-      (setq arglist (list nil)))
-    (dolist (arg arglist)
-      (mcp-async-call-tool
-       connection name
-       (when arg
-         (json-parse-string arg :object-type 'alist :false-object :json-false))
-       (lambda (result)
-         (copilot-chat--ask
-          instance
-          `(:role
-            "tool"
-            :tool_call_id ,(copilot-chat-function-id function)
-            :name ,name
-            :content
-            ,(plist-get (aref (plist-get result :content) 0) :text))
-          callback))
-       (lambda (_ msg)
-         (message "Error calling function %s: %s" name msg)
-         (copilot-chat--ask
-          instance
-          `(:role
-            "tool"
-            :tool_call_id ,(copilot-chat-function-id function)
-            :content ,msg)
-          callback))))))
+         (arglist (copilot-chat--extract-json-objects arguments))
+         (arg (car arglist)))
+    (if (yes-or-no-p
+         (format
+          "Copilot Chat wants to call the tool '%s' with arguments: %s. Allow?"
+          name
+          (if arg
+              (json-encode (json-parse-string arg :object-type 'alist))
+            "none")))
+        (mcp-async-call-tool
+         connection name
+         (when arg
+           (json-parse-string arg
+                              :object-type 'alist
+                              :false-object
+                              :json-false))
+         (lambda (result)
+           (copilot-chat--ask
+            instance
+            `(:role
+              "tool"
+              :tool_call_id ,(copilot-chat-function-id function)
+              :name ,name
+              :content
+              ,(plist-get (aref (plist-get result :content) 0) :text))
+            callback))
+         (lambda (_ msg)
+           (message "Error calling function %s: %s" name msg)
+           (copilot-chat--ask
+            instance
+            `(:role
+              "tool"
+              :tool_call_id ,(copilot-chat-function-id function)
+              :content ,msg)
+            callback)))
+      (copilot-chat--ask
+       instance
+       `(:role
+         "tool"
+         :tool_call_id ,(copilot-chat-function-id function)
+         :content
+         ,(format "User denied the tool call for '%s'." name))
+       callback))))
 
 (defun copilot-chat--activate-mcp-servers (instance)
   "Start the MCP server connections for INSTANCE."
