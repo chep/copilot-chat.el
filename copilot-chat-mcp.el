@@ -41,64 +41,36 @@
  (arguments "" :type string)
  (id "" :type string))
 
-(defun copilot-chat--append-vector-to-function (vector function)
-  "Append elements from VECTOR to FUNCTION."
-  (dolist (item (elt vector 0))
-    (cond
-     ;; if `function` is présent
-     ((eq (car item) 'function)
-      (let ((name (alist-get 'name item))
-            (args (alist-get 'arguments item)))
-        (when name
-          (setf (copilot-chat-function-name function) name))
-        (when args
-          (setf (copilot-chat-function-arguments function)
-                (concat (copilot-chat-function-arguments function) args)))))
-     ;; If `id` is present
-     ((eq (car item) 'id)
-      (setf (copilot-chat-function-id function) (cdr item))))))
 
-(defun copilot-chat--extract-json-objects (json-string)
-  "Extract individual JSON objects from JSON-STRING."
-  (let ((objects '())
-        (start 0)
-        (brace-count 0)
-        (in-object nil)
-        (in-string nil)
-        (escape-next nil)
-        (length (length json-string)))
+(defun copilot-chat--update-function (function args)
+  (setf (copilot-chat-function-arguments function)
+        (concat (copilot-chat-function-arguments function) args)))
 
-    (dotimes (i length)
-      (let ((char (aref json-string i)))
-        (cond
-         ;; Handle escape sequences
-         (escape-next
-          (setq escape-next nil))
+(defun copilot-chat--append-vector-to-functions (vector functions)
+  "Append elements from VECTOR to the correct function in FUNCTIONS."
+  (let ((name "")
+        (args "")
+        (id "")
+        (index -1))
 
-         ;; Check for escape character
-         ((= char ?\\)
-          (setq escape-next t))
+    (dolist (item (elt vector 0))
+      (cond
+       ((eq (car item) 'function)
+        (setq
+         name (alist-get 'name item)
+         args (alist-get 'arguments item)))
+       ((eq (car item) 'id)
+        (setq id (cdr item)))
+       ((eq (car item) 'index)
+        (setq index (cdr item)))))
 
-         ;; Toggle string state (only if not escaped)
-         ((= char ?\")
-          (setq in-string (not in-string)))
-
-         ;; Only count braces outside of strings
-         ((and (not in-string) (= char ?{))
-          (when (= brace-count 0)
-            (setq in-object t)
-            (setq start i))
-          (setq brace-count (1+ brace-count)))
-
-         ;; Closing brace (only if not in a string)
-         ((and (not in-string) (= char ?}) (> brace-count 0))
-          (setq brace-count (1- brace-count))
-          (when (and in-object (= brace-count 0))
-            (push (substring json-string start (1+ i)) objects)
-            (setq in-object nil))))))
-
-    ;; Return objects in original order
-    (nreverse objects)))
+    (when (>= index 0)
+      (if (< index (length functions))
+          (copilot-chat--update-function (nth index functions) args)
+        (let ((new-function
+               (make-copilot-chat-function :name name :arguments args :id id)))
+          (setq functions (append functions (list new-function))))))
+    functions))
 
 (defun copilot-chat--mcp-find-connection (instance function)
   "Find the MCP connection for the given FUNCTION in INSTANCE."
@@ -116,55 +88,66 @@
               (throw 'break connection))))))
     nil))
 
-(defun copilot-chat--call-function (instance function callback)
-  "Call the FUNCTION and manage the result.
+(defun copilot-chat--send-function-result-if-needed
+    (instance callback results functions)
+  "Send the FUNCTION result if all calls are completed.
+INSTANCE is the copilot chat instance.
+CALLBACK is copilot-chat--ask callback.
+RESULT-LIST is the list of results collected.
+ARGLIST is the list of arguments that were processed.
+"
+  (when (= (length results) (length functions))
+    (copilot-chat--ask instance results callback)))
+
+
+(defun copilot-chat--call-functions (instance functions callback)
+  "Call the FUNCTIONS and manage the result.
 INSTANCE is the copilot chat instance."
-  (let* ((connection (copilot-chat--mcp-find-connection instance function))
-         (name (copilot-chat-function-name function))
-         (arguments (copilot-chat-function-arguments function))
-         (arglist (copilot-chat--extract-json-objects arguments))
-         (arg (car arglist)))
-    (if (yes-or-no-p
-         (format
-          "Copilot Chat wants to call the tool '%s' with arguments: %s. Allow?"
-          name
-          (if arg
-              (json-encode (json-parse-string arg :object-type 'alist))
-            "none")))
-        (mcp-async-call-tool
-         connection name
-         (when arg
-           (json-parse-string arg
-                              :object-type 'alist
-                              :false-object
-                              :json-false))
-         (lambda (result)
-           (copilot-chat--ask
-            instance
-            `(:role
-              "tool"
-              :tool_call_id ,(copilot-chat-function-id function)
-              :name ,name
-              :content
-              ,(plist-get (aref (plist-get result :content) 0) :text))
-            callback))
-         (lambda (_ msg)
-           (message "Error calling function %s: %s" name msg)
-           (copilot-chat--ask
-            instance
-            `(:role
-              "tool"
-              :tool_call_id ,(copilot-chat-function-id function)
-              :content ,msg)
-            callback)))
-      (copilot-chat--ask
-       instance
-       `(:role
-         "tool"
-         :tool_call_id ,(copilot-chat-function-id function)
-         :content
-         ,(format "User denied the tool call for '%s'." name))
-       callback))))
+  (let ((results nil))
+    (dolist (function functions)
+      (let* ((connection (copilot-chat--mcp-find-connection instance function))
+             (name (copilot-chat-function-name function))
+             (arguments (copilot-chat-function-arguments function)))
+        (if (yes-or-no-p
+             (format
+              "Copilot Chat wants to call the tool '%s' with arguments: %s. Allow?"
+              name
+              (if (string-empty-p arguments)
+                  "none"
+                arguments)))
+            (mcp-async-call-tool
+             connection name
+             (unless (string-empty-p arguments)
+               (json-parse-string arguments
+                                  :object-type 'alist
+                                  :false-object
+                                  :json-false))
+             (lambda (result)
+               (push `(:role
+                       "tool"
+                       :tool_call_id ,(copilot-chat-function-id function)
+                       :name ,name
+                       :content
+                       ,(plist-get (aref (plist-get result :content) 0) :text))
+                     results)
+               (copilot-chat--send-function-result-if-needed
+                instance callback results functions))
+             (lambda (_ msg)
+               (message "Error calling function %s: %s" name msg)
+               (push `(:role
+                       "tool"
+                       :tool_call_id ,(copilot-chat-function-id function)
+                       :content ,msg)
+                     results)
+               (copilot-chat--send-function-result-if-needed
+                instance callback results functions)))
+          (push `(:role
+                  "tool"
+                  :tool_call_id ,(copilot-chat-function-id function)
+                  :content ,(format "User denied the tool call for '%s'." name))
+                results)
+          (copilot-chat--send-function-result-if-needed
+           instance callback results functions))))))
 
 (defun copilot-chat--activate-mcp-servers (instance)
   "Start the MCP server connections for INSTANCE."
