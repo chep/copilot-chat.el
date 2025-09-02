@@ -106,7 +106,7 @@
   (let ((suffixes '())
         (index 0)
         (instance (copilot-chat--current-instance)))
-    ;; Ajouter chaque serveur comme switch
+    ;; Add each server as switch
     (dolist (server (mapcar 'car mcp-hub-servers))
       (push (list
              (copilot-chat--index-to-key index)
@@ -121,12 +121,10 @@
             suffixes)
       (setq index (1+ index)))
 
-    ;; Ajouter l'option "ALL"
     (push (list (copilot-chat--index-to-key index) "Add All" "ALL") suffixes)
     (push (list (copilot-chat--index-to-key (1+ index)) "Clear All" "CLEAR")
           suffixes)
 
-    ;; Inverser pour avoir l'ordre correct
     (nreverse suffixes)))
 
 (defun copilot-chat--mcp-handle-selection (servers)
