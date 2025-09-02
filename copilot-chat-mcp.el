@@ -48,7 +48,7 @@
         (concat (copilot-chat-function-arguments function) args)))
 
 (defun copilot-chat--append-vector-to-functions (vector functions)
-  "Append elements from VECTOR to the correct function in FUNCTIONS."
+  "Create or update FUNCTIONS elements using tool call data from VECTOR."
   (let ((name "")
         (args "")
         (id "")
