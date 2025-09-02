@@ -29,7 +29,7 @@
 (require 'polymode)
 
 ;; GitHub Copilot models: https://api.githubcopilot.com/models
-(defcustom copilot-chat-default-model "gpt-4o"
+(defcustom copilot-chat-default-model "gpt-4.1"
   "The model to use for Copilot chat.
 The list of available models will be updated when fetched from the API.
 Use `copilot-chat-set-model' to interactively select a model."
