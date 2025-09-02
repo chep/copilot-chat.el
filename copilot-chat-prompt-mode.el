@@ -33,6 +33,7 @@
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c RET") 'copilot-chat-prompt-send)
     (define-key map (kbd "C-c C-c") 'copilot-chat-prompt-send)
+    (define-key map [remap comint-send-input] 'copilot-chat-prompt-send)
     (define-key
      map (kbd "C-c C-q")
      (lambda ()
@@ -41,8 +42,9 @@
        (delete-window)))
     (define-key map (kbd "C-c C-l") 'copilot-chat-prompt-split-and-list)
     (define-key map (kbd "C-c C-t") 'copilot-chat-transient)
-    (define-key map (kbd "M-p") 'copilot-chat-prompt-history-previous)
-    (define-key map (kbd "M-n") 'copilot-chat-prompt-history-next)
+    (define-key
+     map [remap comint-previous-input] 'copilot-chat-prompt-history-previous)
+    (define-key map [remap comint-next-input] 'copilot-chat-prompt-history-next)
     map)
   "Keymap for Copilot Chat Prompt mode.")
 (defvar copilot-chat--prompt-history nil
