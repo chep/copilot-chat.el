@@ -191,22 +191,12 @@ INSTANCE is the copilot chat instance."
                          "function"
                          :function
                          (:name
-                          ,(if name
-                               name
-                             "")
-                          :description
-                          ,(if desc
-                               desc
-                             "")
+                          ,(or name "")
+                          :description ,(or desc "")
                           :parameters
                           (:type
-                           ,(if type
-                                type
-                              "object")
-                           :properties
-                           ,(if properties
-                                properties
-                              (list)))))
+                           ,(or type "object")
+                           :properties ,(or properties (list)))))
                        all-tools)))
              tools)))))
     all-tools))
