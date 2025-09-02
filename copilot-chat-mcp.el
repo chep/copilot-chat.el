@@ -43,6 +43,7 @@
 
 
 (defun copilot-chat--update-function (function args)
+  "Update FUNCTION by appending ARGS to its arguments."
   (setf (copilot-chat-function-arguments function)
         (concat (copilot-chat-function-arguments function) args)))
 
@@ -90,12 +91,11 @@
 
 (defun copilot-chat--send-function-result-if-needed
     (instance callback results functions)
-  "Send the FUNCTION result if all calls are completed.
+  "Send the FUNCTIONS results if all calls are completed.
 INSTANCE is the copilot chat instance.
-CALLBACK is copilot-chat--ask callback.
-RESULT-LIST is the list of results collected.
-ARGLIST is the list of arguments that were processed.
-"
+CALLBACK is `copilot-chat--ask' callback.
+RESULTS is the list of results collected.
+ARGLIST is the list of arguments that were processed."
   (when (= (length results) (length functions))
     (copilot-chat--ask instance results callback)))
 
@@ -217,4 +217,5 @@ INSTANCE is the copilot chat instance."
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)
 ;; fill-column: 80
+;; checkdoc-verb-check-experimental-flag: nil
 ;; End:
