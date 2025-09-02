@@ -182,20 +182,32 @@ INSTANCE is the copilot chat instance."
           (let ((tools (mcp--tools connection)))
             (mapc
              (lambda (tool)
-               (push `(:type
-                       "function"
-                       :function
-                       (:name
-                        ,(plist-get tool :name)
-                        :description ,(plist-get tool :description)
-                        :parameters
-                        (:type
-                         ,(plist-get (plist-get tool :inputSchema) :type)
-                         :properties
-                         ,(plist-get
-                           (plist-get tool :inputSchema)
-                           :properties))))
-                     all-tools))
+               (let* ((name (plist-get tool :name))
+                      (desc (plist-get tool :description))
+                      (type (plist-get (plist-get tool :inputSchema) :type))
+                      (properties
+                       (plist-get (plist-get tool :inputSchema) :properties)))
+                 (push `(:type
+                         "function"
+                         :function
+                         (:name
+                          ,(if name
+                               name
+                             "")
+                          :description
+                          ,(if desc
+                               desc
+                             "")
+                          :parameters
+                          (:type
+                           ,(if type
+                                type
+                              "object")
+                           :properties
+                           ,(if properties
+                                properties
+                              (list)))))
+                       all-tools)))
              tools)))))
     all-tools))
 
