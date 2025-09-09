@@ -209,10 +209,13 @@ Then we need a session token."
                  (buffer-substring-no-properties (point-min) (point-max))))))))
 
   (when (or (null (copilot-chat-connection-token copilot-chat--connection))
-            (> (round (float-time (current-time)))
-               (alist-get
-                'expires_at
-                (copilot-chat-connection-token copilot-chat--connection))))
+            (let* ((token (copilot-chat-connection-token copilot-chat--connection))
+                   (expires-at (and (listp token) (alist-get 'expires_at token)))
+                   (now (round (float-time (current-time)))))
+              ;; Renew token if missing, malformed, or expired.
+              (or (null token)
+                  (null expires-at)
+                  (and (numberp expires-at) (> now expires-at)))))
     (copilot-chat--renew-token))
   (setf (copilot-chat-connection-ready copilot-chat--connection) t))
 
