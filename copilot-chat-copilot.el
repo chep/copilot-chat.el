@@ -204,9 +204,13 @@ Then we need a session token."
       (when (file-exists-p token-file)
         (with-temp-buffer
           (insert-file-contents token-file)
-          (setf (copilot-chat-connection-token copilot-chat--connection)
-                (json-read-from-string
-                 (buffer-substring-no-properties (point-min) (point-max))))))))
+          (let ((token
+                 (json-read-from-string
+                  (buffer-substring-no-properties (point-min) (point-max)))))
+            (if (string= "Bad credentials" (alist-get 'message token))
+                (copilot-chat--login)
+              (setf (copilot-chat-connection-token copilot-chat--connection)
+                    token)))))))
 
   (when (let* ((token (copilot-chat-connection-token copilot-chat--connection))
                (expires-at (and (listp token) (alist-get 'expires_at token)))
