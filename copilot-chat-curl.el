@@ -638,9 +638,7 @@ if the prompt is out of context."
    "-H"
    (concat
     "vscode-machineid: "
-    (copilot-chat-connection-machineid copilot-chat--connection))
-   "-H"
-   "copilot-integration-id: vscode-chat"))
+    (copilot-chat-connection-machineid copilot-chat--connection))))
 
 (defun copilot-chat--curl-cancel (instance)
   "Cancel the current request for INSTANCE."
