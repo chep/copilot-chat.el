@@ -39,7 +39,8 @@
  "Structure to hold function information."
  (name "" :type string)
  (arguments "" :type string)
- (id "" :type string))
+ (id "" :type string)
+ (index -1 :type integer))
 
 
 (defun copilot-chat--update-function (function args)
@@ -65,11 +66,18 @@
        ((eq (car item) 'index)
         (setq index (cdr item)))))
 
-    (when (>= index 0)
-      (if (< index (length functions))
-          (copilot-chat--update-function (nth index functions) args)
+    ;; search for function with index
+    (let ((func
+           (seq-find
+            (lambda (f) (= (copilot-chat-function-index f) index)) functions)))
+      (if func
+          (copilot-chat--update-function func args)
         (let ((new-function
-               (make-copilot-chat-function :name name :arguments args :id id)))
+               (make-copilot-chat-function
+                :name name
+                :arguments args
+                :id id
+                :index index)))
           (setq functions (append functions (list new-function))))))
     functions))
 
@@ -117,11 +125,12 @@ INSTANCE is the copilot chat instance."
                 arguments)))
             (mcp-async-call-tool
              connection name
-             (unless (string-empty-p arguments)
-               (json-parse-string arguments
-                                  :object-type 'alist
-                                  :false-object
-                                  :json-false))
+             (if (and arguments (not (string-empty-p arguments)))
+                 (json-parse-string arguments
+                                    :object-type 'alist
+                                    :false-object
+                                    :json-false)
+               nil)
              (lambda (result)
                (push `(:role
                        "tool"
