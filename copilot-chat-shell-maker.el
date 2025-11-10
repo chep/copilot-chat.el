@@ -29,6 +29,7 @@
 
 (require 'shell-maker)
 
+(require 'copilot-chat-command)
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-markdown)
 
@@ -183,7 +184,9 @@ Argument SHELL is the `shell-maker' instance."
           t nil t
           (copilot-chat--get-buffer-name (copilot-chat-directory instance)))))
     (with-current-buffer buf
-      (setq-local default-directory (copilot-chat-directory instance)))
+      (setq-local default-directory (copilot-chat-directory instance))
+      (local-set-key [remap comint-send-input] #'copilot-chat-prompt-send)
+      (local-set-key [remap shell-maker-submit] #'copilot-chat-prompt-send))
     buf))
 
 (defun copilot-chat--shell-maker-insert-prompt (instance prompt)
