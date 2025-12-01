@@ -87,13 +87,21 @@ authentication."
 
 ;; structures
 (cl-defstruct
+ copilot-chat-curl-responses
+ "Private data for Copilot chat curl /responses endpoint."
+ (event nil :type (or null symbol)))
+
+(cl-defstruct
  copilot-chat-curl
  "Private data for Copilot chat curl backend."
  (answer nil :type (or null string))
  (functions nil :type list)
  (file nil :type (or null file))
  (current-data nil :type (or null string))
- (process nil :type (or null process)))
+ (process nil :type (or null process))
+ (responses
+  (make-copilot-chat-curl-responses)
+  :type copilot-chat-curl-responses))
 
 
 ;; functions
@@ -289,8 +297,40 @@ If your browser does not open automatically, browse to %s."
              (copilot-chat-connection-github-token copilot-chat--connection)))
     (copilot-chat--curl-parse-renew-token)))
 
+(defun copilot-chat--curl-extract-segment-responses (segment)
+  "Extract data from an individual line-delimited SEGMENT, returning one of:
+- `empty` if the segment has no data
+- `partial`: if the segment seems to be incomplete, i.e. more data in a
+  future response
+- `event`: if the segment is the event description
+- otherwise, the entire JSON content (data: {...})
+Argument SEGMENT is data segment to parse."
+  (cond
+   ;; empty
+   ((string-empty-p segment)
+    'empty)
+   ((string-prefix-p "event:" segment)
+    'event)
+   ((string-prefix-p "data: " segment)
+    (let ((data (substring segment 6)))
+      (condition-case _err
+          (json-parse-string data :object-type 'alist :false-object :json-false)
+        ;; failure => the segment was probably truncated and we need more data from a future
+        ;; response
+        (json-parse-error
+         'partial)
+        (json-end-of-file
+         'partial))))
+   (t
+    (condition-case _err
+        (json-parse-string segment
+                           :object-type 'alist
+                           :false-object
+                           :json-false)
+      (error
+       'partial)))))
 
-(defun copilot-chat--curl-extract-segment (segment)
+(defun copilot-chat--curl-extract-segment-completions (segment)
   "Extract data from an individual line-delimited SEGMENT, returning one of:
 - `empty` if the segment has no data
 - `partial`: if the segment seems to be incomplete, i.e. more data in a
@@ -334,8 +374,119 @@ Argument SEGMENT is data segment to parse."
        'partial)))))
 
 
-(defun copilot-chat--curl-analyze-response (instance string callback no-history)
+(defun copilot-chat--curl-analyze-answer (instance string callback no-history)
   "Analyse curl response.
+Argument INSTANCE is the copilot chat instance to use.
+Argument STRING is the data returned by curl.
+Argument CALLBACK is the function to call with analysed data.
+Argument NO-HISTORY is a boolean to indicate
+if the response should be added to history."
+  (if (copilot-chat--instance-support-responses-endpoint instance)
+      (copilot-chat--curl-analyze-responses instance string callback no-history)
+    (copilot-chat--curl-analyze-completions
+     instance string callback no-history)))
+
+(defun copilot-chat--curl-manage-data-responses
+    (instance callback no-history data)
+  "Manage DATA extracted from /responses endpoint.
+Argument INSTANCE is the copilot chat instance to use.
+Argument CALLBACK is the function to call with analysed data.
+Argument NO-HISTORY is a boolean to indicate
+if the response should be added to history."
+  ;; (funcall callback
+  ;;          instance
+  ;;          (concat
+  ;;           event ": " (json-serialize data :false-object :json-false) "\n\n"))
+  (let* ((responses
+          (copilot-chat-curl-responses (copilot-chat--backend instance)))
+         (event (copilot-chat-curl-responses-event responses)))
+    (cond
+     ((string= event "response.created")
+      (setf responses (make-copilot-chat-curl-responses))
+      (copilot-chat--spinner-set-status instance "Generating"))
+     ((string= event "response.in_progress"))
+     ((string= event "response.output_item.added")
+      ;; extract `content` from the item element and display it
+      (let* ((item (alist-get 'item data))
+             (content (and item (alist-get 'content item))))
+        (when (stringp content)
+          (funcall callback instance content))))
+     ((string= event "response.content_item.done"))
+     ((string= event "response.content_part.added"))
+     ((string= event "response.content_part.done"))
+     ((string= event "response.output_text.delta")
+      (let ((text (alist-get 'delta data)))
+        (when (stringp text)
+          (funcall callback instance text))))
+     ((string= event "response.refusal.delta"))
+     ((string= event "response.refusal.done"))
+     ((string= event "response.function_call_arguments.delta"))
+     ((string= event "response.function_call_arguments.done"))
+     ((string= event "response.completed")
+      ;; History
+      (unless no-history
+        (let* ((resp (alist-get 'response data))
+               (output (and resp (alist-get 'output resp)))
+               (content (and output (alist-get 'content (aref output 0))))
+               (answer (and output (alist-get 'text (aref content 0))))
+               (new-hist
+                `(:content
+                  ,(if answer
+                       answer
+                     "")
+                  :role "assistant")))
+          (setf (copilot-chat-history instance)
+                (cons new-hist (copilot-chat-history instance)))))
+
+      (copilot-chat--spinner-stop instance)
+      (funcall callback instance copilot-chat--magic)
+      (setf (copilot-chat-curl-answer (copilot-chat--backend instance)) nil))
+     ((string= event "response.incomplete"))
+     (t))))
+
+
+(defun copilot-chat--curl-analyze-responses
+    (instance string callback no-history)
+  "Analyse curl response when using /responses endpoint.
+Argument INSTANCE is the copilot chat instance to use.
+Argument STRING is the data returned by curl.
+Argument CALLBACK is the function to call with analysed data.
+Argument NO-HISTORY is a boolean to indicate
+if the response should be added to history."
+  (let ((current-data
+         (copilot-chat-curl-current-data (copilot-chat--backend instance))))
+    (when current-data
+      (setq string (concat current-data string))
+      (setf current-data nil)))
+
+  (let ((segments (split-string string "\n"))
+        (responses
+         (copilot-chat-curl-responses (copilot-chat--backend instance))))
+    (dolist (segment segments)
+      ;;(funcall callback instance (concat "Brut :\n" segment "\nFin brut\n\n"))
+      (let ((extracted (copilot-chat--curl-extract-segment-responses segment)))
+        (cond
+         ;; No data at all, just skip:
+         ((eq extracted 'empty)
+          nil)
+         ;; Data looks truncated, save it for the next segment:
+         ((eq extracted 'partial)
+          (setf (copilot-chat-curl-current-data
+                 (copilot-chat--backend instance))
+                segment))
+         ;; new event
+         ((eq extracted 'event)
+          (setf (copilot-chat-curl-responses-event responses)
+                (substring segment 7)))
+         ;; Otherwise, JSON parsed successfully
+         (extracted
+          (copilot-chat--curl-manage-data-responses
+           instance callback no-history extracted)))))))
+
+
+(defun copilot-chat--curl-analyze-completions
+    (instance string callback no-history)
+  "Analyse curl response when using /chat/completions endpoint.
 Argument INSTANCE is the copilot chat instance to use.
 Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data.
@@ -384,7 +535,8 @@ if the response should be added to history."
 
   (let ((segments (split-string string "\n")))
     (dolist (segment segments)
-      (let ((extracted (copilot-chat--curl-extract-segment segment)))
+      (let ((extracted
+             (copilot-chat--curl-extract-segment-completions segment)))
         (cond
          ;; No data at all, just skip:
          ((eq extracted 'empty)
@@ -607,7 +759,9 @@ if the prompt is out of context."
 
   (copilot-chat--curl-make-process
    instance
-   "https://api.githubcopilot.com/chat/completions"
+   (if (copilot-chat--instance-support-responses-endpoint instance)
+       "https://api.githubcopilot.com/responses"
+     "https://api.githubcopilot.com/chat/completions")
    'post
    (concat "@" (copilot-chat-curl-file (copilot-chat--backend instance)))
    (lambda (proc string)
@@ -615,7 +769,7 @@ if the prompt is out of context."
      (if (not
           (string= string "quota exceeded\n"))
          (if (copilot-chat--instance-support-streaming instance)
-             (copilot-chat--curl-analyze-response
+             (copilot-chat--curl-analyze-answer
               instance string callback out-of-context)
            (copilot-chat--curl-analyze-nonstream-response
             instance proc string callback out-of-context))

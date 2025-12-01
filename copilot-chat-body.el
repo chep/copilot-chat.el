@@ -151,7 +151,9 @@ Argument INSTANCE is the copilot chat instance to use.
 Argument PROMPT Copilot prompt to send (string or list of json objects)
 Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
 The create req function is called first and will return new prompt."
-  (let* ((create-req-fn
+  (let* ((use-responses
+          (copilot-chat--instance-support-responses-endpoint instance))
+         (create-req-fn
           (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
          (copilot-instruction-content
           (and copilot-chat-use-copilot-instruction-files
@@ -189,37 +191,49 @@ The create req function is called first and will return new prompt."
     ;; system.
     ;; Add custom instruction as a separate message if available.
     ;; Prefer Global < Project.
-    (when formatted-copilot-instructions
+    (when (and formatted-copilot-instructions (not use-responses))
       (push
        `(:content ,formatted-copilot-instructions :role "system") messages))
 
     (when (and git-commit-instruction-content
-               (eq (copilot-chat-type instance) 'commit))
+               (eq (copilot-chat-type instance) 'commit)
+               (not use-responses))
       (push
        `(:content ,git-commit-instruction-content :role "system") messages))
 
-    ;; Global instruction.
-    (push `(:content ,copilot-chat-prompt :role "system") messages)
-
     ;; Create the appropriate payload based on model type
-    (json-serialize (if (copilot-chat--instance-support-streaming instance)
+    (if use-responses
+        (json-serialize `(:model
+                          ,(copilot-chat-model instance)
+                          :background
+                          :json-false
+                          :input ,(vconcat messages)
+                          :instructions ,(concat copilot-chat-prompt)
+                          :top_p 1
+                          :stream t
+                          :tools ,(vconcat tools))
+                        :false-object
+                        :json-false)
+      ;; Global instruction.
+      (push `(:content ,copilot-chat-prompt :role "system") messages)
+      (json-serialize (if (copilot-chat--instance-support-streaming instance)
+                          `(:messages
+                            ,(vconcat messages)
+                            :top_p 1
+                            :model ,(copilot-chat-model instance)
+                            :stream t
+                            :n 1
+                            :intent t
+                            :temperature 0.1
+                            :tools ,(vconcat tools)
+                            :parallel_tool_calls t)
                         `(:messages
                           ,(vconcat messages)
-                          :top_p 1
                           :model ,(copilot-chat-model instance)
-                          :stream t
-                          :n 1
-                          :intent t
-                          :temperature 0.1
-                          :tools ,(vconcat tools)
-                          :parallel_tool_calls t)
-                      `(:messages
-                        ,(vconcat messages)
-                        :model ,(copilot-chat-model instance)
-                        :stream
-                        :json-false))
-                    :false-object
-                    :json-false)))
+                          :stream
+                          :json-false))
+                      :false-object
+                      :json-false))))
 
 (provide 'copilot-chat-body)
 ;;; copilot-chat-body.el ends here
