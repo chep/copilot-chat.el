@@ -115,6 +115,19 @@ including a supports key."
      (alist-get 'capabilities (copilot-chat--get-model-by-id model-id))))
    t))
 
+(defun copilot-chat--model-id-supports-endpoint-p (model-id endpoint)
+  "Return t if MODEL-ID supports ENDPOINT set to t.
+MODEL-ID is an alist with a capabilities key whose value is another alist
+including a supports key."
+  (let ((supported-endpoints
+         (cdr
+          (assoc
+           'supported_endpoints (copilot-chat--get-model-by-id model-id)))))
+    (if supported-endpoints
+        (when (member endpoint (append supported-endpoints nil))
+          t)
+      nil)))
+
 (defun copilot-chat--model-id-support-streaming (model-id)
   "Return non-nil if MODEL-ID supports streaming responses.
 This checks MODEL-ID.capabilities.supports.streaming."
@@ -156,6 +169,11 @@ This function checks the JSON policy data returned from the API."
 (defun copilot-chat--instance-support-tools (instance)
   "Return non-nil if INSTANCE supports `tool_calls'."
   (copilot-chat--model-id-supports-p (copilot-chat-model instance) 'tool_calls))
+
+(defun copilot-chat--instance-support-responses-endpoint (instance)
+  "Return non-nil if INSTANCE supports `/responses' endpoint."
+  (copilot-chat--model-id-supports-endpoint-p
+   (copilot-chat-model instance) "/responses"))
 
 (provide 'copilot-chat-model)
 ;;; copilot-chat-model.el ends here
