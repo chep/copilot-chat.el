@@ -192,6 +192,7 @@ Optional argument ARGS are additional arguments to pass to curl."
           (when copilot-chat-curl-proxy-user-pass
             (list "-U" copilot-chat-curl-proxy-user-pass))
           args)))
+    (print command t)
     (setf (copilot-chat-curl-process (copilot-chat--backend instance))
           (make-process
            :name "copilot-chat-curl"
@@ -406,9 +407,10 @@ if the response should be added to history."
       (copilot-chat--spinner-set-status instance "Generating"))
      ((string= event "response.in_progress"))
      ((string= event "response.output_item.added")
-      ;; extract `content` from the item element and display it
+      ;; extract `content` from the item element and display it if needed
       (let* ((item (alist-get 'item data))
-             (content (and item (alist-get 'content item))))
+             (type (and item (alist-get 'type item)))
+             (content (and (string= type "message") (alist-get 'content item))))
         (when (stringp content)
           (funcall callback instance content))))
      ((string= event "response.content_item.done"))
@@ -423,6 +425,8 @@ if the response should be added to history."
      ((string= event "response.function_call_arguments.delta"))
      ((string= event "response.function_call_arguments.done"))
      ((string= event "response.completed")
+      ;; find function call
+
       ;; History
       (unless no-history
         (let* ((resp (alist-get 'response data))

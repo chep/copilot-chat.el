@@ -182,8 +182,9 @@ INSTANCE is the copilot chat instance."
                      (lambda (_ err)
                        (error (concat "MCP server start error :" err))))))))))))
 
-(defun copilot-chat--get-tools (instance)
-  "Return the list of tools from the MCP servers managed in INSTANCE."
+(defun copilot-chat--get-tools (instance responses-api)
+  "Return the list of tools from the MCP servers managed in INSTANCE.
+If RESPONSEs-API is t, use openAI responses format."
   (let ((all-tools nil))
     (dolist (server (copilot-chat-mcp-servers instance))
       (let ((connection (gethash server mcp-server-connections)))
@@ -196,17 +197,27 @@ INSTANCE is the copilot chat instance."
                       (type (plist-get (plist-get tool :inputSchema) :type))
                       (properties
                        (plist-get (plist-get tool :inputSchema) :properties)))
-                 (push `(:type
-                         "function"
-                         :function
-                         (:name
-                          ,(or name "")
-                          :description ,(or desc "")
-                          :parameters
-                          (:type
-                           ,(or type "object")
-                           :properties ,(or properties (list)))))
-                       all-tools)))
+                 (if responses-api
+                     (push `(:type
+                             "function"
+                             :name ,(or name "")
+                             :description ,(or desc "")
+                             :parameters
+                             (:type
+                              ,(or type "object")
+                              :properties ,(or properties (list))))
+                           all-tools)
+                   (push `(:type
+                           "function"
+                           :function
+                           (:name
+                            ,(or name "")
+                            :description ,(or desc "")
+                            :parameters
+                            (:type
+                             ,(or type "object")
+                             :properties ,(or properties (list)))))
+                         all-tools))))
              tools)))))
     all-tools))
 

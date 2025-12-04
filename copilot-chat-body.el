@@ -166,7 +166,7 @@ The create req function is called first and will return new prompt."
           (and copilot-chat-use-git-commit-instruction-files
                (copilot-chat--read-git-commit-instructions-file)))
          (messages nil)
-         (tools (copilot-chat--get-tools instance)))
+         (tools (copilot-chat--get-tools instance use-responses)))
     ;; Apply create-req-fn if available
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
