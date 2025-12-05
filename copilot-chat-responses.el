@@ -23,15 +23,20 @@
 ;; SOFTWARE.
 
 ;;; Commentary:
-;; This is the response api implementation for the backend
+;; This is the responses api implementation for the backend
 
 ;;; Code:
-
+(require 'copilot-chat-backend)
+(require 'copilot-chat-mcp)
+(require 'copilot-chat-instance)
+(require 'copilot-chat-body)
+(require 'copilot-chat-spinner)
 
 ;; structures
 (cl-defstruct
  copilot-chat-responses
  "Private data for Copilot chat /responses endpoint."
+ (current-data nil :type (or null string))
  (event nil :type (or null symbol)))
 
 ;; functions
@@ -68,18 +73,18 @@ Argument SEGMENT is data segment to parse."
       (error
        'partial)))))
 
-(defun copilot-chat--responses-manage-data (instance callback no-history data)
+(defun copilot-chat--responses-manage-data
+    (instance responses callback no-history data)
   "Manage DATA extracted from /responses endpoint.
 Argument INSTANCE is the copilot chat instance to use.
+Argument RESPONSES is the copilot chat responses data.
 Argument CALLBACK is the function to call with analysed data.
 Argument NO-HISTORY is a boolean to indicate
 if the response should be added to history."
-  (let* ((responses
-          (copilot-chat-curl-responses (copilot-chat--backend instance)))
-         (event (copilot-chat-curl-responses-event responses)))
+  (let* ((event (copilot-chat-responses-event responses)))
     (cond
      ((string= event "response.created")
-      (setf responses (make-copilot-chat-curl-responses))
+      (setf responses (make-copilot-chat-responses))
       (copilot-chat--spinner-set-status instance "Generating"))
      ((string= event "response.in_progress"))
      ((string= event "response.output_item.added")
@@ -169,43 +174,38 @@ if the response should be added to history."
      (t))))
 
 
-(defun copilot-chat--responses-analyze (instance string callback no-history)
+(defun copilot-chat--responses-analyze
+    (instance responses string callback no-history)
   "Analyse curl response when using /responses endpoint.
 Argument INSTANCE is the copilot chat instance to use.
+Argument RESPONSES is the copilot chat responses data.
 Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data.
 Argument NO-HISTORY is a boolean to indicate
 if the response should be added to history."
-  (let ((current-data
-         (copilot-chat-curl-current-data (copilot-chat--backend instance))))
+  (let ((current-data (copilot-chat-responses-current-data responses)))
     (when current-data
       (setq string (concat current-data string))
-      (setf (copilot-chat-curl-current-data (copilot-chat--backend instance))
-            nil)))
+      (setf (copilot-chat-responses-current-data responses) nil)))
 
-  (let ((segments (split-string string "\n"))
-        (responses
-         (copilot-chat-curl-responses (copilot-chat--backend instance))))
+  (let ((segments (split-string string "\n")))
     (dolist (segment segments)
       ;;(funcall callback instance (concat "Brut :\n" segment "\nFin brut\n\n"))
-      (let ((extracted (copilot-chat--curl-extract-segment-responses segment)))
+      (let ((extracted (copilot-chat--responses-extract-segment segment)))
         (cond
          ;; No data at all, just skip:
          ((eq extracted 'empty)
           nil)
          ;; Data looks truncated, save it for the next segment:
          ((eq extracted 'partial)
-          (setf (copilot-chat-curl-current-data
-                 (copilot-chat--backend instance))
-                segment))
+          (setf (copilot-chat-responses-current-data responses) segment))
          ;; new event
          ((eq extracted 'event)
-          (setf (copilot-chat-curl-responses-event responses)
-                (substring segment 7)))
+          (setf (copilot-chat-responses-event responses) (substring segment 7)))
          ;; Otherwise, JSON parsed successfully
          (extracted
           (copilot-chat--responses-manage-data
-           instance callback no-history extracted)))))))
+           instance responses callback no-history extracted)))))))
 
 (defun copilot-chat--responses-create-req (instance prompt no-context)
   "Create a request for Copilot using responses api.
@@ -244,17 +244,6 @@ Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers."
       ;; history
       (dolist (elt (copilot-chat-history instance))
         (cond
-         ((plist-member elt :content)
-          (let ((role (plist-get elt :role)))
-            (if (string= role "tool")
-                (setq messages
-                      (append
-                       messages
-                       `((:type
-                          "function_call_output"
-                          :call_id (plist-get elt :tool_call_id)
-                          :output (plist-get elt :content)))))
-              (setq messages (append messages (list elt))))))
          ((plist-member elt :tool_calls)
           (mapc
            (lambda (call)
@@ -271,6 +260,17 @@ Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers."
                          :name ,name
                          :arguments ,arguments))))))
            (plist-get elt :tool_calls)))
+         ((plist-member elt :content)
+          (let ((role (plist-get elt :role)))
+            (if (string= role "tool")
+                (setq messages
+                      (append
+                       messages
+                       `((:type
+                          "function_call_output"
+                          :call_id ,(plist-get elt :tool_call_id)
+                          :output ,(plist-get elt :content)))))
+              (setq messages (append messages (list elt))))))
          ((plist-member elt :type)
           (setq messages (append messages (list elt))))))
       ;; Clean buffer list once and add buffer contents
