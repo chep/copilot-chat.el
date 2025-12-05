@@ -84,6 +84,57 @@ Argument SEGMENT is data segment to parse."
       (error
        'partial)))))
 
+
+(defun copilot-chat--completions-call-functions (instance functions callback)
+  "Call the FUNCTIONS and manage the result.
+INSTANCE is the copilot chat instance."
+  (let ((results nil))
+    (dolist (function functions)
+      (let* ((connection (copilot-chat--mcp-find-connection instance function))
+             (name (copilot-chat-function-name function))
+             (arguments (copilot-chat-function-arguments function)))
+        (if (yes-or-no-p
+             (format
+              "Copilot Chat wants to call the tool '%s' with arguments: %s. Allow?"
+              name
+              (if (string-empty-p arguments)
+                  "none"
+                arguments)))
+            (mcp-async-call-tool
+             connection name
+             (if (and arguments (not (string-empty-p arguments)))
+                 (json-parse-string arguments
+                                    :object-type 'alist
+                                    :false-object
+                                    :json-false)
+               nil)
+             (lambda (result)
+               (push `(:role
+                       "tool"
+                       :tool_call_id ,(copilot-chat-function-id function)
+                       :name ,name
+                       :content
+                       ,(plist-get (aref (plist-get result :content) 0) :text))
+                     results)
+               (copilot-chat--send-function-result-if-needed
+                instance callback results functions))
+             (lambda (_ msg)
+               (message "Error calling function %s: %s" name msg)
+               (push `(:role
+                       "tool"
+                       :tool_call_id ,(copilot-chat-function-id function)
+                       :content ,msg)
+                     results)
+               (copilot-chat--send-function-result-if-needed
+                instance callback results functions)))
+          (push `(:role
+                  "tool"
+                  :tool_call_id ,(copilot-chat-function-id function)
+                  :content ,(format "User denied the tool call for '%s'." name))
+                results)
+          (copilot-chat--send-function-result-if-needed
+           instance callback results functions))))))
+
 (defun copilot-chat--completions-analyze
     (instance completions string callback no-history)
   "Analyse curl response when using /chat/completions endpoint.
@@ -172,13 +223,13 @@ if the response should be added to history."
                                      function))))
                               functions))))))
                 (when (or (not (string-empty-p answer)) functions)
-                  (setf (copilot-chat-history instance)
-                        (cons new-hist (copilot-chat-history instance))))))
+                  (push new-hist (copilot-chat-history instance)))))
 
             ;; manage tool
             (if functions
                 ;; We have tools to call
-                (copilot-chat--call-functions instance functions callback)
+                (copilot-chat--completions-call-functions
+                 instance functions callback)
               ;; Else, we are not using tools,
               ;; so just we can send magic and clean.
               (copilot-chat--spinner-stop instance)
@@ -316,29 +367,47 @@ The create req function is called first and will return new prompt."
          (git-commit-instruction-content
           (and copilot-chat-use-git-commit-instruction-files
                (copilot-chat--read-git-commit-instructions-file)))
-         (messages nil)
+         (messages (list))
          (tools (copilot-chat--get-tools instance nil)))
     ;; Apply create-req-fn if available
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
-    ;; user prompt
-    (if (stringp prompt)
-        (setq messages (append messages `((:content ,prompt :role "user"))))
-      (setq messages (append messages prompt)))
 
     ;; reset vision support
     (setf (copilot-chat-uses-vision instance) nil)
+
+    ;; user prompt
+    (if (stringp prompt)
+        (push `(:content ,prompt :role "user") messages)
+      (setq messages prompt))
+
+
     ;; Add context if needed
     (unless no-context
-      ;; history
-      (setq messages
-            (append (reverse (copilot-chat-history instance)) messages))
       ;; Clean buffer list once and add buffer contents
       (setf (copilot-chat-buffers instance)
             (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
       (dolist (buffer (copilot-chat-buffers instance))
         (setq messages
-              (copilot-chat--add-buffer-to-req buffer instance messages))))
+              (copilot-chat--add-buffer-to-req buffer instance messages)))
+
+      ;; history
+      (dolist (elt (copilot-chat-history instance))
+        (cond
+         ((plist-member elt :content)
+          (push elt messages))
+         ((plist-member elt :tool_calls)
+          (push elt messages))
+         ((plist-member elt :type)
+          (push `(:role
+                  "tool"
+                  :tool_call_id ,(plist-get elt :call_id)
+                  :content ,(plist-get elt :output))
+                messages))
+         (t
+          (push elt messages)))))
+
+
     ;; system.
     ;; Add custom instruction as a separate message if available.
     ;; Prefer Global < Project.
@@ -352,6 +421,7 @@ The create req function is called first and will return new prompt."
        `(:content ,git-commit-instruction-content :role "system") messages))
 
     (push `(:content ,copilot-chat-prompt :role "system") messages)
+
     (json-serialize (if (copilot-chat--instance-support-streaming instance)
                         `(:messages
                           ,(vconcat messages)

@@ -107,57 +107,6 @@ ARGLIST is the list of arguments that were processed."
   (when (= (length results) (length functions))
     (copilot-chat--ask instance results callback)))
 
-
-(defun copilot-chat--call-functions (instance functions callback)
-  "Call the FUNCTIONS and manage the result.
-INSTANCE is the copilot chat instance."
-  (let ((results nil))
-    (dolist (function functions)
-      (let* ((connection (copilot-chat--mcp-find-connection instance function))
-             (name (copilot-chat-function-name function))
-             (arguments (copilot-chat-function-arguments function)))
-        (if (yes-or-no-p
-             (format
-              "Copilot Chat wants to call the tool '%s' with arguments: %s. Allow?"
-              name
-              (if (string-empty-p arguments)
-                  "none"
-                arguments)))
-            (mcp-async-call-tool
-             connection name
-             (if (and arguments (not (string-empty-p arguments)))
-                 (json-parse-string arguments
-                                    :object-type 'alist
-                                    :false-object
-                                    :json-false)
-               nil)
-             (lambda (result)
-               (push `(:role
-                       "tool"
-                       :tool_call_id ,(copilot-chat-function-id function)
-                       :name ,name
-                       :content
-                       ,(plist-get (aref (plist-get result :content) 0) :text))
-                     results)
-               (copilot-chat--send-function-result-if-needed
-                instance callback results functions))
-             (lambda (_ msg)
-               (message "Error calling function %s: %s" name msg)
-               (push `(:role
-                       "tool"
-                       :tool_call_id ,(copilot-chat-function-id function)
-                       :content ,msg)
-                     results)
-               (copilot-chat--send-function-result-if-needed
-                instance callback results functions)))
-          (push `(:role
-                  "tool"
-                  :tool_call_id ,(copilot-chat-function-id function)
-                  :content ,(format "User denied the tool call for '%s'." name))
-                results)
-          (copilot-chat--send-function-result-if-needed
-           instance callback results functions))))))
-
 (defun copilot-chat--activate-mcp-servers (instance)
   "Start the MCP server connections for INSTANCE."
   (let ((servers (copilot-chat-mcp-servers instance)))
