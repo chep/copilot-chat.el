@@ -31,6 +31,7 @@
 (require 'copilot-chat-copilot)
 (require 'copilot-chat-frontend)
 (require 'copilot-chat-spinner)
+(require 'copilot-chat-prompts)
 
 (defcustom copilot-chat-commit-model nil
   "The model to use specifically for commit message generation.
