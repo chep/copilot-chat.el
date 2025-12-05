@@ -101,10 +101,9 @@ Clone repository and eval files in Emacs.
 You will need a GitHub account with access to copilot API. When sending the first prompt, you will need to authenticate to GitHub. Follow instructions and everything will be fine.
 
 ** Backend
-~copilot-chat-backend~ can be set to ~'curl~ (default) or ~'request~.
+~copilot-chat-backend~ can only be set to ~'curl~.
 
 With curl, answers will be written token by token. Curl path can be set with the `copilot-chat-curl-program` variable.
-With request library, the text is written when all data is read and this can be long.
 
 ** Frontend
 Several frontends are available. You can select your favorite one by setting the ~copilot-chat-frontend~ variable to ~'org~ (default), ~'markdown~ or ~'shell-maker~.
@@ -121,8 +120,6 @@ You can use copilot to generate your commit messages :
 Or call manually ~(copilot-chat-insert-commit-message)~ when in the commit message buffer.
 
 ** Proxy
-The proxy can be configured with the curl backend. For the emacs-request backend, please refer to the emacs-request documentation if you need to configure a proxy.
-
 Use the variables ~copilot-chat-curl-proxy~, ~copilot-chat-curl-proxy-user-pass~, and ~copilot-chat-curl-proxy-insecure~ to set up a proxy. Refer to the documentation for each variable to learn how to use them.
 
 Proxies have not been thoroughly tested yet, so there may be bugs. Many options are missing for HTTPS proxies. Please open an issue if you need additional features.
@@ -212,7 +209,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 All variables can be customized using ~M-x customize-group RET copilot-chat RET~.
 
 *** Backend
-- ~copilot-chat-backend~ - Backend to use for API calls. Can be ~'curl~ (default) or ~'request~.
+- ~copilot-chat-backend~ - Backend to use for API calls. Can be ~'curl~.
 - ~copilot-chat-curl-program~ - Path to curl executable when using curl backend.
 - ~copilot-chat-curl-proxy~ - Proxy configuration for curl backend. Supports HTTP/HTTPS/SOCKS protocols.
 - ~copilot-chat-curl-proxy-insecure~ - Skip SSL verification for proxy connections in curl backend.

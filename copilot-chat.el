@@ -69,14 +69,13 @@
   :group 'copilot-chat)
 
 (defcustom copilot-chat-backend 'curl
-  "Copilot chat backend.  Can be `curl` or `request`."
+  "Copilot chat backend.  Can be `curl` or a custom on."
   :type '(choice (const :tag "curl" curl) (const :tag "request" request))
   :set
   (lambda (symbol value)
     (set-default-toplevel-value symbol value)
     (pcase value
-      (`curl (require 'copilot-chat-curl))
-      (`request (require 'copilot-chat-request))))
+      (`curl (require 'copilot-chat-curl))))
   :group 'copilot-chat)
 
 (provide 'copilot-chat)

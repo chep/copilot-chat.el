@@ -241,6 +241,7 @@ if the response should be added to history."
   "Analyse curl response non stream version.
 o1 differs from the other models in the format of the reply.
 Argument INSTANCE is the copilot chat instance to use.
+Argument COMPLETIONS is the completions request data.
 Argument PROC is curl process.
 Argument STRING is the data returned by curl.
 Argument CALLBACK is the function to call with analysed data.
@@ -296,6 +297,79 @@ Argument NO-HISTORY is a boolean to indicate
                   (format "GitHub Copilot error: %S\nResponse is %S"
                           err
                           (string-trim string))))))))
+
+(defun copilot-chat--completions-create-req (instance prompt no-context)
+  "Create a request for Copilot.
+Argument INSTANCE is the copilot chat instance to use.
+Argument PROMPT Copilot prompt to send (string or list of json objects)
+Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers.
+The create req function is called first and will return new prompt."
+  (let* ((create-req-fn
+          (copilot-chat-frontend-create-req-fn (copilot-chat--get-frontend)))
+         (copilot-instruction-content
+          (and copilot-chat-use-copilot-instruction-files
+               (copilot-chat--read-copilot-instructions-file)))
+         (formatted-copilot-instructions
+          (and copilot-instruction-content
+               (copilot-chat--format-copilot-instructions
+                copilot-instruction-content)))
+         (git-commit-instruction-content
+          (and copilot-chat-use-git-commit-instruction-files
+               (copilot-chat--read-git-commit-instructions-file)))
+         (messages nil)
+         (tools (copilot-chat--get-tools instance nil)))
+    ;; Apply create-req-fn if available
+    (when create-req-fn
+      (setq prompt (funcall create-req-fn prompt no-context)))
+    ;; user prompt
+    (if (stringp prompt)
+        (setq messages (append messages `((:content ,prompt :role "user"))))
+      (setq messages (append messages prompt)))
+
+    ;; reset vision support
+    (setf (copilot-chat-uses-vision instance) nil)
+    ;; Add context if needed
+    (unless no-context
+      ;; history
+      (setq messages
+            (append (reverse (copilot-chat-history instance)) messages))
+      ;; Clean buffer list once and add buffer contents
+      (setf (copilot-chat-buffers instance)
+            (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
+      (dolist (buffer (copilot-chat-buffers instance))
+        (setq messages
+              (copilot-chat--add-buffer-to-req buffer instance messages))))
+    ;; system.
+    ;; Add custom instruction as a separate message if available.
+    ;; Prefer Global < Project.
+    (when (and formatted-copilot-instructions)
+      (push
+       `(:content ,formatted-copilot-instructions :role "system") messages))
+
+    (when (and git-commit-instruction-content
+               (eq (copilot-chat-type instance) 'commit))
+      (push
+       `(:content ,git-commit-instruction-content :role "system") messages))
+
+    (push `(:content ,copilot-chat-prompt :role "system") messages)
+    (json-serialize (if (copilot-chat--instance-support-streaming instance)
+                        `(:messages
+                          ,(vconcat messages)
+                          :top_p 1
+                          :model ,(copilot-chat-model instance)
+                          :stream t
+                          :n 1
+                          :intent t
+                          :temperature 0.1
+                          :tools ,(vconcat tools)
+                          :parallel_tool_calls t)
+                      `(:messages
+                        ,(vconcat messages)
+                        :model ,(copilot-chat-model instance)
+                        :stream
+                        :json-false))
+                    :false-object
+                    :json-false)))
 
 
 (provide 'copilot-chat-completions)

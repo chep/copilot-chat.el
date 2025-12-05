@@ -32,6 +32,7 @@
 (require 'copilot-chat-git)
 (require 'copilot-chat-model)
 (require 'copilot-chat-prompt-mode)
+(require 'copilot-chat-request)
 
 ;; customs
 (defcustom copilot-chat-list-added-buffers-only nil

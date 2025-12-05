@@ -185,7 +185,6 @@ Optional argument ARGS are additional arguments to pass to curl."
           (when copilot-chat-curl-proxy-user-pass
             (list "-U" copilot-chat-curl-proxy-user-pass))
           args)))
-    (print command t)
     (setf (copilot-chat-curl-process (copilot-chat--backend instance))
           (make-process
            :name "copilot-chat-curl"
@@ -338,7 +337,8 @@ if the prompt is out of context."
       (insert
        (if (copilot-chat--instance-support-responses-endpoint instance)
            (copilot-chat--responses-create-req instance prompt out-of-context)
-         (copilot-chat--create-req instance prompt out-of-context)))))
+         (copilot-chat--completions-create-req
+          instance prompt out-of-context)))))
 
   (unless out-of-context
     (let* ((history (copilot-chat-history instance))
