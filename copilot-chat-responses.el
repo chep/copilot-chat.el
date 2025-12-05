@@ -106,41 +106,36 @@ if the response should be added to history."
      ((string= event "response.function_call_arguments.delta"))
      ((string= event "response.function_call_arguments.done"))
      ((string= event "response.completed")
-      ;; find function call
       (let* ((response (alist-get 'response data))
              (output (and response (alist-get 'output response)))
              (functions nil)
              (new-hist nil))
+
         (when (arrayp output)
           (mapc
            (lambda (elt)
              (cond
+              ;; find function call and add to functions
               ((string= (alist-get 'type elt) "function_call")
-               (setq functions
-                     (append
-                      functions
-                      (list
-                       (make-copilot-chat-function
-                        :name
-                        (alist-get 'name elt)
-                        :arguments
-                        (alist-get 'arguments elt)
-                        :id
-                        (alist-get 'call_id elt)
-                        :index -1)))))
+               (push (make-copilot-chat-function
+                      :name (alist-get 'name elt)
+                      :arguments (alist-get 'arguments elt)
+                      :id (alist-get 'call_id elt)
+                      :index -1)
+                     functions))
+              ;; find message and add to history
               ((and (not no-history) (string= (alist-get 'type elt) "message"))
                (let* ((content (alist-get 'content elt))
                       (answer (and content (alist-get 'text (aref content 0)))))
                  (setq new-hist
-                       (append
-                        new-hist
-                        `(:content
-                          ,(if answer
-                               answer
-                             "")
-                          :role "assistant")))))))
+                       `(:content
+                         ,(if answer
+                              answer
+                            "")
+                         :role "assistant"))))))
            output))
 
+        ;; add functions to history
         (unless no-history
           (when functions
             (setq new-hist
@@ -158,14 +153,14 @@ if the response should be added to history."
                              ,(copilot-chat-function-name function)
                              :arguments
                              ,(copilot-chat-function-arguments function))))
-                        functions))))))
-          (setf (copilot-chat-history instance)
-                (cons new-hist (copilot-chat-history instance))))
+                        (reverse functions)))))))
+          (push new-hist (copilot-chat-history instance)))
 
         ;; manage tool
         (if functions
             ;; We have tools to call
-            (copilot-chat--responses-call-functions instance functions callback)
+            (copilot-chat--responses-call-functions
+             instance (reverse functions) callback)
           ;; Else, we are not using tools,
           ;; so just we can send magic and clean.
           (copilot-chat--spinner-stop instance)
@@ -231,16 +226,23 @@ Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers."
     (when create-req-fn
       (setq prompt (funcall create-req-fn prompt no-context)))
 
-    ;; user prompt
-    (if (stringp prompt)
-        (setq messages (append messages `((:content ,prompt :role "user"))))
-      (setq messages (append messages prompt)))
-
     ;; reset vision support
     (setf (copilot-chat-uses-vision instance) nil)
 
+    ;; user prompt
+    (if (stringp prompt)
+        (push `(:content ,prompt :role "user") messages)
+      (setq messages prompt))
+
     ;; Add context if needed
     (unless no-context
+      ;; Clean buffer list once and add buffer contents
+      (setf (copilot-chat-buffers instance)
+            (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
+      (dolist (buffer (copilot-chat-buffers instance))
+        (setq messages
+              (copilot-chat--add-buffer-to-req buffer instance messages)))
+
       ;; history
       (dolist (elt (copilot-chat-history instance))
         (cond
@@ -251,34 +253,25 @@ Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers."
                     (function (plist-get call :function))
                     (name (plist-get function :name))
                     (arguments (plist-get function :arguments)))
-               (setq messages
-                     (append
-                      messages
-                      `((:type
-                         "function_call"
-                         :call_id ,id
-                         :name ,name
-                         :arguments ,arguments))))))
+               (push `(:type
+                       "function_call"
+                       :call_id ,id
+                       :name ,name
+                       :arguments ,arguments)
+                     messages)))
            (plist-get elt :tool_calls)))
          ((plist-member elt :content)
           (let ((role (plist-get elt :role)))
             (if (string= role "tool")
-                (setq messages
-                      (append
-                       messages
-                       `((:type
-                          "function_call_output"
-                          :call_id ,(plist-get elt :tool_call_id)
-                          :output ,(plist-get elt :content)))))
-              (setq messages (append messages (list elt))))))
+                (push `(:type
+                        "function_call_output"
+                        :call_id ,(plist-get elt :tool_call_id)
+                        :output ,(plist-get elt :content))
+                      messages)
+              (push elt messages))))
          ((plist-member elt :type)
-          (setq messages (append messages (list elt))))))
-      ;; Clean buffer list once and add buffer contents
-      (setf (copilot-chat-buffers instance)
-            (cl-remove-if-not #'buffer-live-p (copilot-chat-buffers instance)))
-      (dolist (buffer (copilot-chat-buffers instance))
-        (setq messages
-              (copilot-chat--add-buffer-to-req buffer instance messages))))
+          (push elt messages)))))
+
     ;; system.
     ;; Add custom instruction as a separate message if available.
     ;; Prefer Global < Project.
@@ -325,7 +318,6 @@ INSTANCE is the copilot chat instance."
              connection name
              (if (and arguments (not (string-empty-p arguments)))
                  (progn
-                   (print arguments t)
                    (json-parse-string arguments
                                       :object-type 'alist
                                       :false-object
