@@ -272,31 +272,26 @@ Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers."
          ((plist-member elt :type)
           (push elt messages)))))
 
-    ;; system.
-    ;; Add custom instruction as a separate message if available.
-    ;; Prefer Global < Project.
-    (when (and formatted-copilot-instructions (not use-responses))
-      (push
-       `(:content ,formatted-copilot-instructions :role "system") messages))
+    (let ((instructions
+           (if formatted-copilot-instructions
+               formatted-copilot-instructions
+             (if (and git-commit-instruction-content
+                      (eq (copilot-chat-type instance) 'commit))
+                 git-commit-instruction-content
+               copilot-chat-prompt))))
 
-    (when (and git-commit-instruction-content
-               (eq (copilot-chat-type instance) 'commit)
-               (not use-responses))
-      (push
-       `(:content ,git-commit-instruction-content :role "system") messages))
-
-    ;; Create the appropriate payload based on model type
-    (json-serialize `(:model
-                      ,(copilot-chat-model instance)
-                      :background
-                      :json-false
-                      :input ,(vconcat messages)
-                      :instructions ,(concat copilot-chat-prompt)
-                      :top_p 1
-                      :stream t
-                      :tools ,(vconcat tools))
-                    :false-object
-                    :json-false)))
+      ;; Create the appropriate payload based on model type
+      (json-serialize `(:model
+                        ,(copilot-chat-model instance)
+                        :background
+                        :json-false
+                        :input ,(vconcat messages)
+                        :instructions ,instructions
+                        :top_p 1
+                        :stream t
+                        :tools ,(vconcat tools))
+                      :false-object
+                      :json-false))))
 
 
 (defun copilot-chat--responses-call-functions (instance functions callback)
@@ -350,7 +345,7 @@ INSTANCE is the copilot chat instance."
            instance callback results functions))))))
 
 (provide 'copilot-chat-responses)
-;;; copilot-chat-mcp.el ends here
+;;; copilot-chat-responses.el ends here
 
 ;; Local Variables:
 ;; byte-compile-warnings: (not obsolete)

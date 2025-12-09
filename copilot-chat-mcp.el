@@ -133,7 +133,7 @@ ARGLIST is the list of arguments that were processed."
 
 (defun copilot-chat--get-tools (instance responses-api)
   "Return the list of tools from the MCP servers managed in INSTANCE.
-If RESPONSEs-API is t, use openAI responses format."
+If RESPONSES-API is t, use openAI responses format."
   (let ((all-tools nil))
     (dolist (server (copilot-chat-mcp-servers instance))
       (let ((connection (gethash server mcp-server-connections)))
