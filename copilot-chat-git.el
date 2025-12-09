@@ -80,6 +80,20 @@ LLMs may understand standard git diff output better."
   :type 'boolean
   :group 'copilot-chat)
 
+(defcustom copilot-chat-git-wait-message-format
+  "# [copilot:%s] Generating commit message..."
+  "Format string for the message displayed while generating a commit message.
+The %s placeholder will be replaced by the model name."
+  :type 'string
+  :group 'copilot-chat)
+
+(defcustom copilot-chat-git-regenerate-wait-message-format
+  "# [copilot:%s] Regenerating commit message..."
+  "Format string for the message displayed while regenerating a commit message.
+The %s placeholder will be replaced by the model name."
+  :type 'string
+  :group 'copilot-chat)
+
 (defvar copilot-chat--git-commit-instance nil
   "Persistent instance for Git commit message generation.")
 
@@ -406,7 +420,7 @@ and temporarily disabling the org frontend's `create-req-fn` if active."
           (diff-content (aio-await (copilot-chat--get-diff-content)))
           (template-comments (copilot-chat--get-git-commit-template-comments))
           (wait-prompt
-           (format "# [copilot:%s] Generating commit message..."
+           (format copilot-chat-git-wait-message-format
                    (copilot-chat-model instance)))
           (accumulated-content ""))
 
@@ -524,9 +538,8 @@ This function is expected to be safe to open via magit when added to
         (if (string-empty-p instr)
             "Please regenerate a new one, taking the previous attempt and my request into account."
           instr)))
-
      (setq wait-prompt
-           (format "# [copilot:%s] Regenerating commit message..."
+           (format copilot-chat-git-regenerate-wait-message-format
                    (copilot-chat-model instance)))
      (copilot-chat--debug 'commit "Starting commit message regeneration.")
      (copilot-chat--debug
