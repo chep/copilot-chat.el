@@ -30,6 +30,7 @@
 (require 'transient)
 
 (require 'copilot-chat-command)
+(require 'copilot-chat-mcp)
 
 ;;;###autoload (autoload 'copilot-chat-transient "copilot-chat" nil t)
 (transient-define-prefix
