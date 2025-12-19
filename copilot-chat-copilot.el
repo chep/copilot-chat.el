@@ -79,13 +79,41 @@
     (optimize . ,copilot-chat-prompt-optimize)
     (test . ,copilot-chat-prompt-test)))
 
+
+(defun copilot-chat--write-cached-token (token)
+  "Write the GitHub TOKEN to cache."
+  (let* ((token-dir
+          (file-name-directory
+           (expand-file-name copilot-chat-github-token-file)))
+         (data
+          (let ((ht (make-hash-table :test 'equal)))
+            (puthash
+             "github.com:Iv1.b507a08c87ecfe98"
+             (let ((entry (make-hash-table :test 'equal)))
+               (puthash "user" (user-login-name) entry)
+               (puthash "oauth_token" token entry)
+               (puthash "githubAppId" "Iv1.b507a08c87ecfe98" entry)
+               entry)
+             ht)
+            ht)))
+    (when (not (file-directory-p token-dir))
+      (make-directory token-dir t))
+    (with-temp-file (expand-file-name copilot-chat-github-token-file)
+      (insert (json-encode data)))))
+
 (defun copilot-chat--get-cached-token ()
   "Get the cached GitHub token."
   (let ((token-file (expand-file-name copilot-chat-github-token-file)))
     (when (file-exists-p token-file)
-      (with-temp-buffer
-        (insert-file-contents token-file)
-        (buffer-substring-no-properties (point-min) (point-max))))))
+      (let* ((json
+              (with-temp-buffer
+                (insert-file-contents token-file)
+                (buffer-string)))
+             (data (json-parse-string json))
+             (first-key (car (hash-table-keys data)))
+             (token-entry (gethash first-key data))
+             (oauth-token (gethash "oauth_token" token-entry)))
+        oauth-token))))
 
 (defun copilot-chat--create (directory &optional model type)
   "Create a new Copilot chat instance with DIRECTORY as source directory.

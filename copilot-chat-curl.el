@@ -208,15 +208,9 @@ Optional argument ARGS are additional arguments to pass to curl."
   "Curl github token request parsing."
   (goto-char (point-min))
   (let* ((json-data (json-parse-buffer :false-object :json-false))
-         (token (gethash "access_token" json-data))
-         (token-dir
-          (file-name-directory
-           (expand-file-name copilot-chat-github-token-file))))
+         (token (gethash "access_token" json-data)))
     (setf (copilot-chat-connection-github-token copilot-chat--connection) token)
-    (when (not (file-directory-p token-dir))
-      (make-directory token-dir t))
-    (with-temp-file copilot-chat-github-token-file
-      (insert token))))
+    (copilot-chat--write-cached-token token)))
 
 (defun copilot-chat--curl-parse-login ()
   "Curl login request parsing."
