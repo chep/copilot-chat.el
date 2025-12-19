@@ -44,7 +44,7 @@
   :type 'boolean
   :group 'copilot-chat)
 
-(defcustom copilot-chat-github-token-file "~/.config/copilot-chat/github-token"
+(defcustom copilot-chat-github-token-file "~/.config/github-copilot/apps.json"
   "The file where to find GitHub token."
   :type 'string
   :group 'copilot-chat)
