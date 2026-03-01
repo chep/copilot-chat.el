@@ -56,12 +56,16 @@
       (shell-maker-submit)
       (display-buffer (current-buffer)))))
 
+(defun copilot-chat--shell-maker-get-buffer-name (directory)
+  "Get the corresponding shell-maker buffer name for DIRECTORY."
+  (format "Copilot-Chat%s" directory))
+
 (defun copilot-chat--shell-maker-temp-buffer-name (instance)
   "Return the temporary buffer name for the Copilot Chat shell-maker.
 INSTANCE is used to get directory"
   (concat
    copilot-chat--shell-maker-temp-buffer-prefix
-   (copilot-chat-directory instance)
+   (copilot-chat--shell-maker-get-buffer-name (copilot-chat-directory instance))
    "*"))
 
 (defun copilot-chat--shell-maker-tmp-buf (instance)
@@ -177,11 +181,15 @@ Argument SHELL is the `shell-maker' instance."
   (let ((buf
          (shell-maker-start
           (make-shell-maker-config
-           :name (format "Copilot-Chat%s" (copilot-chat-directory instance))
+           :name
+           (copilot-chat--shell-maker-get-buffer-name
+            (copilot-chat-directory instance))
            :execute-command
            (lambda (command shell)
              (copilot-chat--shell-cb instance command shell)))
-          t nil t
+          t
+          nil
+          t
           (copilot-chat--get-buffer-name (copilot-chat-directory instance)))))
     (with-current-buffer buf
       (setq-local default-directory (copilot-chat-directory instance))
