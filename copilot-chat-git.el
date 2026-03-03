@@ -525,10 +525,11 @@ Content after the scissor line (`# --- >8 ---') is also ignored,
 as it contains the verbose diff from `git commit -v'."
   (save-excursion
     (goto-char (point-min))
-    (let ((bound (save-excursion
-                   (if (re-search-forward "^# -+ >8 -+$" nil t)
-                       (line-beginning-position)
-                     (point-max)))))
+    (let ((bound
+           (save-excursion
+             (if (re-search-forward "^# -+ >8 -+$" nil t)
+                 (line-beginning-position)
+               (point-max)))))
       (catch 'found
         (while (< (point) bound)
           (let ((line
