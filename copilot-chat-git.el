@@ -518,6 +518,35 @@ This function is expected to be safe to open via magit when added to
                   3
                   1))
 
+(defun copilot-chat--commit-buffer-has-message-p ()
+  "Return non-nil if the current buffer has a non-comment, non-empty line.
+Lines starting with `#' (git comment lines) and blank lines are ignored."
+  (save-excursion
+    (goto-char (point-min))
+    (catch 'found
+      (while (not (eobp))
+        (let ((line
+               (buffer-substring-no-properties
+                (line-beginning-position) (line-end-position))))
+          (unless (or (string-empty-p (string-trim line))
+                      (string-prefix-p "#" (string-trim-left line)))
+            (throw 'found t)))
+        (forward-line 1))
+      nil)))
+
+;;;###autoload (autoload 'copilot-chat-insert-commit-message-no-clobber "copilot-chat" nil t)
+(defun copilot-chat-insert-commit-message-no-clobber ()
+  "Generate and insert a commit message, but only if the buffer is empty.
+Like `copilot-chat-insert-commit-message',
+but skip generation if the commit buffer already contains a non-comment message.
+This is useful for `git-commit-setup-hook'
+to avoid overwriting existing messages during
+amend, rebase, or squash operations."
+  (interactive)
+  (if (copilot-chat--commit-buffer-has-message-p)
+      (message "Commit buffer already has a message, skipping generation.")
+    (copilot-chat-insert-commit-message)))
+
 ;;;###autoload (autoload 'copilot-chat-regenerate-commit-message "copilot-chat" nil t)
 (defun copilot-chat-regenerate-commit-message ()
   "Regenerate and insert a new commit message using GitHub Copilot."
