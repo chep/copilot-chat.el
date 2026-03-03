@@ -520,19 +520,25 @@ This function is expected to be safe to open via magit when added to
 
 (defun copilot-chat--commit-buffer-has-message-p ()
   "Return non-nil if the current buffer has a non-comment, non-empty line.
-Lines starting with `#' (git comment lines) and blank lines are ignored."
+Lines starting with `#' (git comment lines) and blank lines are ignored.
+Content after the scissor line (`# --- >8 ---') is also ignored,
+as it contains the verbose diff from `git commit -v'."
   (save-excursion
     (goto-char (point-min))
-    (catch 'found
-      (while (not (eobp))
-        (let ((line
-               (buffer-substring-no-properties
-                (line-beginning-position) (line-end-position))))
-          (unless (or (string-empty-p (string-trim line))
-                      (string-prefix-p "#" (string-trim-left line)))
-            (throw 'found t)))
-        (forward-line 1))
-      nil)))
+    (let ((bound (save-excursion
+                   (if (re-search-forward "^# -+ >8 -+$" nil t)
+                       (line-beginning-position)
+                     (point-max)))))
+      (catch 'found
+        (while (< (point) bound)
+          (let ((line
+                 (buffer-substring-no-properties
+                  (line-beginning-position) (line-end-position))))
+            (unless (or (string-empty-p (string-trim line))
+                        (string-prefix-p "#" (string-trim-left line)))
+              (throw 'found t)))
+          (forward-line 1))
+        nil))))
 
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message-no-clobber "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message-no-clobber ()
