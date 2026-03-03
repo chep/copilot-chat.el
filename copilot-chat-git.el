@@ -536,9 +536,10 @@ Lines starting with `#' (git comment lines) and blank lines are ignored."
 
 ;;;###autoload (autoload 'copilot-chat-insert-commit-message-no-clobber "copilot-chat" nil t)
 (defun copilot-chat-insert-commit-message-no-clobber ()
-  "Generate and insert a commit message, but only if the buffer is empty.
+  "Generate commit message, but if has no existing message.
 Like `copilot-chat-insert-commit-message',
-but skip generation if the commit buffer already contains a non-comment message.
+but skip generation
+if the commit buffer already contains a non-comment, non-blank line.
 This is useful for `git-commit-setup-hook'
 to avoid overwriting existing messages during
 amend, rebase, or squash operations."
