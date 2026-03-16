@@ -490,6 +490,43 @@ delays invocation by 1 second to allow the buffer to be fully initialized."
   ;; In fact, we would like to get rid of this kind of messy control.
   (run-with-timer 1 nil #'copilot-chat-insert-commit-message-when-ready))
 
+(defun copilot-chat--commit-buffer-has-message-p ()
+  "Return non-nil if the current buffer has a non-comment, non-empty line.
+Lines starting with `#' (git comment lines) and blank lines are ignored.
+Content after the scissor line (`# --- >8 ---') is also ignored,
+as it contains the verbose diff from `git commit -v'."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((bound
+           (save-excursion
+             (if (re-search-forward "^# -+ >8 -+$" nil t)
+                 (line-beginning-position)
+               (point-max)))))
+      (catch 'found
+        (while (< (point) bound)
+          (let ((line
+                 (buffer-substring-no-properties
+                  (line-beginning-position) (line-end-position))))
+            (unless (or (string-empty-p (string-trim line))
+                        (string-prefix-p "#" (string-trim-left line)))
+              (throw 'found t)))
+          (forward-line 1))
+        nil))))
+
+;;;###autoload (autoload 'copilot-chat-insert-commit-message-no-clobber "copilot-chat" nil t)
+(defun copilot-chat-insert-commit-message-no-clobber ()
+  "Generate commit message, but if has no existing message.
+Like `copilot-chat-insert-commit-message',
+but skip generation
+if the commit buffer already contains a non-comment, non-blank line.
+This is useful for `git-commit-setup-hook'
+to avoid overwriting existing messages during
+amend, rebase, or squash operations."
+  (interactive)
+  (if (copilot-chat--commit-buffer-has-message-p)
+      (message "Commit buffer already has a message, skipping generation.")
+    (copilot-chat-insert-commit-message)))
+
 ;;;###autoload (autoload 'copilot-chat-regenerate-commit-message "copilot-chat" nil t)
 (defun copilot-chat-regenerate-commit-message ()
   "Regenerate and insert a new commit message using GitHub Copilot."

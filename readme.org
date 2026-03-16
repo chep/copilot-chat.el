@@ -119,6 +119,13 @@ You can use copilot to generate your commit messages :
 
 Or call manually ~(copilot-chat-insert-commit-message)~ when in the commit message buffer.
 
+If you want to skip generation when the buffer already has a commit message
+(e.g. during amend, rebase, or squash), use the no-clobber variant :
+
+#+begin_src emacs-lisp
+(add-hook 'git-commit-setup-hook 'copilot-chat-insert-commit-message-no-clobber)
+#+end_src
+
 ** Proxy
 Use the variables ~copilot-chat-curl-proxy~, ~copilot-chat-curl-proxy-user-pass~, and ~copilot-chat-curl-proxy-insecure~ to set up a proxy. Refer to the documentation for each variable to learn how to use them.
 
@@ -189,6 +196,7 @@ You can call ~(copilot-chat-transient)~ to open transient menu. Almost all funct
 
 *** Magit
 - ~(copilot-chat-insert-commit-message)~ Insert in the current buffer a copilot generated commit message.
+- ~(copilot-chat-insert-commit-message-no-clobber)~ Like ~copilot-chat-insert-commit-message~, but skip generation if the buffer already has a non-comment message. Useful for ~git-commit-setup-hook~ to avoid overwriting existing messages during amend, rebase, or squash.
 - ~(copilot-chat-regenerate-commit-message)~ Regenerate the commit message, optionally providing additional instructions or a custom user prompt. This reuses previous context and history for improved results.
 
 *** Transient
