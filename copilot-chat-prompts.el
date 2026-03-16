@@ -27,7 +27,8 @@
 
 ;;; Code:
 (defcustom copilot-chat-commit-prompt
-  "You are an expert software engineer and meticulous code reviewer.
+  "You are a commit message generator.
+Your ONLY task is to produce a Git commit message.
 Your task is to generate a single Git commit message that **strictly follows the Conventional Commits v1.0.0 Specification**.
 
 ### INPUTS PROVIDED
