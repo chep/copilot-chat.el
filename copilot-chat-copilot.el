@@ -71,7 +71,7 @@
 
 ;; Functions
 (defun copilot-chat--prompts ()
-  "Return assoc list of promts for each command."
+  "Return assoc list of prompts for each command."
   `((explain . ,copilot-chat-prompt-explain)
     (review . ,copilot-chat-prompt-review)
     (doc . ,copilot-chat-prompt-doc)
