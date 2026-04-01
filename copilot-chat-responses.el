@@ -287,7 +287,6 @@ Argument NO-CONTEXT tells `copilot-chat' to not send history and buffers."
                         :json-false
                         :input ,(vconcat messages)
                         :instructions ,instructions
-                        :top_p 1
                         :stream t
                         :tools ,(vconcat tools))
                       :false-object
